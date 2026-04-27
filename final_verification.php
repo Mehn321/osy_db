@@ -82,4 +82,3 @@ foreach ($dirs as $label => $path) {
 }
 
 $conn->close();
-?>

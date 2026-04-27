@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Comprehensive Application Functionality Test
  * Tests all critical features of the Municipal KK Profiling System
@@ -150,4 +151,3 @@ echo "║            ✅ ALL TESTS PASSED - SYSTEM OPERATIONAL             ║\n
 echo "╚════════════════════════════════════════════════════════════════╝\n";
 
 $conn->close();
-?>

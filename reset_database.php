@@ -15,4 +15,3 @@ echo "Running setup script...\n";
 system('php c:/xampp/htdocs/osy_db/setup_kk_system.php');
 
 $conn->close();
-?>

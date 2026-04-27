@@ -97,28 +97,28 @@ $inTrainingCount = $inTrainingResult['cnt'] ?? 0;
             <a href="reports.php" class="text-sm font-semibold text-blue-900 flex items-center gap-1 hover:underline">View Full Report <span class="material-symbols-outlined text-sm">arrow_forward</span></a>
         </div>
         <?php if (!empty($skills)): ?>
-        <div class="flex items-end gap-6 h-64">
-            <?php
-            $maxSkill = max(array_column($skills, 'count'));
-            $maxSkill = $maxSkill > 0 ? $maxSkill : 1;
-            foreach ($skills as $skill):
-                $percentage = ($skill['count'] / $maxSkill) * 100;
-            ?>
-                <div class="flex-1 flex flex-col items-center gap-4 group">
-                    <div class="w-full bg-blue-200 dark:bg-blue-900 rounded-t-lg relative transition-all hover:bg-blue-400 group-hover:scale-105" style="height: <?php echo $percentage; ?>%;">
-                        <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity"><?php echo $skill['count']; ?></div>
+            <div class="flex items-end gap-6 h-64">
+                <?php
+                $maxSkill = max(array_column($skills, 'count'));
+                $maxSkill = $maxSkill > 0 ? $maxSkill : 1;
+                foreach ($skills as $skill):
+                    $percentage = ($skill['count'] / $maxSkill) * 100;
+                ?>
+                    <div class="flex-1 flex flex-col items-center gap-4 group">
+                        <div class="w-full bg-blue-200 dark:bg-blue-900 rounded-t-lg relative transition-all hover:bg-blue-400 group-hover:scale-105" style="height: <?php echo $percentage; ?>%;">
+                            <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity"><?php echo $skill['count']; ?></div>
+                        </div>
+                        <span class="text-xs font-bold text-slate-600 dark:text-slate-400 text-center"><?php echo substr($skill['primary_skill'], 0, 15); ?></span>
                     </div>
-                    <span class="text-xs font-bold text-slate-600 dark:text-slate-400 text-center"><?php echo substr($skill['primary_skill'], 0, 15); ?></span>
-                </div>
-            <?php endforeach; ?>
-        </div>
-        <?php else: ?>
-        <div class="flex items-center justify-center h-64 text-slate-400">
-            <div class="text-center">
-                <span class="material-symbols-outlined text-4xl mb-2">bar_chart</span>
-                <p>No skill data available yet</p>
+                <?php endforeach; ?>
             </div>
-        </div>
+        <?php else: ?>
+            <div class="flex items-center justify-center h-64 text-slate-400">
+                <div class="text-center">
+                    <span class="material-symbols-outlined text-4xl mb-2">bar_chart</span>
+                    <p>No skill data available yet</p>
+                </div>
+            </div>
         <?php endif; ?>
     </div>
 
@@ -169,26 +169,26 @@ $inTrainingCount = $inTrainingResult['cnt'] ?? 0;
             </thead>
             <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
                 <?php if (!empty($recent)): ?>
-                <?php foreach ($recent as $reg): ?>
-                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-                        <td class="px-6 py-4">
-                            <p class="font-bold text-slate-900 dark:text-white"><?php echo htmlspecialchars($reg['first_name'] . ' ' . $reg['last_name']); ?></p>
-                            <p class="text-xs text-slate-500 dark:text-slate-400"><?php echo htmlspecialchars($reg['email'] ?? 'No email'); ?></p>
-                        </td>
-                        <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300"><?php echo htmlspecialchars($reg['primary_skill'] ?? 'N/A'); ?></td>
-                        <td class="px-6 py-4">
-                            <span class="inline-flex px-3 py-1 rounded-full text-xs font-bold <?php 
-                                if ($reg['status'] == 'Active') echo 'bg-green-100 text-green-700';
-                                elseif ($reg['status'] == 'Employed') echo 'bg-blue-100 text-blue-700';
-                                elseif ($reg['status'] == 'In Training') echo 'bg-orange-100 text-orange-700';
-                                else echo 'bg-yellow-100 text-yellow-700';
-                            ?>">
-                                <?php echo htmlspecialchars($reg['status']); ?>
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400"><?php echo date('M d, Y', strtotime($reg['created_at'])); ?></td>
-                    </tr>
-                <?php endforeach; ?>
+                    <?php foreach ($recent as $reg): ?>
+                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                            <td class="px-6 py-4">
+                                <p class="font-bold text-slate-900 dark:text-white"><?php echo htmlspecialchars($reg['first_name'] . ' ' . $reg['last_name']); ?></p>
+                                <p class="text-xs text-slate-500 dark:text-slate-400"><?php echo htmlspecialchars($reg['email'] ?? 'No email'); ?></p>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300"><?php echo htmlspecialchars($reg['primary_skill'] ?? 'N/A'); ?></td>
+                            <td class="px-6 py-4">
+                                <span class="inline-flex px-3 py-1 rounded-full text-xs font-bold <?php
+                                                                                                    if ($reg['status'] == 'Active') echo 'bg-green-100 text-green-700';
+                                                                                                    elseif ($reg['status'] == 'Employed') echo 'bg-blue-100 text-blue-700';
+                                                                                                    elseif ($reg['status'] == 'In Training') echo 'bg-orange-100 text-orange-700';
+                                                                                                    else echo 'bg-yellow-100 text-yellow-700';
+                                                                                                    ?>">
+                                    <?php echo htmlspecialchars($reg['status']); ?>
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-slate-600 dark:text-slate-400"><?php echo date('M d, Y', strtotime($reg['created_at'])); ?></td>
+                        </tr>
+                    <?php endforeach; ?>
                 <?php else: ?>
                     <tr>
                         <td colspan="4" class="px-6 py-12 text-center text-slate-500">No registrations yet</td>

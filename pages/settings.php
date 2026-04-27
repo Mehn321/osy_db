@@ -61,9 +61,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = "Notification settings updated successfully.";
         $messageType = "success";
         $activeTab = 'notifications';
-        
+
         // Refresh sys_settings array
-        foreach ($fields as $f) { $sys_settings[$f] = $_POST[$f] ?? ''; }
+        foreach ($fields as $f) {
+            $sys_settings[$f] = $_POST[$f] ?? '';
+        }
     } elseif (isset($_POST['test_sms'])) {
         require_once __DIR__ . '/../Classes/SmsService.php';
         $sms = new SmsService($database);
@@ -91,12 +93,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <?php if ($message): ?>
-<div class="mb-6 p-4 <?php echo $messageType === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'; ?> rounded-xl">
-    <p class="<?php echo $messageType === 'success' ? 'text-green-800' : 'text-red-800'; ?> flex items-center gap-2">
-        <span class="material-symbols-outlined text-base"><?php echo $messageType === 'success' ? 'check_circle' : 'error'; ?></span>
-        <?php echo htmlspecialchars($message); ?>
-    </p>
-</div>
+    <div class="mb-6 p-4 <?php echo $messageType === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'; ?> rounded-xl">
+        <p class="<?php echo $messageType === 'success' ? 'text-green-800' : 'text-red-800'; ?> flex items-center gap-2">
+            <span class="material-symbols-outlined text-base"><?php echo $messageType === 'success' ? 'check_circle' : 'error'; ?></span>
+            <?php echo htmlspecialchars($message); ?>
+        </p>
+    </div>
 <?php endif; ?>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
