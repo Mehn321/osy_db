@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ERD — Municipal KK Profiling System (Chen Notation, 1NF–5NF)</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#fff;font-family:Arial,sans-serif;overflow:auto}
+h1{text-align:center;font-size:18px;padding:18px 0 4px;font-weight:bold}
+h2{text-align:center;font-size:13px;font-weight:normal;color:#555;padding-bottom:12px}
+.wrap{overflow:auto;border:2px solid #333;margin:10px;background:#fff;cursor:grab}
+canvas{display:block}
+</style>
+</head>
+<body>
+<h1>Entity Relationship Diagram</h1>
+<h2>Municipal KK Profiling System — Normalized (1NF – 5NF) | 22 Entities</h2>
+<div class="wrap"><canvas id="c"></canvas></div>
+<script>
+const W=3200, H=4200;
+const cv=document.getElementById('c');
+cv.width=W; cv.height=H;
+const cx=cv.getContext('2d');
+cx.fillStyle='#fff'; cx.fillRect(0,0,W,H);
+cx.textBaseline='middle'; cx.textAlign='center';
+
+/* ---- drawing helpers ---- */
+function ent(x,y,name){
+  cx.font='bold 12px Arial';
+  let w=Math.max(cx.measureText(name).width+26,110), h=30;
+  cx.fillStyle='#fff'; cx.strokeStyle='#000'; cx.lineWidth=2;
+  cx.fillRect(x-w/2,y-h/2,w,h); cx.strokeRect(x-w/2,y-h/2,w,h);
+  cx.fillStyle='#000'; cx.fillText(name,x,y);
+  return {x,y,w,h};
+}
+function oval(x,y,name,pk,fk,derived){
+  cx.save(); cx.font='10px Arial'; cx.strokeStyle='#000'; cx.lineWidth=1;
+  let lab=name; if(pk)lab+=' (PK)'; else if(fk)lab+=' (FK)';
+  let tw=cx.measureText(lab).width, rw=Math.max(tw/2+10,24), rh=12;
+  if(derived)cx.setLineDash([4,3]); else cx.setLineDash([]);
+  cx.fillStyle='#fff';
+  cx.beginPath(); cx.ellipse(x,y,rw,rh,0,0,Math.PI*2); cx.fill(); cx.stroke();
+  cx.setLineDash([]); cx.fillStyle='#000'; cx.fillText(lab,x,y);
+  if(pk){let tw2=cx.measureText(lab).width; cx.beginPath();cx.moveTo(x-tw2/2,y+6);cx.lineTo(x+tw2/2,y+6);cx.stroke();}
+  cx.restore();
+}
+function diamond(x,y,name){
+  cx.save(); cx.font='10px Arial'; cx.strokeStyle='#000'; cx.lineWidth=1.5; cx.fillStyle='#fff';
+  let w=Math.max(cx.measureText(name).width+20,56), h2=16;
+  cx.beginPath(); cx.moveTo(x,y-h2); cx.lineTo(x+w/2,y); cx.lineTo(x,y+h2); cx.lineTo(x-w/2,y); cx.closePath();
+  cx.fill(); cx.stroke(); cx.fillStyle='#000'; cx.fillText(name,x,y);
+  cx.restore();
+}
+function ln(x1,y1,x2,y2){cx.beginPath();cx.strokeStyle='#000';cx.lineWidth=1;cx.moveTo(x1,y1);cx.lineTo(x2,y2);cx.stroke();}
+function crd(x,y,t){if(t){cx.font='bold 9px Arial';cx.fillStyle='#000';cx.fillText(t,x,y);}}
+
+// fan attributes around entity
+function fan(ex,ey,list,startAng,spreadAng,r){
+  let n=list.length;
+  for(let i=0;i<n;i++){
+    let a=startAng+(i-(n-1)/2)*spreadAng;
+    let ax=ex+Math.cos(a)*r, ay=ey+Math.sin(a)*r;
+    oval(ax,ay,list[i].n,list[i].pk,list[i].fk,list[i].d);
+    ln(ex,ey,ax,ay);
+  }
+}
+
+cx.font='12px Arial';
+
+// ================================================================
+// LAYOUT — Organized in 6 horizontal rows, tight spacing
+// ================================================================
+
+// ---- ROW 1 (y~120): Lookup Tables ----
+let R1=120;
+ent(320,R1,'barangays');
+fan(320,R1,[{n:'id',pk:1},{n:'name'},{n:'is_active'}], -Math.PI/2, 0.55, 65);
+
+ent(750,R1,'education_levels');
+fan(750,R1,[{n:'id',pk:1},{n:'name'},{n:'sort_order'},{n:'is_active'}], -Math.PI/2, 0.42, 68);
+
+ent(1200,R1,'skills');
+fan(1200,R1,[{n:'id',pk:1},{n:'name'},{n:'category'},{n:'is_active'}], -Math.PI/2, 0.42, 68);
+
+ent(1600,R1,'interests');
+fan(1600,R1,[{n:'id',pk:1},{n:'name'},{n:'is_active'}], -Math.PI/2, 0.55, 65);
+
+ent(2000,R1,'govt_id_types');
+fan(2000,R1,[{n:'id',pk:1},{n:'name'},{n:'is_active'}], -Math.PI/2, 0.55, 65);
+
+// ---- ROW 2 (y~350): Junction Tables ----
+let R2=340;
+ent(550,R2,'profile_skills');
+fan(550,R2,[{n:'profile_id',pk:1,fk:1},{n:'skill_id',pk:1,fk:1},{n:'is_primary'},{n:'created_at'}], -Math.PI/2, 0.45, 70);
+
+ent(1400,R2,'profile_interests');
+fan(1400,R2,[{n:'profile_id',pk:1,fk:1},{n:'interest_id',pk:1,fk:1},{n:'created_at'}], -Math.PI/2, 0.55, 68);
+
+ent(2200,R2,'profile_govt_ids');
+fan(2200,R2,[{n:'id',pk:1},{n:'profile_id',fk:1},{n:'govt_id_type_id',fk:1},{n:'id_number'},{n:'id_image_path'},{n:'verified_at'},{n:'created_at'}], -Math.PI/4, 0.30, 95);
+
+// Relationship diamonds: lookup → junction
+diamond(900,220,'of_skill');
+ln(1200,R1+15,900,220-16); crd(1080,205,'1');
+ln(900,220+16,550+60,R2); crd(730,275,'N');
+
+diamond(1500,220,'of_interest');
+ln(1600,R1+15,1500,220-16); crd(1560,205,'1');
+ln(1500,220+16,1400+60,R2-10); crd(1460,275,'N');
+
+diamond(2100,220,'categorized');
+ln(2000,R1+15,2100,220-16); crd(2040,205,'1');
+ln(2100,220+16,2200-60,R2-10); crd(2140,275,'N');
+
+// ---- ROW 3 (y~580): YOUTH PROFILES (center) + USERS (right) ----
+let R3=600;
+ent(950,R3,'youth_profiles');
+fan(950,R3,[
+  {n:'id',pk:1},{n:'profile_type'},{n:'first_name'},{n:'middle_name'},{n:'last_name'},
+  {n:'email'},{n:'phone'},{n:'gender'},{n:'date_of_birth'},{n:'civil_status'},
+  {n:'barangay_id',fk:1},{n:'education_level_id',fk:1},
+  {n:'reason_not_school'},{n:'engagement_status'},
+  {n:'status'},{n:'image_path'},{n:'reg_status'},
+  {n:'created_by',fk:1},{n:'created_at'},{n:'updated_at'}
+], Math.PI, 0.16, 180);
+
+ent(2600,R3,'users');
+fan(2600,R3,[
+  {n:'id',pk:1},{n:'username'},{n:'email'},{n:'password'},
+  {n:'fullname'},{n:'role'},{n:'is_active'},
+  {n:'last_login'},{n:'created_at'},{n:'updated_at'}
+], 0, 0.28, 120);
+
+// Relationships: junction → youth_profiles
+diamond(550,470,'has_skill');
+ln(550,R2+15,550,470-16); crd(560,430,'N');
+ln(550,470+16,950-60,R3-8); crd(720,530,'1');
+
+diamond(1200,470,'has_interest');
+ln(1400-60,R2+15,1200,470-16); crd(1320,430,'N');
+ln(1200,470+16,950+60,R3-8); crd(1080,530,'1');
+
+diamond(1700,470,'owns_id');
+ln(2200-60,R2+15,1700+35,470); crd(1980,440,'N');
+ln(1700-35,470,950+60,R3); crd(1250,500,'1');
+
+// Lookup → youth_profiles
+diamond(320,420,'located_in');
+ln(320,R1+15,320,420-16); crd(330,370,'1');
+ln(320,420+16,950-60,R3+5); crd(550,530,'N');
+
+diamond(750,470,'attained');
+ln(750,R1+15,750,470-16); crd(760,370,'1');
+ln(750,470+16,950-60,R3-4); crd(830,530,'N');
+
+// users → youth_profiles
+diamond(1800,R3,'creates');
+ln(2600-60,R3,1800+28,R3); crd(2200,R3-12,'1');
+ln(1800-28,R3,950+60,R3); crd(1350,R3-12,'N');
+
+// ---- ROW 4 (y~900): OPPORTUNITIES ----
+let R4=920;
+ent(950,R4,'opportunities');
+fan(950,R4,[
+  {n:'id',pk:1},{n:'title'},{n:'type'},{n:'location'},{n:'description'},
+  {n:'total_slots'},{n:'deadline'},{n:'status'},
+  {n:'created_by',fk:1},{n:'created_at'},{n:'updated_at'}
+], Math.PI, 0.20, 160);
+
+// users → opportunities
+diamond(2000,R4,'creates_opp');
+ln(2600-60,R3+15,2000+28,R4-10); crd(2400,850,'1');
+ln(2000-28,R4,950+60,R4); crd(1400,R4-12,'N');
+
+// osy_matches (between profiles and opportunities)
+let mX=550, mY=780;
+ent(mX,mY,'osy_matches');
+fan(mX,mY,[
+  {n:'id',pk:1},{n:'profile_id',fk:1},{n:'opportunity_id',fk:1},
+  {n:'match_score'},{n:'status'},{n:'notes'},
+  {n:'created_at'},{n:'updated_at'}
+], Math.PI, 0.28, 110);
+
+diamond(750,700,'matched');
+ln(950-60,R3+15,750,700-16); crd(840,680,'1');
+ln(750,700+16,mX+60,mY-10); crd(680,740,'N');
+
+diamond(750,860,'with');
+ln(950-60,R4-15,750,860-16); crd(840,840,'1');
+ln(750,860+16,mX+60,mY+10); crd(680,870,'N');
+
+// ---- ROW 5 (y~1150): Opportunity Subtypes ----
+let R5=1170;
+
+ent(400,R5,'opp_job_details');
+fan(400,R5,[{n:'opportunity_id',pk:1,fk:1},{n:'compensation'},{n:'employment_type'},{n:'work_schedule'},{n:'experience_req'}], Math.PI, 0.35, 90);
+
+ent(950,R5,'opp_training_details');
+fan(950,R5,[{n:'opportunity_id',pk:1,fk:1},{n:'training_provider'},{n:'duration'},{n:'modality'},{n:'certification'}], Math.PI/2, 0.35, 90);
+
+ent(1550,R5,'opp_scholarship_details');
+fan(1550,R5,[{n:'opportunity_id',pk:1,fk:1},{n:'coverage'},{n:'eligibility'},{n:'sponsoring_org'}], 0, 0.40, 90);
+
+// ISA relationships
+diamond(650,1060,'ISA');
+ln(950-60,R4+15,650,1060-16); crd(780,1020,'1');
+ln(650,1060+16,400+60,R5-15); crd(530,1120,'1');
+
+diamond(950,1060,'ISA');
+ln(950,R4+15,950,1060-16); crd(960,1020,'1');
+ln(950,1060+16,950,R5-15); crd(960,1120,'1');
+
+diamond(1250,1060,'ISA');
+ln(950+60,R4+15,1250,1060-16); crd(1120,1020,'1');
+ln(1250,1060+16,1550-60,R5-15); crd(1380,1120,'1');
+
+// Opportunity benefits
+ent(2300,R4,'opp_benefits');
+fan(2300,R4,[{n:'id',pk:1},{n:'opportunity_id',fk:1},{n:'benefit'}], 0, 0.6, 70);
+
+diamond(1600,R4,'includes');
+ln(950+60,R4,1600-28,R4); crd(1250,R4-12,'1');
+ln(1600+28,R4,2300-60,R4); crd(1950,R4-12,'N');
+
+// Opportunity required skills
+ent(2300,1100,'opp_req_skills');
+fan(2300,1100,[{n:'opportunity_id',pk:1,fk:1},{n:'skill_id',pk:1,fk:1},{n:'importance'}], 0, 0.55, 80);
+
+diamond(1600,1050,'requires');
+ln(950+60,R4+15,1600-28,1050); crd(1250,1020,'1');
+ln(1600+28,1050,2300-60,1100-10); crd(1950,1060,'N');
+
+diamond(1700,200,'skill_for');
+ln(2300-60,1100-15,1700+28,200); crd(2080,600,'N');
+ln(1700-28,200,1200+60,R1); crd(1400,170,'1');
+
+// ---- ROW 6 (y~1500+): Notifications + System ----
+let R6=1500;
+
+ent(500,R6,'notifications');
+fan(500,R6,[
+  {n:'id',pk:1},{n:'title'},{n:'message'},{n:'type'},
+  {n:'recipient_type'},{n:'status'},{n:'created_by',fk:1},{n:'created_at'}
+], Math.PI, 0.28, 110);
+
+ent(500,R6+250,'notif_recipients');
+fan(500,R6+250,[{n:'notification_id',pk:1,fk:1},{n:'profile_id',pk:1,fk:1},{n:'is_read'},{n:'read_at'}], Math.PI/2, 0.45, 75);
+
+ent(1300,R6,'notif_templates');
+fan(1300,R6,[
+  {n:'id',pk:1},{n:'name'},{n:'subject'},{n:'body'},{n:'type'},
+  {n:'is_active'},{n:'created_by',fk:1},{n:'created_at'},{n:'updated_at'}
+], Math.PI/2, 0.28, 110);
+
+// notifications → recipients
+diamond(500,R6+130,'targets');
+ln(500,R6+15,500,R6+130-16); crd(510,R6+80,'1');
+ln(500,R6+130+16,500,R6+250-15); crd(510,R6+200,'N');
+
+// notification_recipients → youth_profiles
+diamond(250,R6+130,'receives');
+ln(500-60,R6+250-15,250+28,R6+130); crd(400,R6+180,'N');
+ln(250-28,R6+130,250,R3+15); crd(240,1000,'1');
+ln(250,R3+15,950-60,R3+10); // connect to youth_profiles
+
+// users → notifications
+diamond(1500,R6-120,'sends_notif');
+ln(2600-60,R3+15,1500+28,R6-120); crd(2100,1000,'1');
+ln(1500-28,R6-120,500+60,R6-10); crd(900,R6-130,'N');
+
+// users → notification_templates
+diamond(2000,R6,'creates_tmpl');
+ln(2600-60,R3+15,2000+28,R6); crd(2400,1100,'1');
+ln(2000-28,R6,1300+60,R6); crd(1600,R6-12,'N');
+
+// ---- System Tables ----
+ent(2500,R6,'system_settings');
+fan(2500,R6,[{n:'id',pk:1},{n:'setting_key'},{n:'setting_value'},{n:'updated_at'}], 0, 0.50, 80);
+
+ent(2500,R6+250,'audit_log');
+fan(2500,R6+250,[
+  {n:'id',pk:1},{n:'user_id',fk:1},{n:'action'},{n:'table_name'},
+  {n:'record_id'},{n:'old_values'},{n:'new_values'},{n:'ip_address'},{n:'created_at'}
+], 0, 0.28, 110);
+
+// users → audit_log
+diamond(2550,R6+120,'performed');
+ln(2600,R3+15,2550,R6+120-16); crd(2560,1000,'1');
+ln(2550,R6+120+16,2500,R6+250-15); crd(2560,R6+200,'N');
+
+// ================================================================
+// Border + caption
+// ================================================================
+cx.strokeStyle='#333'; cx.lineWidth=3; cx.strokeRect(10,10,W-20,H-20);
+cx.font='bold 12px Arial'; cx.fillStyle='#333'; cx.textAlign='left';
+cx.fillText('Figure: Entity Relationship Diagram — Municipal KK Profiling System (Normalized 1NF–5NF) — 22 Entities',20,H-18);
+
+</script>
+</body>
+</html>

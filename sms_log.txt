@@ -1,0 +1,24 @@
+2026-04-11 05:36:15 | To: 639674185880 | Code: 200 | Resp: {"responses":[{"success":true,"messageId":"projects/traccar-sms-gateway/messages/0:1775878575589858%21dc6000f9fd7ecd"}],"successCount":1,"failureCount":0} | Error: 
+2026-04-11 05:41:33 | To: 639700751236 | Code: 200 | Resp: {"responses":[{"success":true,"messageId":"projects/traccar-sms-gateway/messages/0:1775878893283944%21dc6000f9fd7ecd"}],"successCount":1,"failureCount":0} | Error: 
+2026-04-11 05:42:16 | To: 639700751236 | Code: 200 | Resp: {"responses":[{"success":true,"messageId":"projects/traccar-sms-gateway/messages/0:1775878936211585%21dc6000f9fd7ecd"}],"successCount":1,"failureCount":0} | Error: 
+2026-04-11 05:43:33 | To: 639700751236 | Code: 200 | Resp: {"responses":[{"success":true,"messageId":"projects/traccar-sms-gateway/messages/0:1775879013775264%21dc6000f9fd7ecd"}],"successCount":1,"failureCount":0} | Error: 
+2026-04-11 05:43:35 | To: 639700751236 | Code: 200 | Resp: {"responses":[{"success":true,"messageId":"projects/traccar-sms-gateway/messages/0:1775879015131500%21dc6000f9fd7ecd"}],"successCount":1,"failureCount":0} | Error: 
+2026-04-11 05:48:12 | To: 639700751236 | Code: 200 | Resp: {"responses":[{"success":true,"messageId":"projects/traccar-sms-gateway/messages/0:1775879292314042%21dc6000f9fd7ecd"}],"successCount":1,"failureCount":0} | Error: 
+2026-04-11 06:17:37 | To: 639700751236 | Code: 200 | Resp: {"responses":[{"success":true,"messageId":"projects/traccar-sms-gateway/messages/0:1775881057937021%21dc6000f9fd7ecd"}],"successCount":1,"failureCount":0} | Error: 
+2026-04-11 06:17:46 | To: 639700751236 | Code: 200 | Resp: {"responses":[{"success":true,"messageId":"projects/traccar-sms-gateway/messages/0:1775881066385874%21dc6000f9fd7ecd"}],"successCount":1,"failureCount":0} | Error: 
+2026-04-11 06:17:51 | To: 639700751236 | Code: 200 | Resp: {"responses":[{"success":true,"messageId":"projects/traccar-sms-gateway/messages/0:1775881071152877%21dc6000f9fd7ecd"}],"successCount":1,"failureCount":0} | Error: 
+2026-04-11 06:18:40 | To: 639700751236 | Code: 200 | Resp: {"responses":[{"success":true,"messageId":"projects/traccar-sms-gateway/messages/0:1775881119619273%21dc6000f9fd7ecd"}],"successCount":1,"failureCount":0} | Error: 
+2026-04-11 06:55:22 | To: 639700751236 | Code: 200 | Resp: {"responses":[{"success":true,"messageId":"projects/traccar-sms-gateway/messages/0:1775883322794791%21dc6000f9fd7ecd"}],"successCount":1,"failureCount":0} | Error: 
+2026-04-11 06:55:28 | To: 639700751236 | Code: 200 | Resp: {"responses":[{"success":true,"messageId":"projects/traccar-sms-gateway/messages/0:1775883328324898%21dc6000f9fd7ecd"}],"successCount":1,"failureCount":0} | Error: 
+2026-04-11 07:56:22 | To: 639700751236 | Code: 200 | Resp: {"responses":[{"success":true,"messageId":"projects/traccar-sms-gateway/messages/0:1775886982581899%21dc6000f9fd7ecd"}],"successCount":1,"failureCount":0} | Error: 
+2026-04-11 08:27:57 | Try URL: http://192.168.100.41:8082/ | To: 639123456789 | Code: 200 | Resp:  | Error: 
+2026-04-11 08:33:19 | Try URL: http://192.168.100.41:8082/ | To: 639123456789 | Code: 200 | Resp:  | Error: 
+2026-04-11 08:34:49 | Try URL: http://192.168.100.41:8082/ | To: 639700751236 | Code: 200 | Resp:  | Error: 
+2026-04-11 08:35:27 | Try URL: http://192.168.100.41:8082/ | To: 639700751236 | Code: 200 | Resp:  | Error: 
+2026-04-11 08:38:27 | Try URL: http://192.168.100.41:8082/ | To: +639123456789 | Code: 200 | Resp:  | Error: 
+2026-04-11 08:39:35 | Try URL: http://192.168.100.41:8082/ | To: +649123456789 | Code: 200 | Resp:  | Error: 
+2026-04-11 08:40:37 | Try URL: http://192.168.100.41:8082/ | To: +639700751236 | Code: 200 | Resp:  | Error: 
+2026-04-11 09:49:38 | Try URL: http://192.168.100.41:8082/ | To: +639674185880 | Code: 200 | Resp:  | Error: 
+2026-04-21 05:40:40 | Try URL: http://192.168.100.41:8082/ | To: +639466898063 | Code: 0 | Resp:  | Error: Connection timed out after 5015 milliseconds
+2026-04-21 05:40:45 | Try URL: http://172.18.11.218:8082/ | To: +639466898063 | Code: 0 | Resp:  | Error: Connection timed out after 5001 milliseconds
+2026-04-21 05:40:46 | Try URL: https://www.traccar.org/sms/ | To: +639466898063 | Code: 200 | Resp: {"responses":[{"success":false,"error":{"code":"messaging/invalid-argument","message":"The registration token is not a valid FCM registration token"}}],"successCount":0,"failureCount":1} | Error: 
