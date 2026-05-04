@@ -27,12 +27,6 @@ class GeminiService
      * @param string $prompt The prompt to send to the AI
      * @return string|false The AI response or false on failure
      */
-    /**
-     * Generate content from a prompt
-     * 
-     * @param string $prompt The prompt to send to the AI
-     * @return string|false The AI response or false on failure
-     */
     public function generateContent($prompt)
     {
         $url = $this->apiUrl . $this->model . ':generateContent?key=' . $this->apiKey;
@@ -187,14 +181,14 @@ class GeminiService
 
         $response = $this->generateContent($prompt);
         
-        if ($response === false) return 0;
+        if ($response === false) return false;
         
         // Extract first number found in response
         if (preg_match('/(\d+)/', $response, $matches)) {
             return (int)$matches[1];
         }
         
-        return 0;
+        return false;
     }
 
     /**

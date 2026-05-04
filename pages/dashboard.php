@@ -1,11 +1,13 @@
 <?php
 $pageTitle = 'Dashboard';
-require_once __DIR__ . '/../includes/header.php';
+require_once __DIR__ . '/../init.php';
 
 if (!$user->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
+
+require_once __DIR__ . '/../includes/header.php';
 
 $dashboard = new Dashboard($database);
 $stats = $dashboard->getStats();
@@ -24,7 +26,7 @@ $inTrainingCount = $inTrainingResult['cnt'] ?? 0;
 </div>
 
 <!-- Summary Cards -->
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
     <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex items-start justify-between">
         <div>
             <p class="text-sm font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">Total KK Youth</p>
@@ -84,6 +86,35 @@ $inTrainingCount = $inTrainingResult['cnt'] ?? 0;
         </div>
         <div class="p-3 bg-orange-100 dark:bg-orange-900/30 rounded-lg text-orange-900">
             <span class="material-symbols-outlined text-3xl">campaign</span>
+        </div>
+    </div>
+
+    <?php
+        // Get AI scoring coverage for dashboard
+        $matchingDash = new Matching($database);
+        $syncStatsDash = $matchingDash->getGlobalSyncStats();
+        $dashScoringPct = $syncStatsDash['total_possible'] > 0 
+            ? round(($syncStatsDash['existing_matches'] / $syncStatsDash['total_possible']) * 100, 1) 
+            : 0;
+    ?>
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
+        <div class="flex items-start justify-between mb-3">
+            <div>
+                <p class="text-sm font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-1">AI Scoring</p>
+                <h3 class="text-4xl font-black <?php echo $dashScoringPct >= 100 ? 'text-emerald-600' : ($dashScoringPct >= 50 ? 'text-amber-600' : 'text-blue-900'); ?>"><?php echo $dashScoringPct; ?>%</h3>
+            </div>
+            <div class="p-3 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg text-indigo-700">
+                <span class="material-symbols-outlined text-3xl">auto_awesome</span>
+            </div>
+        </div>
+        <div>
+            <div class="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden mb-2">
+                <div class="h-full bg-indigo-500 rounded-full transition-all duration-700" style="width: <?php echo min(100, $dashScoringPct); ?>%"></div>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm"><?php echo $dashScoringPct >= 100 ? 'check_circle' : 'sync'; ?></span>
+                <?php echo number_format($syncStatsDash['existing_matches']); ?>/<?php echo number_format($syncStatsDash['total_possible']); ?> scored
+            </p>
         </div>
     </div>
 </div>

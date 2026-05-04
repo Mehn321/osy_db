@@ -312,6 +312,11 @@ class Matching
                 // Get AI Score (Lightweight call)
                 $score = $gemini->calculateScoreOnly($osy, $opp);
 
+                // Fallback to local matching algorithm if AI fails (e.g. rate limit exceeded)
+                if ($score === false) {
+                    $score = $this->calculateMatchScore($osy_id, $opp['id']);
+                }
+
                 if ($existing) {
                     $this->db->execute(
                         "UPDATE {$this->table} SET match_score = ?, updated_at = NOW() WHERE id = ?",
