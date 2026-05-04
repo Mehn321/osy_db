@@ -112,7 +112,13 @@ try {
         }
     }
 
-    // ── 6. Seed sample notification templates if none exist ───────────────────
+    // ── 6. osy_matches – AI insights column ──────────────────────────────────
+    $matchCols = array_column($database->fetchAll("SHOW COLUMNS FROM `osy_matches`"), 'Field');
+    if (!in_array('ai_insight', $matchCols)) {
+        $conn->query("ALTER TABLE `osy_matches` ADD COLUMN `ai_insight` TEXT DEFAULT NULL AFTER `notes`");
+    }
+
+    // ── 7. Seed sample notification templates if none exist ───────────────────
     $tmplCount = $database->fetchOne("SELECT COUNT(*) as cnt FROM `notification_templates`");
     if (($tmplCount['cnt'] ?? 0) == 0) {
         $conn->query("INSERT INTO `notification_templates` (`name`, `subject`, `body`, `type`, `created_by`, `created_at`) VALUES
@@ -135,6 +141,21 @@ try {
             ('Application Deadline Reminder', 'STEM University Grant applications close in 5 days. Apply now!', 'Reminder', 'OSY', 'Sent', 1, NOW())
         ");
     }
+
+    // ── 8. ai_usage_log table – track Gemini API usage ─────────────────────────
+    $conn->query("CREATE TABLE IF NOT EXISTS `ai_usage_log` (
+        `id` int(11) NOT NULL AUTO_INCREMENT,
+        `endpoint` varchar(100) NOT NULL DEFAULT 'generateContent',
+        `model` varchar(100) DEFAULT NULL,
+        `prompt_tokens` int(11) DEFAULT 0,
+        `response_tokens` int(11) DEFAULT 0,
+        `total_tokens` int(11) DEFAULT 0,
+        `http_status` int(5) DEFAULT 200,
+        `success` tinyint(1) DEFAULT 1,
+        `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        KEY `idx_ai_usage_date` (`created_at`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
 } catch (Exception $e) {
     // Silent – migrations must never interrupt page loads

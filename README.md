@@ -1,6 +1,6 @@
-# Municipal KK Profiling System - PHP Version
+# Integrated Web Based Information System for Youth Profiling and Skills Matching
 
-A complete recreation of the Municipal KK Youth Profiling and Skills Matching System using **PHP (OOP), MySQL, Tailwind CSS, HTML, CSS, and JavaScript**.
+A complete implementation of the Integrated Web Based Information System for Youth Profiling and Skills Matching using **PHP (OOP), MySQL, Tailwind CSS, HTML, CSS, and JavaScript**.
 
 ## 🚀 Features
 
@@ -8,9 +8,9 @@ A complete recreation of the Municipal KK Youth Profiling and Skills Matching Sy
 - ✅ **MySQL Database** - Normalized schema with sample data included
 - ✅ **Tailwind CSS Styling** - Modern, responsive UI matching the original design
 - ✅ **User Authentication** - Secure login system with role-based access
-- ✅ **OSY Profile Management** - Create, read, update, delete OSY profiles
+- ✅ **youth Profile Management** - Create, read, update, delete youth profiles
 - ✅ **Opportunity Management** - Job openings, training programs, scholarships
-- ✅ **Skills Matching Engine** - Matches OSY with opportunities
+- ✅ **Skills Matching Engine** - Matches youth with opportunities
 - ✅ **Notifications System** - Broadcasting notifications to matched candidates
 - ✅ **Reports & Analytics** - Dashboard with key metrics and statistics
 - ✅ **Responsive Design** - Works on desktop and mobile devices
@@ -26,19 +26,19 @@ A complete recreation of the Municipal KK Youth Profiling and Skills Matching Sy
 
 ### Step 1: Extract Files
 
-Place the `osy_db` folder in your XAMPP `htdocs` directory:
+Place the `youth_db` folder in your XAMPP `htdocs` directory:
 
 ```
-C:\xampp\htdocs\osy_db
+C:\xampp\htdocs\youth_db
 ```
 
 ### Step 2: Create Database
 
 1. Open phpMyAdmin: `http://localhost/phpmyadmin`
-2. Create a new database named `civic_horizon_osy`
+2. Create a new database named `civic_horizon_youth`
 3. Import the SQL dump:
    - Go to **Import** tab
-   - Select `database_dump.sql` file from the `osy_db` folder
+   - Select `database_dump.sql` file from the `youth_db` folder
    - Click **Go**
 
 **OR use command line:**
@@ -55,7 +55,7 @@ Edit `config/database.php` and update credentials if needed:
 define('DB_HOST', 'localhost');
 define('DB_USER', 'root');
 define('DB_PASS', '');  // Add password if set
-define('DB_NAME', 'civic_horizon_osy');
+define('DB_NAME', 'civic_horizon_youth');
 ```
 
 ### Step 4: Start Apache & MySQL
@@ -65,7 +65,7 @@ define('DB_NAME', 'civic_horizon_osy');
 
 ### Step 5: Access the Application
 
-Visit: `http://localhost/osy_db`
+Visit: `http://localhost/youth_db`
 
 ## 👤 Default Login Credentials
 
@@ -91,19 +91,19 @@ Visit: `http://localhost/osy_db`
 ### Tables
 
 1. **users** - System users (admin, staff, managers)
-2. **osy_profiles** - Out-of-School Youth profiles with skills
+2. **youth_profiles** - Out-of-School Youth profiles with skills
 3. **opportunities** - Job openings, training, scholarships
-4. **osy_matches** - Matching between OSY and opportunities
+4. **youth_matches** - Matching between youth and opportunities
 5. **notifications** - System notifications and broadcasts
 
 ## 🏗️ Project Structure
 
 ```
-osy_db/
+youth_db/
 ├── Classes/
 │   ├── Database.php          # Database connection & operations
 │   ├── User.php              # User authentication & management
-│   ├── OSYProfile.php        # OSY profile CRUD operations
+│   ├── youthProfile.php        # youth profile CRUD operations
 │   ├── Opportunity.php       # Opportunity management
 │   ├── Matching.php          # Skills matching algorithm
 │   ├── Notification.php      # Notification system
@@ -114,7 +114,7 @@ osy_db/
 ├── pages/
 │   ├── login.php             # Login page
 │   ├── dashboard.php         # Main dashboard
-│   ├── profiles.php          # OSY profiles list
+│   ├── profiles.php          # youth profiles list
 │   ├── opportunities.php     # Opportunities management
 │   ├── matching.php          # Skills matching interface
 │   ├── notifications.php     # Notifications management
@@ -150,13 +150,13 @@ $user = new User($database);
 $result = $user->login('admin1', 'Admin@123');
 ```
 
-### OSYProfile Class
+### youthProfile Class
 
-CRUD operations for OSY profiles with filtering.
+CRUD operations for youth profiles with filtering.
 
 ```php
-$osy = new OSYProfile($database);
-$profiles = $osy->getAll(['status' => 'Active']);
+$youth = new youthProfile($database);
+$profiles = $youth->getAll(['status' => 'Active']);
 ```
 
 ### Opportunity Class
@@ -170,11 +170,11 @@ $opps = $opportunity->getAll(['type' => 'Job Opening']);
 
 ### Matching Class
 
-Skills-based matching algorithm between OSY and opportunities.
+Skills-based matching algorithm between youth and opportunities.
 
 ```php
 $matching = new Matching($database);
-$score = $matching->calculateMatchScore($osy_id, $opp_id);
+$score = $matching->calculateMatchScore($youth_id, $opp_id);
 ```
 
 ### Dashboard Class
@@ -188,7 +188,7 @@ $stats = $dashboard->getStats();
 
 ## 📊 Sample Data Included
 
-- **12 OSY Profiles** with various skills (Welding, Culinary, IT, etc.)
+- **12 youth Profiles** with various skills (Welding, Culinary, IT, etc.)
 - **8 Opportunities** including jobs, training, and scholarships
 - **15 Skill Matches** with scoring
 - **6 Notifications** sent to users
@@ -203,7 +203,7 @@ $stats = $dashboard->getStats();
 - Status breakdown (Active/In Training/Employed)
 - Recent registrations table
 
-### OSY Profiles
+### youth Profiles
 
 - List all profiles with filters
 - Search by name/email
@@ -227,14 +227,14 @@ $stats = $dashboard->getStats();
 
 ### Notifications
 
-- Send notifications to OSY
+- Send notifications to youth
 - Broadcast system messages
 - Track notification status
 - Archive notifications
 
 ### Reports
 
-- OSY Statistics
+- youth Statistics
 - Opportunity Analysis
 - Matching Success Rate
 - Employment Metrics

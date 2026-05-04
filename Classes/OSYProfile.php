@@ -90,7 +90,7 @@ class OSYProfile
             $query = "INSERT INTO {$this->table} 
                      (profile_type, first_name, middle_name, last_name, email, phone, age, gender, 
                       civil_status, education_level, reason_for_not_in_school, engagement_status, 
-                      purok, govt_id_type, govt_id_number, govt_id_image, primary_skill, skills, 
+                      barangay, govt_id_type, govt_id_number, govt_id_image, primary_skill, skills, 
                       interests, status, registration_status, date_of_birth, image_path, created_by, created_at) 
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
 
@@ -107,7 +107,7 @@ class OSYProfile
                 $data['education_level'] ?? null,       // s (10)
                 $data['reason_for_not_in_school'] ?? null, // s (11)
                 $data['engagement_status'] ?? null,     // s (12)
-                $data['purok'],                         // s (13)
+                $data['barangay'],                         // s (13)
                 $data['govt_id_type'] ?? null,          // s (14)
                 $data['govt_id_number'] ?? null,        // s (15)
                 $govtIdImagePath,                       // s (16)
@@ -121,10 +121,19 @@ class OSYProfile
                 $_SESSION['user_id']                    // i (24)
             ], "sssssssisssssssssssssssi");
 
+            $id = $this->db->lastInsertId();
+
+            // Trigger automated AI scoring in the background
+            $scriptPath = realpath(__DIR__ . '/../api/background_recalculate_scores.php');
+            if ($scriptPath) {
+                // Windows-specific background process command
+                pclose(popen("start /B php " . escapeshellarg($scriptPath) . " " . intval($id), "r"));
+            }
+
             return [
                 'success' => true,
                 'message' => 'Youth profile registered successfully',
-                'id' => $this->db->lastInsertId()
+                'id' => $id
             ];
         } catch (Exception $e) {
             return [
@@ -154,8 +163,8 @@ class OSYProfile
             $query .= " AND TRIM(profile_type) = '" . $this->db->escape(trim($filters['profile_type'])) . "'";
         }
 
-        if (isset($filters['purok']) && $filters['purok'] != 'All Puroks') {
-            $query .= " AND TRIM(purok) = '" . $this->db->escape(trim($filters['purok'])) . "'";
+        if (isset($filters['barangay']) && $filters['barangay'] != 'All Barangays') {
+            $query .= " AND TRIM(barangay) = '" . $this->db->escape(trim($filters['barangay'])) . "'";
         }
 
         if (isset($filters['gender']) && $filters['gender'] != 'All Genders') {
@@ -203,7 +212,7 @@ class OSYProfile
                 'education_level',
                 'reason_for_not_in_school',
                 'engagement_status',
-                'purok',
+                'barangay',
                 'govt_id_type',
                 'govt_id_number',
                 'primary_skill',
@@ -247,6 +256,13 @@ class OSYProfile
 
             $query = "UPDATE {$this->table} SET " . implode(', ', $updates) . ", updated_at = NOW() WHERE id = ?";
             $this->db->execute($query, $params, $types);
+
+            // Trigger automated AI scoring in the background
+            $scriptPath = realpath(__DIR__ . '/../api/background_recalculate_scores.php');
+            if ($scriptPath) {
+                // Windows-specific background process command
+                pclose(popen("start /B php " . escapeshellarg($scriptPath) . " " . intval($id), "r"));
+            }
 
             return [
                 'success' => true,

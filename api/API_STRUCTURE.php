@@ -60,7 +60,7 @@ POST /api/osy/create.php
     "age": 20,
     "gender": "Male",
     "education_level": "High School Graduate",
-    "purok": "Purok 1",
+    "barangay": "Barangay Poblacion",
     "primary_skill": "Welding",
     "status": "Active"
 }

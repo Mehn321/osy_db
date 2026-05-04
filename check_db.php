@@ -1,8 +1,16 @@
 <?php
 require_once 'init.php';
-$db = Database::getInstance()->getConnection();
-$stmt = $db->query("SHOW COLUMNS FROM osy_profiles LIKE 'purok'");
-print_r($stmt->fetchAll(PDO::FETCH_ASSOC));
+require_once 'init.php';
+$conn = $database->getConnection();
 
-$stmt2 = $db->query("SELECT * FROM reference_data WHERE category = 'purok'");
-print_r($stmt2->fetchAll(PDO::FETCH_ASSOC));
+echo "OSY Profiles Columns:\n";
+$res = $conn->query("SHOW COLUMNS FROM osy_profiles");
+while($row = $res->fetch_assoc()) {
+    echo $row['Field'] . "\n";
+}
+
+echo "\nBarangay References:\n";
+$res2 = $conn->query("SELECT * FROM system_references WHERE category = 'barangay'");
+while($row = $res2->fetch_assoc()) {
+    print_r($row);
+}

@@ -3,7 +3,7 @@
 /**
  * Reference Class
  * 
- * Handles fetching static reference data (Purok, Skills, Education levels, etc.) used in dropdowns.
+ * Handles fetching static reference data (Barangay, Skills, Education levels, etc.) used in dropdowns.
  */
 
 class Reference
@@ -19,7 +19,7 @@ class Reference
     /**
      * Get active references by category
      * 
-     * @param string $category The category to fetch (e.g. 'purok', 'primary_skill')
+     * @param string $category The category to fetch (e.g. 'barangay', 'primary_skill')
      * @return array
      */
     public function getByCategory($category)

@@ -35,8 +35,8 @@ class Report
             $query .= " AND p.primary_skill = '{$this->db->escape($filters['skill'])}'";
         }
 
-        if (isset($filters['purok'])) {
-            $query .= " AND p.purok = '{$this->db->escape($filters['purok'])}'";
+        if (isset($filters['barangay'])) {
+            $query .= " AND p.barangay = '{$this->db->escape($filters['barangay'])}'";
         }
 
         $query .= " GROUP BY p.id ORDER BY p.created_at DESC";

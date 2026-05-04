@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo isset($pageTitle) ? $pageTitle . ' - Municipal KK' : 'Municipal KK Profiling System'; ?></title>
+    <title><?php echo isset($pageTitle) ? $pageTitle . ' - Integrated Web Based Information System for Youth Profiling and Skills Matching' : 'Integrated Web Based Information System for Youth Profiling and Skills Matching'; ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
@@ -90,7 +90,7 @@
                     <span class="material-symbols-outlined">account_balance</span>
                 </div>
                 <div>
-                    <h1 class="font-bold text-blue-900 dark:text-blue-200 leading-none">Municipal KK</h1>
+                    <h1 class="font-bold text-blue-900 dark:text-blue-200 leading-tight text-sm">Integrated Web Based Information System for Youth Profiling and Skills Matching</h1>
                     <p class="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-widest mt-1">Youth Registry</p>
                 </div>
             </div>

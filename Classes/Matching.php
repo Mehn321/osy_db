@@ -49,7 +49,7 @@ class Matching
         try {
             // Get OSY profile with all relevant fields
             $osy = $this->db->fetchOne(
-                "SELECT primary_skill, skills, interests, education_level, age, purok FROM osy_profiles WHERE id = ? LIMIT 1",
+                "SELECT primary_skill, skills, interests, education_level, age, barangay FROM osy_profiles WHERE id = ? LIMIT 1",
                 [$osy_id],
                 "i"
             );
@@ -142,8 +142,8 @@ class Matching
             }
 
             // 5. Location Proximity (up to 15 points)
-            $purok = strtolower(str_replace('Purok ', 'p', $osy['purok'])); // Convert "Purok 1" to "p1"
-            if (strpos($oppLoc, $purok) !== false || strpos($oppLoc, strtolower($osy['purok'])) !== false) {
+            $barangay = strtolower($osy['barangay']);
+            if (strpos($oppLoc, $barangay) !== false) {
                 $score += 15;
             } elseif (strpos($oppLoc, 'any') !== false || strpos($oppLoc, 'remote') !== false || empty($opportunity['location'])) {
                 $score += 10;
@@ -279,5 +279,79 @@ class Matching
                 'message' => $e->getMessage()
             ];
         }
+    }
+    /**
+     * Automatically update AI match scores for all active opportunities for a specific OSY
+     * This is triggered on profile create/update to save credits on rationales
+     */
+    public function updateAllScoresForOSY($osy_id)
+    {
+        try {
+            require_once __DIR__ . '/GeminiService.php';
+            $gemini = new GeminiService($this->db);
+
+            // 1. Get OSY data
+            $osy = $this->db->fetchOne(
+                "SELECT id, primary_skill, skills, interests, education_level FROM osy_profiles WHERE id = ?",
+                [$osy_id],
+                "i"
+            );
+            if (!$osy) return false;
+
+            // 2. Get all Open opportunities
+            $opportunities = $this->db->fetchAll("SELECT id, title, description, certification FROM opportunities WHERE status = 'Open'");
+
+            foreach ($opportunities as $opp) {
+                // Check if match already exists
+                $existing = $this->db->fetchOne(
+                    "SELECT id FROM {$this->table} WHERE osy_id = ? AND opportunity_id = ? LIMIT 1",
+                    [$osy_id, $opp['id']],
+                    "ii"
+                );
+
+                // Get AI Score (Lightweight call)
+                $score = $gemini->calculateScoreOnly($osy, $opp);
+
+                if ($existing) {
+                    $this->db->execute(
+                        "UPDATE {$this->table} SET match_score = ?, updated_at = NOW() WHERE id = ?",
+                        [$score, $existing['id']],
+                        "ii"
+                    );
+                } else {
+                    $this->createMatch($osy_id, $opp['id'], $score);
+                }
+                
+                // 1 second sleep to stay within free tier rate limits
+                usleep(1000000); 
+            }
+
+            return true;
+        } catch (Exception $e) {
+            error_log("Error in updateAllScoresForOSY: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Get statistics on how many profiles are missing AI scores for active jobs
+     */
+    public function getGlobalSyncStats()
+    {
+        // Total possible matches (Profiles * Open Opportunities)
+        $profilesCount = $this->db->fetchOne("SELECT COUNT(*) as count FROM osy_profiles")['count'];
+        $oppsCount = $this->db->fetchOne("SELECT COUNT(*) as count FROM opportunities WHERE status = 'Open'")['count'];
+        $totalPossible = $profilesCount * $oppsCount;
+
+        // Existing matches
+        $existingCount = $this->db->fetchOne("SELECT COUNT(*) as count FROM {$this->table}")['count'];
+        
+        return [
+            'total_possible' => $totalPossible,
+            'existing_matches' => $existingCount,
+            'missing_matches' => max(0, $totalPossible - $existingCount),
+            'profiles_count' => $profilesCount,
+            'opportunities_count' => $oppsCount
+        ];
     }
 }

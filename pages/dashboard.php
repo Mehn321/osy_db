@@ -97,18 +97,22 @@ $inTrainingCount = $inTrainingResult['cnt'] ?? 0;
             <a href="reports.php" class="text-sm font-semibold text-blue-900 flex items-center gap-1 hover:underline">View Full Report <span class="material-symbols-outlined text-sm">arrow_forward</span></a>
         </div>
         <?php if (!empty($skills)): ?>
-            <div class="flex items-end gap-6 h-64">
+            <div class="flex items-end gap-3 sm:gap-6 h-80 pt-10 px-2">
                 <?php
                 $maxSkill = max(array_column($skills, 'count'));
                 $maxSkill = $maxSkill > 0 ? $maxSkill : 1;
                 foreach ($skills as $skill):
                     $percentage = ($skill['count'] / $maxSkill) * 100;
+                    $skillName = $skill['primary_skill'];
+                    $displayName = strlen($skillName) > 12 ? substr($skillName, 0, 10) . '..' : $skillName;
                 ?>
-                    <div class="flex-1 flex flex-col items-center gap-4 group">
-                        <div class="w-full bg-blue-200 dark:bg-blue-900 rounded-t-lg relative transition-all hover:bg-blue-400 group-hover:scale-105" style="height: <?php echo $percentage; ?>%;">
-                            <div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity"><?php echo $skill['count']; ?></div>
+                    <div class="flex-1 flex flex-col items-center gap-4 group min-w-[40px]">
+                        <div class="w-full bg-blue-600/20 dark:bg-blue-900/40 rounded-t-xl relative transition-all hover:bg-blue-600/40 group-hover:scale-x-110" style="height: <?php echo $percentage; ?>%;">
+                            <div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[11px] font-bold py-1.5 px-3 rounded-lg opacity-0 group-hover:opacity-100 transition-all pointer-events-none shadow-xl z-10 whitespace-nowrap">
+                                <?php echo $skillName; ?>: <?php echo $skill['count']; ?>
+                            </div>
                         </div>
-                        <span class="text-xs font-bold text-slate-600 dark:text-slate-400 text-center"><?php echo substr($skill['primary_skill'], 0, 15); ?></span>
+                        <span class="text-[10px] sm:text-xs font-bold text-slate-500 dark:text-slate-400 text-center leading-tight h-8 flex items-center justify-center"><?php echo htmlspecialchars($displayName); ?></span>
                     </div>
                 <?php endforeach; ?>
             </div>

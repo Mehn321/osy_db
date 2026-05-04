@@ -88,8 +88,21 @@ $matches_for_opportunity = $selectedOpportunityId ? $matching->getMatchesForOppo
     <nav class="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400 font-medium mb-2">
         <a href="dashboard.php" class="hover:text-blue-900 transition-colors">Municipal KK</a>
         <span class="material-symbols-outlined text-sm">chevron_right</span>
-        <span class="text-blue-900 dark:text-blue-400">Skills Alignment Analysis</span>
     </nav>
+    <div class="flex items-center justify-between gap-4">
+        <h1 class="text-2xl font-bold text-slate-900 dark:text-white">Skills Alignment Analysis</h1>
+        
+        <?php 
+            $syncStats = $matching->getGlobalSyncStats(); 
+            if ($syncStats['missing_matches'] > 0):
+        ?>
+            <div id="syncAlert" class="flex items-center gap-3 px-4 py-2 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-sm">
+                <span class="material-symbols-outlined text-amber-600">warning</span>
+                <span><strong>Data Gap:</strong> <?php echo $syncStats['missing_matches']; ?> potential matches are missing AI scores.</span>
+                <button onclick="triggerGlobalSync()" class="ml-2 px-3 py-1 bg-amber-600 text-white rounded font-bold hover:bg-amber-700 transition-colors">Sync All Now</button>
+            </div>
+        <?php endif; ?>
+    </div>
 </div>
 
 <?php if ($message): ?>
@@ -356,6 +369,17 @@ function renderMatchCard($match, $isPending) {
             </button>
         </div>
         <?php endif; ?>
+
+        <!-- AI Insight Section -->
+        <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+            <button onclick="analyzeMatchAI(<?php echo $match['id']; ?>)" id="aiBtn-<?php echo $match['id']; ?>" class="w-full py-2 px-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-600 hover:text-white border border-blue-200 dark:border-blue-800 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined text-[18px] animate-pulse">auto_awesome</span> 
+                <?php echo !empty($match['ai_insight']) ? 'View AI Rationale' : 'Analyze with AI'; ?>
+            </button>
+            <div id="aiInsight-<?php echo $match['id']; ?>" class="hidden mt-3 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg border-l-4 border-blue-500 text-[12px] text-slate-600 dark:text-slate-300 italic leading-relaxed">
+                <?php if (!empty($match['ai_insight'])) echo htmlspecialchars($match['ai_insight']); ?>
+            </div>
+        </div>
     </div>
     <?php
 }
@@ -474,6 +498,17 @@ function renderMatchCard($match, $isPending) {
                     </div>
                 </div>
                 ${actionHtml}
+
+                <!-- AI Insight Section -->
+                <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                    <button onclick="analyzeMatchAI(${match.id})" id="aiBtn-${match.id}" class="w-full py-2 px-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-600 hover:text-white border border-blue-200 dark:border-blue-800 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-[18px] animate-pulse">auto_awesome</span> 
+                        ${match.ai_insight ? 'View AI Rationale' : 'Analyze with AI'}
+                    </button>
+                    <div id="aiInsight-${match.id}" class="${match.ai_insight ? '' : 'hidden'} mt-3 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg border-l-4 border-blue-500 text-[12px] text-slate-600 dark:text-slate-300 italic leading-relaxed">
+                        ${match.ai_insight || ''}
+                    </div>
+                </div>
             </div>
         `;
     }
@@ -556,6 +591,64 @@ function renderMatchCard($match, $isPending) {
         
         if(pMsg) pMsg.style.display = pendingVisible.length ? 'none' : 'block';
         if(aMsg) aMsg.style.display = acceptedVisible.length ? 'none' : 'block';
+    }
+
+    async function analyzeMatchAI(matchId) {
+        const btn = document.getElementById('aiBtn-' + matchId);
+        const insightBox = document.getElementById('aiInsight-' + matchId);
+        
+        // If already visible, just toggle
+        if (!insightBox.classList.contains('hidden') && insightBox.textContent.trim() !== '') {
+            insightBox.classList.add('hidden');
+            return;
+        }
+
+        // Loading state
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">sync</span> Analyzing...';
+        
+        try {
+            const res = await fetch('../api/ai_analyze_match.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ match_id: matchId })
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                insightBox.textContent = data.insight;
+                insightBox.classList.remove('hidden');
+                btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">auto_awesome</span> View AI Rationale';
+            } else {
+                alert('AI Analysis failed: ' + data.message);
+                btn.innerHTML = originalHtml;
+            }
+        } catch (e) {
+            alert('Network error. Could not reach AI service.');
+            btn.innerHTML = originalHtml;
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    async function triggerGlobalSync() {
+        if (!confirm("This will start a background process to calculate AI scores for all profiles against all jobs. This may take several minutes. Proceed?")) return;
+        
+        const alert = document.getElementById('syncAlert');
+        try {
+            const res = await fetch('../api/trigger_global_sync.php');
+            const data = await res.json();
+            if (data.success) {
+                alert.innerHTML = `<span class="material-symbols-outlined text-blue-600 animate-spin">sync</span> 
+                                  <span class="text-blue-800">Background Sync Started. Scores will populate automatically over the next few minutes.</span>`;
+                alert.className = "flex items-center gap-3 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg text-sm";
+            } else {
+                alert(data.message);
+            }
+        } catch (e) {
+            alert("Failed to trigger sync.");
+        }
     }
 </script>
 

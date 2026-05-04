@@ -2,7 +2,7 @@
 /**
  * AJAX API – Broadcast Notification
  * Handles notification logging + optional SMS/Email to recipients.
- * Supports all template variables: {{name}}, {{purok}}, {{opportunity}},
+ * Supports all template variables: {{name}}, {{barangay}}, {{opportunity}},
  * {{company}}, {{course}}, {{percentage}}
  * Returns JSON.
  */
@@ -82,7 +82,7 @@ function replaceTemplateVars(string $text, array $rec, array $broadcastVars): st
     // Per-recipient (personalized)
     $fullName = trim(($rec['first_name'] ?? '') . ' ' . ($rec['last_name'] ?? ''));
     $text = str_replace('{{name}}',  $fullName ?: ($rec['first_name'] ?? ''), $text);
-    $text = str_replace('{{purok}}', $rec['purok'] ?? '', $text);
+    $text = str_replace('{{barangay}}', $rec['barangay'] ?? '', $text);
 
     // Broadcast-wide (same for everyone)
     $text = str_replace('{{opportunity}}', $broadcastVars['opportunity'], $text);

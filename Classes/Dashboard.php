@@ -119,7 +119,13 @@ class Dashboard
      */
     public function getSkillDistribution()
     {
-        $query = "SELECT primary_skill, COUNT(*) as count FROM osy_profiles WHERE primary_skill IS NOT NULL GROUP BY primary_skill ORDER BY count DESC LIMIT 10";
+        $query = "SELECT primary_skill, COUNT(*) as count FROM osy_profiles 
+                 WHERE primary_skill IS NOT NULL 
+                 AND primary_skill != '' 
+                 AND primary_skill != 'Not Specified'
+                 GROUP BY primary_skill 
+                 ORDER BY count DESC 
+                 LIMIT 10";
         return $this->db->fetchAll($query);
     }
 
