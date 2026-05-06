@@ -126,7 +126,7 @@ if (!$user->isLoggedIn()) {
             The system provides several useful reports:
         </p>
         <ul class="list-disc list-inside space-y-2 text-slate-600 dark:text-slate-400">
-            <li><strong>OSY Demographics Report:</strong> Age, gender, education distribution</li>
+            <li><strong>Youth Demographics Report:</strong> Age, gender, education distribution</li>
             <li><strong>Skills Analysis Report:</strong> Most in-demand skills and gaps</li>
             <li><strong>Matching Report:</strong> Success rates and match quality metrics</li>
             <li><strong>Employment Status Report:</strong> Tracking youth employment outcomes</li>

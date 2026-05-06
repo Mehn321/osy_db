@@ -238,7 +238,16 @@
         }
 
         // --- Single Page Application (SPA) Logic ---
+        let currentSpaController = null;
+
         async function navigateTo(url, pushState = true) {
+            // Cancel any ongoing navigation
+            if (currentSpaController) {
+                currentSpaController.abort();
+            }
+            currentSpaController = new AbortController();
+            const signal = currentSpaController.signal;
+
             const progressBar = document.getElementById('spa-progress');
             const mainContent = document.querySelector('main');
             
@@ -248,7 +257,7 @@
             }
             
             try {
-                const response = await fetch(url);
+                const response = await fetch(url, { signal });
                 if (!response.ok) throw new Error('Navigation failed');
                 
                 if (progressBar) progressBar.style.width = '70%';
@@ -291,15 +300,26 @@
                     window.scrollTo(0, 0);
                 }
             } catch (error) {
+                if (error.name === 'AbortError') {
+                    console.log('Navigation aborted:', url);
+                    return;
+                }
                 console.error('SPA Error:', error);
                 window.location.href = url;
             } finally {
-                if (progressBar) {
-                    progressBar.style.width = '100%';
-                    setTimeout(() => {
-                        progressBar.style.display = 'none';
-                        progressBar.style.width = '0';
-                    }, 500);
+                // Only hide progress bar if this is still the active navigation
+                if (currentSpaController && currentSpaController.signal === signal) {
+                    if (progressBar) {
+                        progressBar.style.width = '100%';
+                        setTimeout(() => {
+                            // Re-check after timeout in case a new nav started
+                            if (currentSpaController && currentSpaController.signal === signal) {
+                                progressBar.style.display = 'none';
+                                progressBar.style.width = '0';
+                            }
+                        }, 500);
+                    }
+                    currentSpaController = null;
                 }
             }
         }
@@ -397,6 +417,13 @@
                     progressBar.style.width = '30%';
                 }
                 
+                // Cancel any ongoing navigation
+                if (currentSpaController) {
+                    currentSpaController.abort();
+                }
+                currentSpaController = new AbortController();
+                const signal = currentSpaController.signal;
+
                 try {
                     const formData = new FormData(form);
                     if (e.submitter && e.submitter.name) {
@@ -405,7 +432,8 @@
 
                     const response = await fetch(url.href, {
                         method: form.method || 'POST',
-                        body: formData
+                        body: formData,
+                        signal
                     });
 
                     if (!response.ok) throw new Error('Submission failed');
@@ -434,15 +462,24 @@
                         window.scrollTo(0, 0);
                     }
                 } catch (error) {
+                    if (error.name === 'AbortError') {
+                        console.log('Form submission aborted');
+                        return;
+                    }
                     console.error('SPA Form Error:', error);
                     form.submit();
                 } finally {
-                    if (progressBar) {
-                        progressBar.style.width = '100%';
-                        setTimeout(() => {
-                            progressBar.style.display = 'none';
-                            progressBar.style.width = '0';
-                        }, 500);
+                    if (currentSpaController && currentSpaController.signal === signal) {
+                        if (progressBar) {
+                            progressBar.style.width = '100%';
+                            setTimeout(() => {
+                                if (currentSpaController && currentSpaController.signal === signal) {
+                                    progressBar.style.display = 'none';
+                                    progressBar.style.width = '0';
+                                }
+                            }, 500);
+                        }
+                        currentSpaController = null;
                     }
                 }
             }

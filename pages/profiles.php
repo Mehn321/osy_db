@@ -88,7 +88,13 @@ $filters = [
     'search' => $_GET['search'] ?? ''
 ];
 
-$profiles = $osyProfile->getAll($filters);
+$page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+$limit = 50;
+$offset = ($page - 1) * $limit;
+
+$totalFiltered = $osyProfile->getFilteredCount($filters);
+$profiles = $osyProfile->getAll($filters, $limit, $offset);
+$totalPages = ceil($totalFiltered / $limit);
 
 require_once __DIR__ . '/../Classes/Reference.php';
 $reference = new Reference($database);
@@ -125,57 +131,58 @@ require_once __DIR__ . '/../includes/header.php';
 <?php endif; ?>
 
 <!-- Filters -->
-<div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4 mb-8">
+<form method="GET" id="filterForm" class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4 mb-8">
     <div class="relative mb-2">
         <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">search</span>
-        <input type="text" id="filter_search" placeholder="Search profiles by name or email..." class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 pl-12 pr-4 text-sm focus:ring-2 focus:ring-blue-900 transition-all text-slate-900 dark:text-white" onkeyup="filterProfiles()" />
+        <input type="text" name="search" id="filter_search" value="<?php echo htmlspecialchars($filters['search']); ?>" placeholder="Search profiles by name or email (Press Enter)..." class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 pl-12 pr-4 text-sm focus:ring-2 focus:ring-blue-900 transition-all text-slate-900 dark:text-white" onkeypress="if(event.key === 'Enter') { event.preventDefault(); this.form.submit(); }" />
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <div>
             <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase pl-1">Profile Type</label>
-            <select id="filter_type" class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-2.5 pl-4 pr-4 text-sm mt-1.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900" onchange="filterProfiles()">
-                <option value="All Types">All Types</option>
-                <option value="OSY">OSY</option>
-                <option value="Regular">Regular</option>
+            <select name="profile_type" id="filter_type" class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-2.5 pl-4 pr-4 text-sm mt-1.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900" onchange="this.form.submit()">
+                <option value="All Types" <?php echo $filters['profile_type'] === 'All Types' ? 'selected' : ''; ?>>All Types</option>
+                <option value="OSY" <?php echo $filters['profile_type'] === 'OSY' ? 'selected' : ''; ?>>OSY</option>
+                <option value="Regular" <?php echo $filters['profile_type'] === 'Regular' ? 'selected' : ''; ?>>Regular</option>
             </select>
         </div>
         <div>
             <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase pl-1">Barangay</label>
-            <select id="filter_barangay" class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-2.5 pl-4 pr-4 text-sm mt-1.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900" onchange="filterProfiles()">
-                <option value="All Barangays">All Barangays</option>
+            <select name="barangay" id="filter_barangay" class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-2.5 pl-4 pr-4 text-sm mt-1.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900" onchange="this.form.submit()">
+                <option value="All Barangays" <?php echo $filters['barangay'] === 'All Barangays' ? 'selected' : ''; ?>>All Barangays</option>
                 <?php foreach ($barangays as $b): ?>
-                    <option value="<?php echo htmlspecialchars($b); ?>"><?php echo htmlspecialchars($b); ?></option>
+                    <option value="<?php echo htmlspecialchars($b); ?>" <?php echo $filters['barangay'] === $b ? 'selected' : ''; ?>><?php echo htmlspecialchars($b); ?></option>
                 <?php endforeach; ?>
             </select>
         </div>
         <div>
             <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase pl-1">Gender</label>
-            <select id="filter_gender" class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-2.5 pl-4 pr-4 text-sm mt-1.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900" onchange="filterProfiles()">
-                <option value="All Genders">All Genders</option>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
+            <select name="gender" id="filter_gender" class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-2.5 pl-4 pr-4 text-sm mt-1.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900" onchange="this.form.submit()">
+                <option value="All Genders" <?php echo $filters['gender'] === 'All Genders' ? 'selected' : ''; ?>>All Genders</option>
+                <option value="Male" <?php echo $filters['gender'] === 'Male' ? 'selected' : ''; ?>>Male</option>
+                <option value="Female" <?php echo $filters['gender'] === 'Female' ? 'selected' : ''; ?>>Female</option>
             </select>
         </div>
         <div>
             <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase pl-1">Education</label>
-            <select id="filter_education" class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-2.5 pl-4 pr-4 text-sm mt-1.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900" onchange="filterProfiles()">
-                <option value="Any Level">Any Level</option>
+            <select name="education" id="filter_education" class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-2.5 pl-4 pr-4 text-sm mt-1.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900" onchange="this.form.submit()">
+                <option value="Any Level" <?php echo $filters['education'] === 'Any Level' ? 'selected' : ''; ?>>Any Level</option>
                 <?php foreach ($eduLevels as $e): ?>
-                    <option value="<?php echo htmlspecialchars($e); ?>"><?php echo htmlspecialchars($e); ?></option>
+                    <option value="<?php echo htmlspecialchars($e); ?>" <?php echo $filters['education'] === $e ? 'selected' : ''; ?>><?php echo htmlspecialchars($e); ?></option>
                 <?php endforeach; ?>
             </select>
         </div>
         <div>
             <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase pl-1">Status</label>
-            <select id="filter_status" class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-2.5 pl-4 pr-4 text-sm mt-1.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900" onchange="filterProfiles()">
-                <option value="All Status">All Status</option>
-                <option value="Active">Active</option>
-                <option value="Employed">Employed</option>
-                <option value="In Training">In Training</option>
+            <select name="status" id="filter_status" class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-2.5 pl-4 pr-4 text-sm mt-1.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900" onchange="this.form.submit()">
+                <option value="All Status" <?php echo $filters['status'] === 'All Status' ? 'selected' : ''; ?>>All Status</option>
+                <option value="Active" <?php echo $filters['status'] === 'Active' ? 'selected' : ''; ?>>Active</option>
+                <option value="Employed" <?php echo $filters['status'] === 'Employed' ? 'selected' : ''; ?>>Employed</option>
+                <option value="In Training" <?php echo $filters['status'] === 'In Training' ? 'selected' : ''; ?>>In Training</option>
             </select>
         </div>
     </div>
-</div>
+    <input type="submit" class="hidden" />
+</form>
 
 <!-- Profiles Table -->
 <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
@@ -196,13 +203,7 @@ require_once __DIR__ . '/../includes/header.php';
             <tbody id="profilesTableBody" class="divide-y divide-slate-200 dark:divide-slate-700">
                 <?php if (!empty($profiles)): ?>
                     <?php foreach ($profiles as $profile): ?>
-                        <tr class="profile-row hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
-                            data-type="<?php echo htmlspecialchars($profile['profile_type']); ?>"
-                            data-barangay="<?php echo htmlspecialchars($profile['barangay'] ?? ''); ?>"
-                            data-gender="<?php echo htmlspecialchars($profile['gender'] ?? ''); ?>"
-                            data-education="<?php echo htmlspecialchars($profile['education_level'] ?? ''); ?>"
-                            data-status="<?php echo htmlspecialchars($profile['status'] ?? ''); ?>"
-                            data-search="<?php echo strtolower(htmlspecialchars($profile['first_name'] . ' ' . $profile['last_name'] . ' ' . $profile['email'])); ?>">
+                        <tr class="profile-row hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                             <td class="px-6 py-4">
                                 <div class="w-10 h-10 rounded-full bg-blue-200 dark:bg-blue-900 flex items-center justify-center text-blue-900 dark:text-blue-200 font-bold">
                                     <?php echo strtoupper(substr($profile['first_name'], 0, 1)); ?>
@@ -253,8 +254,26 @@ require_once __DIR__ . '/../includes/header.php';
             </tbody>
         </table>
     </div>
-    <div class="px-6 py-4 bg-slate-100 dark:bg-slate-700 flex items-center justify-between">
-        <span class="text-sm text-slate-600 dark:text-slate-400">Showing <?php echo count($profiles); ?> of <?php echo $osyProfile->getTotalCount(); ?> entries</span>
+    <div class="px-6 py-4 bg-slate-100 dark:bg-slate-700 flex flex-col md:flex-row items-center justify-between gap-4">
+        <span class="text-sm text-slate-600 dark:text-slate-400">Showing <?php echo count($profiles); ?> of <?php echo $totalFiltered; ?> entries (Page <?php echo $page; ?> of <?php echo max(1, $totalPages); ?>)</span>
+        
+        <?php if ($totalPages > 1): ?>
+        <div class="flex gap-2">
+            <?php 
+                $queryParams = $_GET; 
+                if ($page > 1): 
+                    $queryParams['page'] = $page - 1;
+            ?>
+                <a href="?<?php echo http_build_query($queryParams); ?>" class="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm">Previous</a>
+            <?php endif; ?>
+            
+            <?php if ($page < $totalPages): 
+                $queryParams['page'] = $page + 1;
+            ?>
+                <a href="?<?php echo http_build_query($queryParams); ?>" class="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm">Next</a>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
     </div>
 </div>
 
@@ -515,47 +534,7 @@ require_once __DIR__ . '/../includes/header.php';
         profilesData[<?php echo $profile['id']; ?>] = <?php echo json_encode($profile); ?>;
     <?php endforeach; ?>
 
-    // Real-time DOM Filtering function
-    function filterProfiles() {
-        const searchVal = document.getElementById('filter_search').value.toLowerCase();
-        const typeVal = document.getElementById('filter_type').value;
-        const barangayVal = document.getElementById('filter_barangay').value;
-        const genderVal = document.getElementById('filter_gender').value;
-        const eduVal = document.getElementById('filter_education').value;
-        const statusVal = document.getElementById('filter_status').value;
-
-        const rows = document.querySelectorAll('.profile-row');
-        let visibleCount = 0;
-
-        rows.forEach(row => {
-            const dataSearch = row.getAttribute('data-search');
-            const dataType = row.getAttribute('data-type');
-            const dataBarangay = row.getAttribute('data-barangay');
-            const dataGender = row.getAttribute('data-gender');
-            const dataEducation = row.getAttribute('data-education');
-            const dataStatus = row.getAttribute('data-status');
-
-            let match = true;
-
-            if (searchVal && !dataSearch.includes(searchVal)) match = false;
-            if (typeVal !== 'All Types' && dataType !== typeVal) match = false;
-            if (barangayVal !== 'All Barangays' && dataBarangay !== barangayVal) match = false;
-            if (genderVal !== 'All Genders' && dataGender !== genderVal) match = false;
-            if (eduVal !== 'Any Level' && dataEducation !== eduVal) match = false;
-            if (statusVal !== 'All Status' && dataStatus !== statusVal) match = false;
-
-            if (match) {
-                row.style.display = '';
-                visibleCount++;
-            } else {
-                row.style.display = 'none';
-            }
-        });
-        
-        // Optionally update a dynamic row count or show "no rows found" placeholder
-        const tableCountText = document.getElementById('tableCountText');
-        if(tableCountText) tableCountText.textContent = `Showing ${visibleCount} entries`;
-    }
+    // Real-time filtering handled by form submission now
 </script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

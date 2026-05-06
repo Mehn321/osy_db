@@ -238,29 +238,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_member'])) {
                     </div>
 
                     <!-- Government ID Details -->
-                    <div class="p-4 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-200 dark:border-orange-800">
-                        <h3 class="text-sm font-bold text-orange-900 dark:text-orange-300 mb-4 flex items-center gap-2">
-                            <span class="material-symbols-outlined">id_card</span>
-                            Government ID Document
-                        </h3>
-                        <div class="space-y-4">
-                            <div>
-                                <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase">ID Number</label>
-                                <input type="text" name="govt_id_number" placeholder="Enter your ID number" class="w-full bg-white dark:bg-slate-700 border border-orange-200 dark:border-orange-700 rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-orange-500 text-slate-900 dark:text-white mt-2">
-                            </div>
-                            <div>
-                                <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase mb-2 block">ID Document Photo</label>
-                                <div class="border-2 border-dashed border-orange-300 dark:border-orange-700 rounded-xl p-4 text-center bg-orange-50 dark:bg-orange-900/10 hover:bg-orange-100 dark:hover:bg-orange-900/20 transition-colors cursor-pointer">
-                                    <input type="file" name="govt_id_image" accept="image/*" class="hidden" id="govtIdUpload">
-                                    <div onclick="document.getElementById('govtIdUpload').click()">
-                                        <span class="material-symbols-outlined text-3xl text-orange-400 block mb-2">upload_file</span>
-                                        <p id="govtIdLabel" class="text-xs font-semibold text-orange-700 dark:text-orange-400">Click to upload ID document photo</p>
-                                        <p class="text-xs text-orange-600 dark:text-orange-500 mt-1">JPG, PNG, or GIF (Max 5MB)</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                  
                 </div>
             </div>
         </div>

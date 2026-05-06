@@ -152,13 +152,8 @@ class OSYProfile
         return $this->db->fetchOne($query, [$id], "i");
     }
 
-    /**
-     * Get all profiles with filters
-     */
-    public function getAll($filters = [])
+    private function applyFilters($filters, &$query)
     {
-        $query = "SELECT * FROM {$this->table} WHERE 1=1";
-
         if (isset($filters['profile_type']) && $filters['profile_type'] != 'All Types') {
             $query .= " AND TRIM(profile_type) = '" . $this->db->escape(trim($filters['profile_type'])) . "'";
         }
@@ -183,10 +178,33 @@ class OSYProfile
             $search = $this->db->escape($filters['search']);
             $query .= " AND (first_name LIKE '%{$search}%' OR last_name LIKE '%{$search}%' OR email LIKE '%{$search}%')";
         }
+    }
 
+    /**
+     * Get all profiles with filters
+     */
+    public function getAll($filters = [], $limit = null, $offset = 0)
+    {
+        $query = "SELECT * FROM {$this->table} WHERE 1=1";
+        $this->applyFilters($filters, $query);
         $query .= " ORDER BY created_at DESC";
 
+        if ($limit !== null) {
+            $query .= " LIMIT " . (int)$limit . " OFFSET " . (int)$offset;
+        }
+
         return $this->db->fetchAll($query);
+    }
+
+    /**
+     * Get count of filtered profiles
+     */
+    public function getFilteredCount($filters = [])
+    {
+        $query = "SELECT COUNT(*) as total FROM {$this->table} WHERE 1=1";
+        $this->applyFilters($filters, $query);
+        $result = $this->db->fetchOne($query);
+        return $result['total'] ?? 0;
     }
 
     /**

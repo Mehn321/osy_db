@@ -129,15 +129,6 @@ if ($user->isLoggedIn()) {
                         </span>
                     </button>
                 </form>
-
-                <!-- Demo Credentials Info -->
-                <div class="mt-8 pt-8 border-t border-slate-200">
-                    <p class="text-xs text-slate-500 mb-3 font-semibold">DEMO CREDENTIALS:</p>
-                    <div class="space-y-2 text-xs">
-                        <p><strong>Admin:</strong> admin1 / Admin@123</p>
-                        <p><strong>Staff:</strong> jsmith / Staff@123</p>
-                    </div>
-                </div>
             </div>
         </div>
     </main>
