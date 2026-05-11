@@ -42,6 +42,44 @@ class Matching
     }
 
     /**
+     * Create a match using array parameters (for applications)
+     */
+    public function createMatchFromArray($data)
+    {
+        try {
+            $query = "INSERT INTO {$this->table} 
+                     (osy_id, opportunity_id, status, created_at) 
+                     VALUES (?, ?, ?, NOW())";
+
+            $this->db->execute($query, [
+                $data['profile_id'],
+                $data['opportunity_id'],
+                $data['status'] ?? 'Pending'
+            ], "iis");
+
+            return [
+                'success' => true,
+                'message' => 'Application submitted successfully',
+                'id' => $this->db->lastInsertId()
+            ];
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Check if youth already applied to opportunity
+     */
+    public function getMatchByYouthAndOpportunity($profile_id, $opportunity_id)
+    {
+        $query = "SELECT * FROM {$this->table} WHERE osy_id = ? AND opportunity_id = ? LIMIT 1";
+        return $this->db->fetchOne($query, [$profile_id, $opportunity_id], "ii");
+    }
+
+    /**
      * Calculate match score between OSY and opportunity
      */
     public function calculateMatchScore($osy_id, $opportunity_id)
@@ -71,7 +109,7 @@ class Matching
 
             $score = 0;
             $maxScore = 100;
-            
+
             // Text to match against
             $oppText = strtolower($opportunity['title'] . ' ' . $opportunity['description']);
             $oppLoc = strtolower($opportunity['location']);
@@ -90,7 +128,7 @@ class Matching
                     'sales' => ['retail', 'cashier', 'marketing', 'customer service', 'store'],
                     'housekeeping' => ['cleaning', 'maid', 'maintenance', 'janitor']
                 ];
-                
+
                 foreach ($synonyms as $key => $related) {
                     if (strpos($pSkill, $key) !== false || in_array($pSkill, $related)) {
                         foreach ($related as $syn) {
@@ -129,7 +167,7 @@ class Matching
             // 4. Education Level Fit (up to 20 points)
             $eduLevel = $osy['education_level'];
             $reqText = strtolower($opportunity['certification'] . ' ' . $opportunity['description']);
-            
+
             if (strpos($reqText, 'college') !== false || strpos($reqText, 'degree') !== false) {
                 if ($eduLevel == 'College Graduate') $score += 20;
                 elseif ($eduLevel == 'College Undergraduate') $score += 10;
@@ -326,9 +364,9 @@ class Matching
                 } else {
                     $this->createMatch($osy_id, $opp['id'], $score);
                 }
-                
+
                 // 1 second sleep to stay within free tier rate limits
-                usleep(1000000); 
+                usleep(1000000);
             }
 
             return true;
@@ -350,7 +388,7 @@ class Matching
 
         // Existing matches
         $existingCount = $this->db->fetchOne("SELECT COUNT(*) as count FROM {$this->table}")['count'];
-        
+
         return [
             'total_possible' => $totalPossible,
             'existing_matches' => $existingCount,

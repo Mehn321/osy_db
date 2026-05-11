@@ -92,8 +92,8 @@ $aiStats = $gemini->getUsageStats();
 // Load matching sync stats
 $matching = new Matching($database);
 $syncStats = $matching->getGlobalSyncStats();
-$scoringPct = $syncStats['total_possible'] > 0 
-    ? round(($syncStats['existing_matches'] / $syncStats['total_possible']) * 100, 1) 
+$scoringPct = $syncStats['total_possible'] > 0
+    ? round(($syncStats['existing_matches'] / $syncStats['total_possible']) * 100, 1)
     : 0;
 
 ?>
@@ -286,11 +286,11 @@ $scoringPct = $syncStats['total_possible'] > 0
         <!-- AI Services -->
         <div id="section-ai" class="<?php echo $activeTab !== 'ai' ? 'hidden' : ''; ?>">
             <?php
-                $dailyPct = $aiStats['rate_limits']['daily_pct'];
-                $barColor = $dailyPct >= 90 ? 'bg-red-500' : ($dailyPct >= 60 ? 'bg-amber-500' : 'bg-emerald-500');
-                $statusColor = $dailyPct >= 90 ? 'text-red-600' : ($dailyPct >= 60 ? 'text-amber-600' : 'text-emerald-600');
-                $statusBg = $dailyPct >= 90 ? 'bg-red-50 border-red-200' : ($dailyPct >= 60 ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200');
-                $statusLabel = $dailyPct >= 90 ? 'Critical' : ($dailyPct >= 60 ? 'Moderate' : 'Healthy');
+            $dailyPct = $aiStats['rate_limits']['daily_pct'];
+            $barColor = $dailyPct >= 90 ? 'bg-red-500' : ($dailyPct >= 60 ? 'bg-amber-500' : 'bg-emerald-500');
+            $statusColor = $dailyPct >= 90 ? 'text-red-600' : ($dailyPct >= 60 ? 'text-amber-600' : 'text-emerald-600');
+            $statusBg = $dailyPct >= 90 ? 'bg-red-50 border-red-200' : ($dailyPct >= 60 ? 'bg-amber-50 border-amber-200' : 'bg-emerald-50 border-emerald-200');
+            $statusLabel = $dailyPct >= 90 ? 'Critical' : ($dailyPct >= 60 ? 'Moderate' : 'Healthy');
             ?>
 
             <!-- AI Status Banner -->
@@ -357,12 +357,12 @@ $scoringPct = $syncStats['total_possible'] > 0
                         </span>
                     </div>
                     <div class="w-full h-4 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                        <div class="h-full <?php echo $barColor; ?> rounded-full transition-all duration-700 ease-out relative" 
-                             style="width: <?php echo min(100, $dailyPct); ?>%">
+                        <div class="h-full <?php echo $barColor; ?> rounded-full transition-all duration-700 ease-out relative"
+                            style="width: <?php echo min(100, $dailyPct); ?>%">
                             <?php if ($dailyPct > 15): ?>
-                            <span class="absolute inset-0 flex items-center justify-center text-[9px] font-black text-white">
-                                <?php echo $dailyPct; ?>%
-                            </span>
+                                <span class="absolute inset-0 flex items-center justify-center text-[9px] font-black text-white">
+                                    <?php echo $dailyPct; ?>%
+                                </span>
                             <?php endif; ?>
                         </div>
                     </div>
@@ -544,7 +544,7 @@ $scoringPct = $syncStats['total_possible'] > 0
                 <div class="space-y-4 text-sm text-slate-600 dark:text-slate-400">
                     <div class="flex justify-between py-3 border-b border-slate-200 dark:border-slate-700">
                         <span class="font-semibold text-slate-700 dark:text-slate-300">System Name</span>
-                        <span>Municipal KK Profiling System</span>
+                        <span>Youth Profiling System</span>
                     </div>
                     <div class="flex justify-between py-3 border-b border-slate-200 dark:border-slate-700">
                         <span class="font-semibold text-slate-700 dark:text-slate-300">Version</span>

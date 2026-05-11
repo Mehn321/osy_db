@@ -11,7 +11,7 @@ if (!$user->isLoggedIn()) {
 <!-- Help Center Header -->
 <div class="mb-12">
     <h1 class="text-4xl font-extrabold text-slate-900 dark:text-white mb-4">Help Center</h1>
-    <p class="text-lg text-slate-600 dark:text-slate-400">Find answers to common questions and learn how to use Municipal KK Profiling System.</p>
+    <p class="text-lg text-slate-600 dark:text-slate-400">Find answers to common questions and learn how to use the Youth Profiling System.</p>
 </div>
 
 <!-- Search Bar -->

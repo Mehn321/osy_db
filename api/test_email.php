@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AJAX API – Test Email / SMS Connection
  * Called from Settings > Notifications testing panel.
@@ -30,15 +31,14 @@ if ($action === 'test_email') {
     $email  = new EmailService($database);
     $result = $email->send(
         $to,
-        'System Test – Municipal KK OSY Program',
+        'System Test – Youth Profiling System',
         "<div style='font-family:sans-serif;max-width:500px;margin:0 auto;padding:30px;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0'>
           <h2 style='color:#1e3a8a;margin:0 0 16px'>✅ Email Test Successful!</h2>
           <p style='color:#374151'>Your Gmail SMTP configuration is working correctly.</p>
-          <p style='color:#6b7280;font-size:13px;margin-top:20px'>Sent at: " . date('F d, Y h:i A') . "<br>From: Municipal KK OSY Profiling System</p>
+          <p style='color:#6b7280;font-size:13px;margin-top:20px'>Sent at: " . date('F d, Y h:i A') . "<br>From: Youth Profiling System</p>
         </div>"
     );
     echo json_encode($result);
-
 } elseif ($action === 'test_sms') {
     $phone = trim($_POST['test_phone'] ?? '');
     if (empty($phone)) {
@@ -49,7 +49,6 @@ if ($action === 'test_email') {
     $sms    = new SmsService($database);
     $result = $sms->send($phone, 'Profiling System: This is a test SMS message via Traccar.');
     echo json_encode($result);
-
 } else {
     echo json_encode(['success' => false, 'message' => 'Unknown action.']);
 }

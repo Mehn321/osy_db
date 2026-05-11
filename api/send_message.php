@@ -1,4 +1,5 @@
 <?php
+
 /**
  * AJAX API – Send Chat Message
  * Handles message save + optional SMS/Email dispatch.
@@ -22,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $osy_id       = intval($_POST['osy_id'] ?? 0);
 $message_text = trim($_POST['message_content'] ?? '');
 $trigger_sms  = !empty($_POST['trigger_sms']);
-$trigger_email= !empty($_POST['trigger_email']);
+$trigger_email = !empty($_POST['trigger_email']);
 
 if (!$osy_id || $message_text === '') {
     echo json_encode(['success' => false, 'message' => 'Missing required fields.']);
@@ -43,7 +44,7 @@ $sms_status   = 'none';
 $email_status = 'none';
 $sms_error    = null;
 $email_error  = null;
-$notifications= [];
+$notifications = [];
 
 // ── SMS ──────────────────────────────────────────────────────────────────────
 if ($trigger_sms) {
@@ -67,16 +68,16 @@ if ($trigger_email) {
     $emailBody = "
 <div style='font-family:sans-serif;max-width:600px;margin:0 auto'>
   <div style='background:#1e3a8a;padding:20px 30px;border-radius:12px 12px 0 0'>
-    <h2 style='color:white;margin:0'>Municipal KK OSY Program</h2>
+    <h2 style='color:white;margin:0'>Youth Profiling System</h2>
   </div>
   <div style='background:#f8fafc;padding:30px;border:1px solid #e2e8f0;border-radius:0 0 12px 12px'>
     <p style='color:#374151'>Dear <strong>{$recipientName}</strong>,</p>
     <p style='color:#374151;white-space:pre-wrap'>" . nl2br(htmlspecialchars($message_text)) . "</p>
     <hr style='border:0;border-top:1px solid #e2e8f0;margin:20px 0'>
-    <p style='color:#9ca3af;font-size:12px'>This message was sent by Municipal KK Youth Registry. Do not reply to this email.</p>
+    <p style='color:#9ca3af;font-size:12px'>This message was sent by the Youth Profiling System. Do not reply to this email.</p>
   </div>
 </div>";
-    $emailResp = $email->send($recipientEmail, 'Message from Municipal KK OSY Program', $emailBody);
+    $emailResp = $email->send($recipientEmail, 'Message from Youth Profiling System', $emailBody);
     $email_status = $emailResp['success'] ? 'success' : 'failed';
     if (!$emailResp['success']) {
         $email_error = $emailResp['message'];

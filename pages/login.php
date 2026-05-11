@@ -31,7 +31,7 @@ if ($user->isLoggedIn()) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Municipal KK Profiling System</title>
+    <title>Login - Youth Profiling System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
@@ -58,14 +58,14 @@ if ($user->isLoggedIn()) {
                 <div class="absolute inset-0 opacity-20 bg-[url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2220%22 cy=%2220%22 r=%225%22 fill=%22white%22/></svg>')]"></div>
                 <div class="relative z-10">
                     <div class="flex items-center gap-2 mb-8">
-                        <span class="material-symbols-outlined text-4xl">account_balance</span>
-                        <span class="text-2xl font-bold tracking-tighter">Municipal KK</span>
+                        <span class="material-symbols-outlined text-4xl">groups</span>
+                        <span class="text-2xl font-bold tracking-tighter">Youth Profiling</span>
                     </div>
                     <h1 class="text-4xl font-extrabold leading-tight tracking-tight mb-4">
-                        Digital Governance<br />for the Community.
+                        Opportunities & Skills<br />for Our Youth.
                     </h1>
                     <p class="text-blue-100 text-lg max-w-sm font-medium">
-                        Securely access the Barangay management portal to streamline public services and resident support.
+                        Securely connect with employment opportunities, training programs, and community support services.
                     </p>
                 </div>
                 <div class="relative z-10">
@@ -129,6 +129,24 @@ if ($user->isLoggedIn()) {
                         </span>
                     </button>
                 </form>
+
+                <!-- Youth & Provider Registration Links -->
+                <div class="mt-8 space-y-3 text-center border-t border-slate-200 pt-8">
+                    <div>
+                        <p class="text-sm text-slate-600 mb-2">Are you a youth looking for opportunities?</p>
+                        <a href="youth-signup.php" class="inline-flex items-center gap-2 text-blue-900 font-semibold hover:underline">
+                            <span class="material-symbols-outlined text-base">person_add</span>
+                            Youth Sign Up
+                        </a>
+                    </div>
+                    <div>
+                        <p class="text-sm text-slate-600 mb-2">Are you an employer or training provider?</p>
+                        <a href="provider-registration.php" class="inline-flex items-center gap-2 text-blue-900 font-semibold hover:underline">
+                            <span class="material-symbols-outlined text-base">business</span>
+                            Register as Provider
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
     </main>

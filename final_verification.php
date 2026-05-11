@@ -7,7 +7,7 @@ if ($conn->connect_error) {
 $conn->set_charset('utf8mb4');
 
 echo "\n╔════════════════════════════════════════════════════════════════╗\n";
-echo "║          MUNICIPAL KK PROFILING SYSTEM - FINAL VERIFICATION       ║\n";
+echo "║          YOUTH PROFILING SYSTEM - FINAL VERIFICATION          ║\n";
 echo "╚════════════════════════════════════════════════════════════════╝\n";
 
 // Check database

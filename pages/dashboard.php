@@ -22,7 +22,7 @@ $inTrainingCount = $inTrainingResult['cnt'] ?? 0;
 <!-- Welcome Header -->
 <div class="mb-10">
     <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">Welcome back, <?php echo htmlspecialchars($_SESSION['fullname'] ?? 'User'); ?>!</h2>
-    <p class="text-slate-600 dark:text-slate-400 font-medium">Monitoring youth enrollment and OSY progress in Municipal KK Profiling System.</p>
+    <p class="text-slate-600 dark:text-slate-400 font-medium">Monitor youth enrollment, training progress, and employment outcomes in the Youth Profiling System.</p>
 </div>
 
 <!-- Summary Cards -->
@@ -90,12 +90,12 @@ $inTrainingCount = $inTrainingResult['cnt'] ?? 0;
     </div>
 
     <?php
-        // Get AI scoring coverage for dashboard
-        $matchingDash = new Matching($database);
-        $syncStatsDash = $matchingDash->getGlobalSyncStats();
-        $dashScoringPct = $syncStatsDash['total_possible'] > 0 
-            ? round(($syncStatsDash['existing_matches'] / $syncStatsDash['total_possible']) * 100, 1) 
-            : 0;
+    // Get AI scoring coverage for dashboard
+    $matchingDash = new Matching($database);
+    $syncStatsDash = $matchingDash->getGlobalSyncStats();
+    $dashScoringPct = $syncStatsDash['total_possible'] > 0
+        ? round(($syncStatsDash['existing_matches'] / $syncStatsDash['total_possible']) * 100, 1)
+        : 0;
     ?>
     <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
         <div class="flex items-start justify-between mb-3">

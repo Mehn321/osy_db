@@ -13,7 +13,7 @@
     define('DB_OLD_NAME', 'civic_horizon_osy');
     define('DB_NEW_NAME', 'municipal_kk_profiling');
 
-    echo "🔄 Setting up Municipal KK Profiling System...\n\n";
+    echo "🔄 Setting up Youth Profiling System...\n\n";
 
     try {
         // Connect to MySQL (no database specified initially)
@@ -116,7 +116,7 @@
 
             // Split into individual statements - improved handling
             $statements = preg_split('/;(?=\s*\n|\s*$)/m', $schemaContent);
-            $statements = array_filter(array_map('trim', $statements), function($s) {
+            $statements = array_filter(array_map('trim', $statements), function ($s) {
                 return !empty($s) && !preg_match('/^--/', $s);
             });
 
@@ -153,13 +153,13 @@
 
         // Step 2b: Ensure critical tables exist
         echo "🔨 Verifying critical tables...\n";
-        
+
         // Helper function to check if table exists
-        $tableExists = function($tableName) use ($conn) {
+        $tableExists = function ($tableName) use ($conn) {
             $result = $conn->query("SHOW TABLES LIKE '$tableName'");
             return $result && $result->num_rows > 0;
         };
-        
+
         // Create osy_matches if missing
         if (!$tableExists('osy_matches')) {
             $sql = "CREATE TABLE IF NOT EXISTS `osy_matches` (
@@ -182,19 +182,22 @@
         } else {
             echo "✓ osy_matches table exists\n";
         }
-        
+
         // Create notifications if missing
         if (!$tableExists('notifications')) {
             $sql = "CREATE TABLE IF NOT EXISTS `notifications` (
               `id` int(11) NOT NULL AUTO_INCREMENT,
               `title` varchar(255) NOT NULL,
               `message` text NOT NULL,
-              `user_id` int(11) NOT NULL,
-              `type` varchar(50) DEFAULT 'info',
-              `is_read` tinyint(1) DEFAULT 0,
+              `type` enum('Opportunity','Match','System','Reminder') DEFAULT 'System',
+              `recipient_type` enum('All','OSY','Staff','Specific') DEFAULT 'All',
+              `recipient_id` int(11) DEFAULT NULL,
+              `status` enum('Sent','Read','Failed') DEFAULT 'Sent',
+              `created_by` int(11) DEFAULT NULL,
               `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
               PRIMARY KEY (`id`),
-              FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+              FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON DELETE SET NULL,
+              FOREIGN KEY (`recipient_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
             if ($conn->query($sql)) {
                 echo "✓ notifications table created\n";
@@ -202,7 +205,28 @@
         } else {
             echo "✓ notifications table exists\n";
         }
-        
+
+        // Create notification_reads if missing
+        if (!$tableExists('notification_reads')) {
+            $sql = "CREATE TABLE IF NOT EXISTS `notification_reads` (
+              `id` int(11) NOT NULL AUTO_INCREMENT,
+              `notification_id` int(11) NOT NULL,
+              `user_id` int(11) NOT NULL,
+              `read_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (`id`),
+              UNIQUE KEY `uniq_notification_user` (`notification_id`, `user_id`),
+              KEY `idx_notification` (`notification_id`),
+              KEY `idx_user` (`user_id`),
+              FOREIGN KEY (`notification_id`) REFERENCES `notifications`(`id`) ON DELETE CASCADE,
+              FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+            if ($conn->query($sql)) {
+                echo "✓ notification_reads table created\n";
+            }
+        } else {
+            echo "✓ notification_reads table exists\n";
+        }
+
         // Create notification_templates if missing
         if (!$tableExists('notification_templates')) {
             $sql = "CREATE TABLE IF NOT EXISTS `notification_templates` (
@@ -294,7 +318,7 @@
             }
         }
 
-        echo "\n✅ Municipal KK Profiling System setup completed!\n";
+        echo "\n✅ Youth Profiling System setup completed!\n";
         echo "\n📋 Summary:\n";
         echo "- Database: " . DB_NEW_NAME . "\n";
         echo "- System rebranded from OSY to Municipal KK Profiling\n";

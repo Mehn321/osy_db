@@ -244,3 +244,12 @@
 2026-05-04 05:47:35 | Try URL: http://192.168.100.41:8082/ | To: +639674185880 | Code: 0 | Resp:  | Error: Connection timed out after 5014 milliseconds
 2026-05-04 05:47:40 | Try URL: http://172.18.11.218:8082/ | To: +639674185880 | Code: 0 | Resp:  | Error: Connection timed out after 5015 milliseconds
 2026-05-04 05:47:41 | Try URL: https://www.traccar.org/sms/ | To: +639674185880 | Code: 200 | Resp: {"responses":[{"success":false,"error":{"code":"messaging/invalid-argument","message":"The registration token is not a valid FCM registration token"}}],"successCount":0,"failureCount":1} | Error: 
+2026-05-06 03:59:25 | Try URL: http://192.168.100.41:8082/ | To: +9466898063 | Code: 0 | Resp:  | Error: Connection timed out after 5002 milliseconds
+2026-05-06 03:59:30 | Try URL: http://172.18.11.218:8082/ | To: +9466898063 | Code: 0 | Resp:  | Error: Connection timed out after 5015 milliseconds
+2026-05-06 03:59:31 | Try URL: https://www.traccar.org/sms/ | To: +9466898063 | Code: 200 | Resp: {"responses":[{"success":false,"error":{"code":"messaging/invalid-argument","message":"The registration token is not a valid FCM registration token"}}],"successCount":0,"failureCount":1} | Error: 
+2026-05-06 04:12:22 | Try URL: http://192.168.100.41:8082/ | To: +639674185880 | Code: 0 | Resp:  | Error: Connection timed out after 5007 milliseconds
+2026-05-06 04:12:27 | Try URL: http://172.18.11.218:8082/ | To: +639674185880 | Code: 0 | Resp:  | Error: Connection timed out after 5007 milliseconds
+2026-05-06 04:12:28 | Try URL: https://www.traccar.org/sms/ | To: +639674185880 | Code: 200 | Resp: {"responses":[{"success":false,"error":{"code":"messaging/invalid-argument","message":"The registration token is not a valid FCM registration token"}}],"successCount":0,"failureCount":1} | Error: 
+2026-05-06 04:14:01 | Try URL: http://192.168.100.41:8082/ | To: +9466898063 | Code: 0 | Resp:  | Error: Connection timed out after 5015 milliseconds
+2026-05-06 04:14:06 | Try URL: http://172.18.11.218:8082/ | To: +9466898063 | Code: 0 | Resp:  | Error: Connection timed out after 5007 milliseconds
+2026-05-06 04:14:07 | Try URL: https://www.traccar.org/sms/ | To: +9466898063 | Code: 200 | Resp: {"responses":[{"success":false,"error":{"code":"messaging/invalid-argument","message":"The registration token is not a valid FCM registration token"}}],"successCount":0,"failureCount":1} | Error: 

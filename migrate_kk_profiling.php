@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Database Migration: Rebrand OSY System to Municipal KK Profiling System
  * - Adds profile_type (OSY/Regular) field
@@ -9,7 +10,7 @@
 
 require_once __DIR__ . '/config/database.php';
 
-echo "🔄 Starting Municipal KK Profiling System migration...\n\n";
+echo "🔄 Starting Youth Profiling System migration...\n\n";
 
 try {
     // First, connect to MySQL server without specifying database
@@ -119,14 +120,13 @@ try {
         }
     }
 
-    echo "\n✅ Municipal KK Profiling System migration completed successfully!\n";
+    echo "\n✅ Youth Profiling System migration completed successfully!\n";
     echo "\n📋 Summary:\n";
     echo "- System rebranded from OSY to Municipal KK Profiling\n";
     echo "- Profile type tracking: OSY vs Regular\n";
     echo "- Enhanced name fields: middle_name (optional)\n";
     echo "- Government ID tracking: number + document image\n";
     echo "- Non-OSY engagement status tracking\n";
-
 } catch (Exception $e) {
     echo "❌ Error: " . $e->getMessage() . "\n";
     exit(1);
@@ -135,4 +135,3 @@ try {
         $conn->close();
     }
 }
-?>

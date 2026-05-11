@@ -1,4 +1,5 @@
 <?php
+
 /**
  * migrate.php – idempotent migrations, safe to run every request.
  * Included by init.php automatically. $database must already be defined.
@@ -46,7 +47,7 @@ try {
     $existingMsgCols = array_column($database->fetchAll("SHOW COLUMNS FROM `messages`"), 'Field');
     $msgColMigrations = [
         'sender_type'   => "ALTER TABLE `messages` ADD COLUMN `sender_type` ENUM('admin','osy') NOT NULL DEFAULT 'admin' AFTER `id`",
-        'recipient_type'=> "ALTER TABLE `messages` ADD COLUMN `recipient_type` ENUM('admin','osy') NOT NULL DEFAULT 'osy' AFTER `sender_id`",
+        'recipient_type' => "ALTER TABLE `messages` ADD COLUMN `recipient_type` ENUM('admin','osy') NOT NULL DEFAULT 'osy' AFTER `sender_id`",
         'recipient_id'  => "ALTER TABLE `messages` ADD COLUMN `recipient_id` int(11) NOT NULL DEFAULT 0 AFTER `recipient_type`",
         'sms_status'    => "ALTER TABLE `messages` ADD COLUMN `sms_status` ENUM('none','pending','success','failed') DEFAULT 'none' AFTER `message`",
         'email_status'  => "ALTER TABLE `messages` ADD COLUMN `email_status` ENUM('none','pending','success','failed') DEFAULT 'none' AFTER `sms_status`",
@@ -60,9 +61,79 @@ try {
         }
     }
 
-    // ── 3. notifications table – fix schema differences ─────────────────────────
+    // ── 2. users table – extend RBAC fields and workflows ───────────────────────
+    $existingUserCols = array_column($database->fetchAll("SHOW COLUMNS FROM `users`"), 'Field');
+    $roleColumn = $database->fetchOne("SHOW COLUMNS FROM `users` LIKE 'role'");
+    if ($roleColumn && strpos($roleColumn['Type'], 'lydo') === false) {
+        $conn->query("ALTER TABLE `users` MODIFY `role` ENUM('admin','staff','manager','viewer','lydo','sk_chairman','youth','employer','training_provider') DEFAULT 'staff'");
+    }
+
+    if (!in_array('status', $existingUserCols)) {
+        $conn->query("ALTER TABLE `users` ADD COLUMN `status` ENUM('Active','Pending','Declined','Suspended') DEFAULT 'Active' AFTER `is_active`");
+    }
+
+    if (!in_array('barangay', $existingUserCols)) {
+        $conn->query("ALTER TABLE `users` ADD COLUMN `barangay` varchar(100) DEFAULT NULL AFTER `status`");
+    }
+
+    if (!in_array('provider_type', $existingUserCols)) {
+        $conn->query("ALTER TABLE `users` ADD COLUMN `provider_type` ENUM('employer','training_provider') DEFAULT NULL AFTER `barangay`");
+    }
+
+    if (!in_array('provider_document_path', $existingUserCols)) {
+        $conn->query("ALTER TABLE `users` ADD COLUMN `provider_document_path` varchar(255) DEFAULT NULL AFTER `provider_type`");
+    }
+
+    if (!in_array('temp_password_required', $existingUserCols)) {
+        $conn->query("ALTER TABLE `users` ADD COLUMN `temp_password_required` TINYINT(1) DEFAULT 0 AFTER `provider_document_path`");
+    }
+
+    if (!in_array('approval_remark', $existingUserCols)) {
+        $conn->query("ALTER TABLE `users` ADD COLUMN `approval_remark` TEXT DEFAULT NULL AFTER `temp_password_required`");
+    }
+
+    if (!in_array('created_by', $existingUserCols)) {
+        $conn->query("ALTER TABLE `users` ADD COLUMN `created_by` int(11) DEFAULT NULL AFTER `approval_remark`");
+    }
+
+    if (!in_array('updated_at', $existingUserCols)) {
+        $conn->query("ALTER TABLE `users` ADD COLUMN `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER `created_at`");
+    }
+
+    // ── 3. osy_profiles table – add youth verification workflow fields ─────────
+    $existingProfileCols = array_column($database->fetchAll("SHOW COLUMNS FROM `osy_profiles`"), 'Field');
+
+    if (!in_array('verification_status', $existingProfileCols)) {
+        $conn->query("ALTER TABLE `osy_profiles` ADD COLUMN `verification_status` ENUM('Drafting','Pending','Verified','Action Required') DEFAULT 'Drafting' AFTER `registration_status`");
+    }
+
+    if (!in_array('verification_remark', $existingProfileCols)) {
+        $conn->query("ALTER TABLE `osy_profiles` ADD COLUMN `verification_remark` TEXT DEFAULT NULL AFTER `verification_status`");
+    }
+
+    if (!in_array('consent_accepted', $existingProfileCols)) {
+        $conn->query("ALTER TABLE `osy_profiles` ADD COLUMN `consent_accepted` TINYINT(1) DEFAULT 0 AFTER `verification_remark`");
+    }
+
+    if (!in_array('identity_document_path', $existingProfileCols)) {
+        $conn->query("ALTER TABLE `osy_profiles` ADD COLUMN `identity_document_path` varchar(255) DEFAULT NULL AFTER `consent_accepted`");
+    }
+
+    if (!in_array('approved_by', $existingProfileCols)) {
+        $conn->query("ALTER TABLE `osy_profiles` ADD COLUMN `approved_by` int(11) DEFAULT NULL AFTER `identity_document_path`");
+    }
+
+    if (!in_array('approved_at', $existingProfileCols)) {
+        $conn->query("ALTER TABLE `osy_profiles` ADD COLUMN `approved_at` datetime DEFAULT NULL AFTER `approved_by`");
+    }
+
+    if (!in_array('barangay_id', $existingProfileCols)) {
+        $conn->query("ALTER TABLE `osy_profiles` ADD COLUMN `barangay_id` int(11) DEFAULT NULL AFTER `barangay`");
+    }
+
+    // ── 4. notifications table – support specific recipients ────────────────────
     $existingNotifCols = array_column($database->fetchAll("SHOW COLUMNS FROM `notifications`"), 'Field');
-    
+
     // Rename user_id to created_by if needed
     if (in_array('user_id', $existingNotifCols) && !in_array('created_by', $existingNotifCols)) {
         $conn->query("ALTER TABLE `notifications` CHANGE `user_id` `created_by` int(11) DEFAULT NULL");
@@ -70,19 +141,30 @@ try {
         $conn->query("ALTER TABLE `notifications` ADD COLUMN `created_by` int(11) DEFAULT NULL AFTER `type`");
     }
 
-    // Rename is_read to status if needed
-    if (in_array('is_read', $existingNotifCols) && !in_array('status', $existingNotifCols)) {
-        $conn->query("ALTER TABLE `notifications` CHANGE `is_read` `status` varchar(50) DEFAULT 'Sent'");
-    } elseif (!in_array('status', $existingNotifCols)) {
-        $conn->query("ALTER TABLE `notifications` ADD COLUMN `status` varchar(50) DEFAULT 'Sent' AFTER `type`");
+    if (!in_array('recipient_id', $existingNotifCols)) {
+        $conn->query("ALTER TABLE `notifications` ADD COLUMN `recipient_id` int(11) DEFAULT NULL AFTER `recipient_type`");
     }
 
     if (!in_array('recipient_type', $existingNotifCols)) {
         $conn->query("ALTER TABLE `notifications` ADD COLUMN `recipient_type` ENUM('All','OSY','Staff','Specific') DEFAULT 'All' AFTER `type`");
     }
 
+    // ── 5. audit_logs table – create action history ─────────────────────────────
+    $conn->query("CREATE TABLE IF NOT EXISTS `audit_logs` (
+        `id` int(11) NOT NULL AUTO_INCREMENT,
+        `actor_id` int(11) DEFAULT NULL,
+        `actor_role` varchar(50) DEFAULT NULL,
+        `action` varchar(255) NOT NULL,
+        `target_type` varchar(100) DEFAULT NULL,
+        `target_id` int(11) DEFAULT NULL,
+        `metadata` text DEFAULT NULL,
+        `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        KEY `idx_audit_actor` (`actor_id`),
+        KEY `idx_audit_target` (`target_type`, `target_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
-    // ── 4. notification_templates – fix missing columns ────────────────────────
+    // ── 6. notification_templates – fix missing columns ────────────────────────
     $existingTmplCols = array_column($database->fetchAll("SHOW COLUMNS FROM `notification_templates`"), 'Field');
     $tmplColMigrations = [
         'subject'    => "ALTER TABLE `notification_templates` ADD COLUMN `subject` varchar(255) DEFAULT NULL AFTER `name`",
@@ -96,7 +178,24 @@ try {
         }
     }
 
-    // ── 5. opportunities – extra columns ──────────────────────────────────────
+    // ── 6a. notification_reads table – add per-user read tracking ─────────────
+    $existingNotifReadTable = $database->fetchAll("SHOW TABLES LIKE 'notification_reads'");
+    if (empty($existingNotifReadTable)) {
+        $conn->query("CREATE TABLE IF NOT EXISTS `notification_reads` (
+            `id` int(11) NOT NULL AUTO_INCREMENT,
+            `notification_id` int(11) NOT NULL,
+            `user_id` int(11) NOT NULL,
+            `read_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            UNIQUE KEY `uniq_notification_user` (`notification_id`, `user_id`),
+            KEY `idx_notification` (`notification_id`),
+            KEY `idx_user` (`user_id`),
+            FOREIGN KEY (`notification_id`) REFERENCES `notifications`(`id`) ON DELETE CASCADE,
+            FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    }
+
+    // ── 7. opportunities – extra columns ──────────────────────────────────────
     $oppCols = array_column($database->fetchAll("SHOW COLUMNS FROM `opportunities`"), 'Field');
     $oppColMigrations = [
         'employment_type'   => "ALTER TABLE `opportunities` ADD COLUMN `employment_type` varchar(50) DEFAULT NULL AFTER `type`",
@@ -105,6 +204,7 @@ try {
         'training_provider' => "ALTER TABLE `opportunities` ADD COLUMN `training_provider` varchar(255) DEFAULT NULL AFTER `experience_req`",
         'duration'          => "ALTER TABLE `opportunities` ADD COLUMN `duration` varchar(100) DEFAULT NULL AFTER `training_provider`",
         'modality'          => "ALTER TABLE `opportunities` ADD COLUMN `modality` varchar(100) DEFAULT NULL AFTER `duration`",
+        'provider_id'       => "ALTER TABLE `opportunities` ADD COLUMN `provider_id` int(11) DEFAULT NULL AFTER `created_by`",
     ];
     foreach ($oppColMigrations as $col => $sql) {
         if (!in_array($col, $oppCols)) {
@@ -112,7 +212,7 @@ try {
         }
     }
 
-    // ── 6. osy_matches – AI insights column ──────────────────────────────────
+    // ── 8. osy_matches – AI insights column ──────────────────────────────────
     $matchCols = array_column($database->fetchAll("SHOW COLUMNS FROM `osy_matches`"), 'Field');
     if (!in_array('ai_insight', $matchCols)) {
         $conn->query("ALTER TABLE `osy_matches` ADD COLUMN `ai_insight` TEXT DEFAULT NULL AFTER `notes`");
@@ -156,7 +256,6 @@ try {
         PRIMARY KEY (`id`),
         KEY `idx_ai_usage_date` (`created_at`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-
 } catch (Exception $e) {
     // Silent – migrations must never interrupt page loads
     error_log('OSY Migration Error: ' . $e->getMessage());

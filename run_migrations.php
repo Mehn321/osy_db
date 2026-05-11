@@ -1,4 +1,5 @@
 <?php
+
 /**
  * run_migrations.php
  * Run this ONCE to fix all database schema issues.
@@ -80,7 +81,7 @@ $defaultSettings = [
     'traccar_token'    => '',
     'gmail_user'       => '',
     'gmail_app_password' => '',
-    'system_name'      => 'Municipal KK Profiling System',
+    'system_name'      => 'Youth Profiling System',
     'system_version'   => '1.0.0',
 ];
 foreach ($defaultSettings as $key => $value) {

@@ -146,7 +146,7 @@ INSERT INTO `users` (`username`, `email`, `password`, `fullname`, `role`, `is_ac
 INSERT INTO `users` (`username`, `email`, `password`, `fullname`, `role`, `is_active`) VALUES
 ('admin2', 'admin2@civichorizon.ph', '$2y$10$a3QPnmKLlwC/4k0q6clwju7aEZCkB/xpnZgy0ILElzfzCDyPYYw8W', 'System Manager', 'admin', 1);
 
--- Admin 3: admin3 / Admin@789
+-- Admin 3: admin3 / Admin@789 
 INSERT INTO `users` (`username`, `email`, `password`, `fullname`, `role`, `is_active`) VALUES
 ('admin3', 'admin3@civichorizon.ph', '$2y$10$mQ9PL5gA5MesA6AEBX5my.m8YUg/1MtLURUN55AygeKfew3zUmUUi', 'Database Administrator', 'admin', 1);
 

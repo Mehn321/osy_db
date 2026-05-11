@@ -22,9 +22,18 @@ class Opportunity
     public function create($data)
     {
         try {
+            // Check if user is an approved provider
+            if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['employer', 'training_provider'])) {
+                throw new Exception("Only approved providers can create opportunities");
+            }
+
+            if ($_SESSION['status'] !== 'Active') {
+                throw new Exception("Your account must be approved to create opportunities");
+            }
+
             $query = "INSERT INTO {$this->table} 
-                     (title, type, employment_type, work_schedule, experience_req, training_provider, duration, modality, location, compensation, benefits, certification, description, total_slots, deadline, status, created_by, created_at) 
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Open', ?, NOW())";
+                     (title, type, employment_type, work_schedule, experience_req, training_provider, duration, modality, location, compensation, benefits, certification, description, total_slots, deadline, status, provider_id, created_by, created_at) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Open', ?, ?, NOW())";
 
             $this->db->execute($query, [
                 $data['title'],
@@ -42,8 +51,9 @@ class Opportunity
                 $data['description'] ?? null,
                 $data['total_slots'],
                 $data['deadline'],
-                $_SESSION['user_id']
-            ], "sssssssssssssssi");
+                $_SESSION['user_id'], // provider_id
+                $_SESSION['user_id']  // created_by
+            ], "ssssssssssssssiii");
 
             return [
                 'success' => true,
@@ -77,7 +87,7 @@ class Opportunity
         if (isset($filters['type']) && $filters['type'] != 'All') {
             $query .= " AND type = '{$this->db->escape($filters['type'])}'";
         }
-        
+
         if (isset($filters['category'])) {
             if ($filters['category'] === 'jobs') {
                 $query .= " AND type = 'Job Opening'";
@@ -106,6 +116,21 @@ class Opportunity
     public function update($id, $data)
     {
         try {
+            // Check ownership and permissions
+            $opportunity = $this->getById($id);
+            if (!$opportunity) {
+                throw new Exception("Opportunity not found");
+            }
+
+            if (!isset($_SESSION['role'])) {
+                throw new Exception("Authentication required");
+            }
+
+            // Only the provider who created it or LYDO can update
+            if ($_SESSION['role'] !== 'lydo' && $opportunity['provider_id'] != $_SESSION['user_id']) {
+                throw new Exception("You can only update your own opportunities");
+            }
+
             $updates = [];
             $params = [];
             $types = '';
@@ -163,6 +188,21 @@ class Opportunity
     public function delete($id)
     {
         try {
+            // Check ownership and permissions
+            $opportunity = $this->getById($id);
+            if (!$opportunity) {
+                throw new Exception("Opportunity not found");
+            }
+
+            if (!isset($_SESSION['role'])) {
+                throw new Exception("Authentication required");
+            }
+
+            // Only the provider who created it or LYDO can delete
+            if ($_SESSION['role'] !== 'lydo' && $opportunity['provider_id'] != $_SESSION['user_id']) {
+                throw new Exception("You can only delete your own opportunities");
+            }
+
             $query = "DELETE FROM {$this->table} WHERE id = ?";
             $this->db->execute($query, [$id], "i");
 
@@ -198,12 +238,49 @@ class Opportunity
     }
 
     /**
-     * Get filled slots
+     * Get opportunities by provider
      */
-    public function getFilledSlots($opportunity_id)
+    public function getByProvider($providerId = null)
     {
-        $query = "SELECT COUNT(*) as filled FROM osy_matches WHERE opportunity_id = ?";
-        $result = $this->db->fetchOne($query, [$opportunity_id], "i");
-        return $result['filled'] ?? 0;
+        $providerId = $providerId ?? $_SESSION['user_id'];
+        $query = "SELECT * FROM {$this->table} WHERE provider_id = ? ORDER BY created_at DESC";
+        return $this->db->fetchAll($query, [$providerId], "i");
+    }
+
+    /**
+     * Get opportunities for youth (only active opportunities)
+     */
+    public function getForYouth($filters = [])
+    {
+        $query = "SELECT o.*, u.fullname as provider_name, u.provider_type 
+                 FROM {$this->table} o 
+                 LEFT JOIN users u ON o.provider_id = u.id 
+                 WHERE o.status = 'Open' AND u.status = 'Active'";
+
+        $params = [];
+        $types = '';
+
+        if (isset($filters['type']) && $filters['type'] != 'All') {
+            $query .= " AND o.type = ?";
+            $params[] = $filters['type'];
+            $types .= 's';
+        }
+
+        if (isset($filters['location'])) {
+            $query .= " AND o.location LIKE ?";
+            $params[] = '%' . $filters['location'] . '%';
+            $types .= 's';
+        }
+
+        if (isset($filters['search'])) {
+            $search = $filters['search'];
+            $query .= " AND (o.title LIKE ? OR o.description LIKE ? OR o.location LIKE ?)";
+            $params = array_merge($params, ['%' . $search . '%', '%' . $search . '%', '%' . $search . '%']);
+            $types .= 'sss';
+        }
+
+        $query .= " ORDER BY o.created_at DESC";
+
+        return $this->db->fetchAll($query, $params, $types);
     }
 }

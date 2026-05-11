@@ -16,6 +16,7 @@ require_once __DIR__ . '/Classes/OSYProfile.php';
 require_once __DIR__ . '/Classes/Opportunity.php';
 require_once __DIR__ . '/Classes/Matching.php';
 require_once __DIR__ . '/Classes/Notification.php';
+require_once __DIR__ . '/Classes/AuditLog.php';
 require_once __DIR__ . '/Classes/Report.php';
 require_once __DIR__ . '/Classes/Dashboard.php';
 
@@ -44,3 +45,7 @@ if (file_exists(__DIR__ . '/migrate.php')) {
 
 // Initialize core classes
 $user = new User($database);
+$auditLog = new AuditLog($database);
+
+// Load RBAC helpers
+require_once __DIR__ . '/includes/access_control.php';

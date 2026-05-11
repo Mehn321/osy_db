@@ -66,7 +66,11 @@ class Database
             }
 
             if (!empty($params)) {
-                $stmt->bind_param($types, ...$params);
+                $bindParams = [$types];
+                foreach ($params as &$param) {
+                    $bindParams[] = &$param;
+                }
+                call_user_func_array([$stmt, 'bind_param'], $bindParams);
             }
 
             if ($stmt->execute()) {

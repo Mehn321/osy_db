@@ -11,7 +11,7 @@ class OSYProfile
     private $db;
     private $table = 'osy_profiles';
     private $uploadDir = __DIR__ . '/../uploads/profiles';
-    private $allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    private $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
     private $maxFileSize = 5242880; // 5MB
 
     public function __construct($database)
@@ -24,7 +24,7 @@ class OSYProfile
     }
 
     /**
-     * Handle image upload
+     * Handle document upload
      */
     private function uploadImage($file, $type = 'profile')
     {
@@ -38,7 +38,7 @@ class OSYProfile
 
         // Validate file type
         if (!in_array($file['type'], $this->allowedTypes)) {
-            throw new Exception("Invalid file type. Only JPEG, PNG, and GIF are allowed.");
+            throw new Exception("Invalid file type. Only JPEG, PNG, GIF, and PDF are allowed.");
         }
 
         // Validate file size
@@ -47,8 +47,13 @@ class OSYProfile
         }
 
         // Determine upload directory
-        $uploadDir = $type === 'govt_id' ?
-            (__DIR__ . '/../uploads/govt_ids') : (__DIR__ . '/../uploads/profiles');
+        if ($type === 'govt_id') {
+            $uploadDir = __DIR__ . '/../uploads/govt_ids';
+        } elseif ($type === 'certification') {
+            $uploadDir = __DIR__ . '/../uploads/certifications';
+        } else {
+            $uploadDir = __DIR__ . '/../uploads/profiles';
+        }
 
         // Create directory if needed
         if (!is_dir($uploadDir)) {
@@ -66,14 +71,21 @@ class OSYProfile
         }
 
         // Return relative path for storage in database
-        $path = $type === 'govt_id' ? '/uploads/govt_ids/' : '/uploads/profiles/';
+        if ($type === 'govt_id') {
+            $path = '/uploads/govt_ids/';
+        } elseif ($type === 'certification') {
+            $path = '/uploads/certifications/';
+        } else {
+            $path = '/uploads/profiles/';
+        }
+
         return $path . $filename;
     }
 
     /**
      * Create new youth profile
      */
-    public function create($data, $profileImageFile = null, $govtIdImageFile = null)
+    public function create($data, $profileImageFile = null, $govtIdImageFile = null, $certificationFile = null)
     {
         try {
             // Handle image uploads if provided
@@ -87,39 +99,24 @@ class OSYProfile
                 $govtIdImagePath = $this->uploadImage($govtIdImageFile, 'govt_id');
             }
 
-            $query = "INSERT INTO {$this->table} 
-                     (profile_type, first_name, middle_name, last_name, email, phone, age, gender, 
-                      civil_status, education_level, reason_for_not_in_school, engagement_status, 
-                      barangay, govt_id_type, govt_id_number, govt_id_image, primary_skill, skills, 
-                      interests, status, registration_status, date_of_birth, image_path, created_by, created_at) 
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+            $certificationPath = null;
+            if ($certificationFile) {
+                $certificationPath = $this->uploadImage($certificationFile, 'certification');
+            }
 
-            $this->db->execute($query, [
-                $data['profile_type'] ?? 'Regular',     // s (1)
-                $data['first_name'],                    // s (2)
-                $data['middle_name'] ?? null,           // s (3)
-                $data['last_name'],                     // s (4)
-                $data['email'] ?? null,                 // s (5)
-                $data['phone'] ?? null,                 // s (6)
-                $data['age'],                           // i (7)
-                $data['gender'],                        // s (8)
-                $data['civil_status'] ?? null,          // s (9)
-                $data['education_level'] ?? null,       // s (10)
-                $data['reason_for_not_in_school'] ?? null, // s (11)
-                $data['engagement_status'] ?? null,     // s (12)
-                $data['barangay'],                         // s (13)
-                $data['govt_id_type'] ?? null,          // s (14)
-                $data['govt_id_number'] ?? null,        // s (15)
-                $govtIdImagePath,                       // s (16)
-                $data['primary_skill'] ?? 'Not Specified', // s (17)
-                $data['skills'] ?? null,                // s (18)
-                $data['interests'] ?? null,             // s (19)
-                $data['status'] ?? 'Active',            // s (20)
-                $data['registration_status'] ?? 'Drafting', // s (21)
-                $data['date_of_birth'] ?? null,         // s (22)
-                $profileImagePath,                      // s (23)
-                $_SESSION['user_id']                    // i (24)
-            ], "sssssssisssssssssssssssi");
+            // Add the paths to data
+            $data['govt_id_image'] = $govtIdImagePath;
+            $data['image_path'] = $profileImagePath;
+            $data['identity_document_path'] = $certificationPath;
+
+            // Dynamic insert
+            $columns = array_keys($data);
+            $values = array_values($data);
+            $placeholders = str_repeat('?,', count($values) - 1) . '?';
+            $types = str_repeat('s', count($values));
+            $query = "INSERT INTO {$this->table} (" . implode(',', $columns) . ") VALUES ($placeholders)";
+
+            $this->db->execute($query, $values, $types);
 
             $id = $this->db->lastInsertId();
 
@@ -150,6 +147,15 @@ class OSYProfile
     {
         $query = "SELECT * FROM {$this->table} WHERE id = ? LIMIT 1";
         return $this->db->fetchOne($query, [$id], "i");
+    }
+
+    /**
+     * Get profile by user ID
+     */
+    public function getByUserId($userId)
+    {
+        $query = "SELECT * FROM {$this->table} WHERE created_by = ? LIMIT 1";
+        return $this->db->fetchOne($query, [$userId], "i");
     }
 
     private function applyFilters($filters, &$query)
@@ -238,7 +244,8 @@ class OSYProfile
                 'interests',
                 'status',
                 'registration_status',
-                'date_of_birth'
+                'date_of_birth',
+                'identity_document_path'
             ];
 
             foreach ($data as $key => $value) {
@@ -292,6 +299,65 @@ class OSYProfile
                 'message' => $e->getMessage()
             ];
         }
+    }
+
+    /**
+     * Set verification status for a youth profile
+     */
+    public function setVerificationStatus($profile_id, $status, $remark = null, $approved_by = null)
+    {
+        try {
+            $validStatuses = ['Drafting', 'Pending', 'Verified', 'Rejected', 'Action Required'];
+            if (!in_array($status, $validStatuses, true)) {
+                throw new Exception("Invalid verification status");
+            }
+
+            $updates = [
+                'verification_status = ?',
+                'verification_remark = ?',
+                'approved_by = ?',
+                'approved_at = NOW()'
+            ];
+            $params = [$status, $remark, $approved_by];
+            $types = 'ssi';
+
+            if ($status === 'Verified') {
+                $updates[] = 'registration_status = ?';
+                $params[] = 'Approved';
+                $types .= 's';
+            }
+
+            if ($status === 'Rejected') {
+                $updates[] = 'registration_status = ?';
+                $params[] = 'Declined';
+                $types .= 's';
+            }
+
+            $params[] = $profile_id;
+            $types .= 'i';
+
+            $query = "UPDATE {$this->table} SET " . implode(', ', $updates) . " WHERE id = ?";
+            $this->db->execute($query, $params, $types);
+
+            return [
+                'success' => true,
+                'message' => 'Profile verification status updated successfully'
+            ];
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Get pending profiles for a barangay
+     */
+    public function getPendingByBarangay($barangay)
+    {
+        $query = "SELECT * FROM {$this->table} WHERE barangay = ? AND verification_status = 'Pending' ORDER BY created_at DESC";
+        return $this->db->fetchAll($query, [$barangay], 's');
     }
 
     /**

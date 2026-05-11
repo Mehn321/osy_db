@@ -15,26 +15,29 @@ require_once __DIR__ . '/../libs/PHPMailer/SMTP.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception as PHPMailerException;
 
-class EmailService {
+class EmailService
+{
     private $db;
     private $user;
     private $pass;
     private $host = 'smtp.gmail.com';
     private $port = 587;
 
-    public function __construct($database) {
+    public function __construct($database)
+    {
         $this->db = $database;
         $this->loadSettings();
     }
 
-    private function loadSettings() {
+    private function loadSettings()
+    {
         $resultUser = $this->db->fetchOne(
             "SELECT setting_value FROM system_settings WHERE setting_key = 'gmail_user'"
         );
         $resultPass = $this->db->fetchOne(
             "SELECT setting_value FROM system_settings WHERE setting_key = 'gmail_app_password'"
         );
-        
+
         $this->user = $resultUser['setting_value'] ?? '';
         $this->pass = $resultPass['setting_value'] ?? '';
     }
@@ -47,7 +50,8 @@ class EmailService {
      * @param string $message Email body (HTML supported)
      * @return array Success status and message
      */
-    public function send($to, $subject, $message) {
+    public function send($to, $subject, $message)
+    {
         if (empty($this->user) || empty($this->pass)) {
             return ['success' => false, 'message' => 'Gmail SMTP credentials not configured. Go to Settings > Notifications to set up.'];
         }
@@ -70,7 +74,7 @@ class EmailService {
             $mail->Timeout    = 30;
 
             // Sender & recipient
-            $mail->setFrom($this->user, 'Municipal KK OSY Program');
+            $mail->setFrom($this->user, 'Youth Profiling System');
             $mail->addAddress($to);
 
             // Email content
@@ -88,7 +92,6 @@ class EmailService {
             @file_put_contents(__DIR__ . '/../email_log.txt', $logEntry, FILE_APPEND);
 
             return ['success' => true, 'message' => 'Email sent successfully via Gmail.'];
-
         } catch (PHPMailerException $e) {
             // Log failure
             $logEntry = date('Y-m-d H:i:s') . " | Email FAILED | To: $to | Error: {$mail->ErrorInfo}\n";
