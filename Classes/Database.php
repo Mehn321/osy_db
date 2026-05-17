@@ -66,6 +66,18 @@ class Database
             }
 
             if (!empty($params)) {
+                if (empty($types)) {
+                    $types = '';
+                    foreach ($params as $param) {
+                        if (is_int($param)) {
+                            $types .= 'i';
+                        } elseif (is_float($param) || is_double($param)) {
+                            $types .= 'd';
+                        } else {
+                            $types .= 's';
+                        }
+                    }
+                }
                 $bindParams = [$types];
                 foreach ($params as &$param) {
                     $bindParams[] = &$param;

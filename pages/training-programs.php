@@ -1,11 +1,14 @@
 <?php
 $pageTitle = 'Training Programs';
-require_once __DIR__ . '/../includes/header.php';
+require_once __DIR__ . '/../init.php';
 
 if (!$user->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
+requireRole('lydo');
+
+require_once __DIR__ . '/../includes/header.php';
 
 $opportunity = new Opportunity($database);
 $osyProfile = new OSYProfile($database);
@@ -34,15 +37,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 // Map frontend groups to OSYProfile filters
                 $filters = [];
-                if ($target_group === 'OSY') $filters['profile_type'] = 'OSY';
-                elseif ($target_group === 'Non-OSY') $filters['profile_type'] = 'Non-OSY';
-                elseif ($target_group === 'Unemployed') $filters['employment_status'] = 'Unemployed';
-                elseif ($target_group === 'In Training') $filters['employment_status'] = 'In Training';
-                elseif ($target_group === 'Employed') $filters['employment_status'] = 'Employed';
-                
-                $recipients = $osyProfile->getAll($filters);
-            }
-            
+                    if ($target_group === 'OSY') {
+                        $filters['profile_type'] = 'OSY';
+                    } elseif ($target_group === 'Non-OSY') {
+                        $filters['profile_type'] = 'Regular';
+                    } elseif ($target_group === 'Unemployed') {
+                        $filters['status'] = 'Unemployed';
+                    } elseif ($target_group === 'In Training') {
+                        $filters['status'] = 'In Training';
+                    } elseif ($target_group === 'Employed') {
+                        $filters['status'] = 'Employed';
+                    }
+
             require_once __DIR__ . '/../Classes/SmsService.php';
             require_once __DIR__ . '/../Classes/EmailService.php';
             $sms = new SmsService($database);
@@ -60,13 +66,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 $sentCount++;
             }
-            
-            $notification->create([
-                'title' => 'Training Broadcast: ' . $opp['title'],
-                'message' => $message_text,
-                'type' => 'Opportunity',
-                'recipient_type' => 'Group: ' . $target_group
-            ]);
+
+            if ($target_group === 'Specific') {
+                foreach ($recipients as $r) {
+                    if (empty($r['created_by'])) {
+                        continue;
+                    }
+                    $notification->create([
+                        'title' => 'Training Broadcast: ' . $opp['title'],
+                        'message' => str_replace(['{{name}}', '{{opportunity}}'], [$r['first_name'], $opp['title']], $message_text),
+                        'type' => 'Opportunity',
+                        'recipient_type' => 'Specific',
+                        'recipient_id' => $r['created_by']
+                    ]);
+                }
+            } else {
+                $notification->create([
+                    'title' => 'Training Broadcast: ' . $opp['title'],
+                    'message' => $message_text,
+                    'type' => 'Opportunity',
+                    'recipient_type' => $target_group === 'All' ? 'All' : 'OSY'
+                ]);
+            }
             
             $message = "Broadcast deployed to $sentCount recipients successfully!";
         }

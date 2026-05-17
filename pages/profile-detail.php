@@ -1,19 +1,38 @@
 <?php
 $pageTitle = 'Profile Details';
-require_once __DIR__ . '/../includes/header.php';
+require_once __DIR__ . '/../init.php';
 
 if (!$user->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
+requireRole(['lydo', 'sk_chairman']);
+
+require_once __DIR__ . '/../includes/header.php';
 
 $profile_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 $osyProfile = new OSYProfile($database);
 $message = '';
 $messageType = '';
 
-// Handle delete
+$profile = $osyProfile->getById($profile_id);
+
+if (!$profile) {
+    header('Location: ' . ($_SESSION['role'] === 'sk_chairman' ? 'sk-barangay-youth.php' : 'profiles.php') . '?error=Profile not found');
+    exit;
+}
+
+// Barangay scoping for SK Chairman
+if ($_SESSION['role'] === 'sk_chairman') {
+    if ($profile['barangay'] !== $_SESSION['barangay']) {
+        header('Location: sk-barangay-youth.php?error=unauthorized_barangay');
+        exit;
+    }
+}
+
+// Handle delete (Restricted to LYDO only)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_profile'])) {
+    requireRole('lydo'); // Double check role for destructive action
     $result = $osyProfile->delete(intval($_POST['profile_id']));
     if ($result['success']) {
         header('Location: profiles.php?success=deleted');
@@ -24,13 +43,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_profile'])) {
     }
 }
 
-$profile = $osyProfile->getById($profile_id);
-
-if (!$profile) {
-    header('Location: profiles.php?error=Profile not found');
-    exit;
-}
-
 $matching = new Matching($database);
 $matches = $matching->getMatchesForOSY($profile_id);
 ?>
@@ -39,7 +51,11 @@ $matches = $matching->getMatchesForOSY($profile_id);
 <nav class="text-sm text-slate-600 dark:text-slate-400 mb-6">
     <a href="dashboard.php" class="hover:text-blue-900 dark:hover:text-blue-400">Dashboard</a>
     <span class="mx-2">›</span>
-    <a href="profiles.php" class="hover:text-blue-900 dark:hover:text-blue-400">Profiles</a>
+    <?php if ($_SESSION['role'] === 'sk_chairman'): ?>
+        <a href="sk-barangay-youth.php" class="hover:text-blue-900 dark:hover:text-blue-400">My Barangay</a>
+    <?php else: ?>
+        <a href="profiles.php" class="hover:text-blue-900 dark:hover:text-blue-400">Profiles</a>
+    <?php endif; ?>
     <span class="mx-2">›</span>
     <span class="text-blue-900 dark:text-blue-400 font-semibold"><?php echo htmlspecialchars($profile['first_name'] . ' ' . $profile['last_name']); ?></span>
 </nav>
@@ -219,18 +235,20 @@ $matches = $matching->getMatchesForOSY($profile_id);
         <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
             <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">Actions</h3>
             <div class="space-y-3">
-                <a href="profiles.php?edit=<?php echo $profile['id']; ?>" class="block w-full px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white rounded-lg font-semibold text-sm transition-colors text-center">
+                <a href="edit-profile.php?id=<?php echo $profile['id']; ?>" class="block w-full px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white rounded-lg font-semibold text-sm transition-colors text-center">
                     <span class="flex items-center justify-center gap-2">
                         <span class="material-symbols-outlined text-base">edit</span>
                         Edit Profile
                     </span>
                 </a>
+                <?php if ($_SESSION['role'] === 'lydo'): ?>
                 <a href="matching.php" class="block w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold text-sm transition-colors text-center">
                     <span class="flex items-center justify-center gap-2">
                         <span class="material-symbols-outlined text-base">psychology</span>
                         Find Matches
                     </span>
                 </a>
+                <?php endif; ?>
                 <form method="POST" onsubmit="return confirm('Are you sure you want to delete this profile? This cannot be undone.')">
                     <input type="hidden" name="profile_id" value="<?php echo $profile['id']; ?>">
                     <button type="submit" name="delete_profile" value="1" class="w-full px-4 py-2 bg-red-100 dark:bg-red-900/20 hover:bg-red-200 dark:hover:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg font-semibold text-sm transition-colors">

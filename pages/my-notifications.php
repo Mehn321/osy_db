@@ -1,11 +1,13 @@
 <?php
 $pageTitle = 'My Notifications';
-require_once __DIR__ . '/../includes/header.php';
+require_once __DIR__ . '/../init.php';
 
 if (!$user->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
+
+require_once __DIR__ . '/../includes/header.php';
 
 $notification = new Notification($database);
 $message = '';

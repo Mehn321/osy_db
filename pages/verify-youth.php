@@ -7,7 +7,7 @@ require_once __DIR__ . '/../Classes/Notification.php';
 require_once __DIR__ . '/../Classes/User.php';
 
 requireLogin();
-requireRole(['admin', 'sk_chairman']);
+requireRole(['lydo', 'sk_chairman']);
 
 $osyProfile = new OSYProfile($database);
 $auditLog = new AuditLog($database);
@@ -19,6 +19,15 @@ $messageType = 'success';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_youth'])) {
     $profileId = intval($_POST['profile_id']);
+    
+    // Scoping check for SK Chairman
+    if ($_SESSION['role'] === 'sk_chairman') {
+        $checkProfile = $osyProfile->getById($profileId);
+        if ($checkProfile && $checkProfile['barangay'] !== $_SESSION['barangay']) {
+            die("Access Denied: Cannot verify youth from another barangay.");
+        }
+    }
+
     $action = $_POST['action'] === 'approve' ? 'Verified' : 'Declined';
     $remark = trim($_POST['remark'] ?? '');
 

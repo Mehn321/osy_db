@@ -1,11 +1,13 @@
 <?php
 $pageTitle = 'Help Center';
-require_once __DIR__ . '/../includes/header.php';
+require_once __DIR__ . '/../init.php';
 
 if (!$user->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
+
+require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <!-- Help Center Header -->

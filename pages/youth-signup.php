@@ -38,7 +38,7 @@ $middleName = '';
 $lastName = '';
 $gender = '';
 $dateOfBirth = '';
-$barangay = '';
+$address = '';
 $phone = '';
 $age = '';
 $educationLevel = '';
@@ -66,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
     $lastName = trim($_POST['last_name'] ?? '');
     $gender = $_POST['gender'] ?? '';
     $dateOfBirth = $_POST['date_of_birth'] ?? '';
-    $barangay = trim($_POST['barangay'] ?? '');
+    $address = trim($_POST['address'] ?? '');
     $phone = trim($_POST['phone'] ?? '');
     $age = trim($_POST['age'] ?? '');
     $educationLevel = trim($_POST['education_level'] ?? '');
@@ -125,8 +125,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
         }
     }
 
-    if (empty($barangay)) {
-        $errors[] = 'Barangay is required.';
+    if (empty($address)) {
+        $errors[] = 'Address is required.';
     }
 
     if (empty($phone)) {
@@ -215,7 +215,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
                 'date_of_birth' => $dateOfBirth,
                 'education_level' => $educationLevel,
                 'civil_status' => $civilStatus,
-                'barangay' => $barangay,
+                'barangay' => $address,
                 'primary_skill' => $primarySkill,
                 'skills' => $certifications,
                 'interests' => $interests,
@@ -246,7 +246,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
                 'Youth self-registered with full profile for approval',
                 'OSYProfile',
                 $profileId,
-                json_encode(['barangay' => $barangay, 'id_type' => $govtIdType])
+                json_encode(['barangay' => $address, 'id_type' => $govtIdType])
             );
 
             // Success message with next steps
@@ -255,7 +255,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
 
             // Clear form
             $username = $email = $password = $confirmPassword = $firstName = $middleName = $lastName = '';
-            $gender = $dateOfBirth = $barangay = $phone = $educationLevel = $civilStatus = '';
+            $gender = $dateOfBirth = $address = $phone = $educationLevel = $civilStatus = '';
             $primarySkill = $certifications = $interests = $reasonNotInSchool = $engagementStatus = $age = '';
             $govtIdType = $govtIdNumber = '';
             $consentAccepted = $dataPrivacyAccepted = 0;
@@ -505,22 +505,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
                                                 placeholder="09XXXXXXXXX">
                                         </div>
                                         <div>
-                                            <label class="block text-sm font-semibold text-slate-700 mb-2">Barangay
+                                            <label class="block text-sm font-semibold text-slate-700 mb-2">Address
                                                 *</label>
-                                            <select name="barangay" required
-                                                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                                <option value="">Select barangay</option>
-                                                <?php
-                                                $barangays = $database->fetchAll("SELECT DISTINCT barangay FROM osy_profiles WHERE barangay IS NOT NULL ORDER BY barangay ASC");
-                                                foreach ($barangays as $b):
-                                                    $bname = $b['barangay'];
-                                                    $selected = ($barangay === $bname) ? 'selected' : '';
-                                                ?>
-                                                <option value="<?php echo htmlspecialchars($bname); ?>"
-                                                    <?php echo $selected; ?>><?php echo htmlspecialchars($bname); ?>
-                                                </option>
-                                                <?php endforeach; ?>
-                                            </select>
+                                            <input type="text" name="address" required
+                                                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                placeholder="Enter your address" value="<?php echo htmlspecialchars($address); ?>">
                                         </div>
                                     </div>
                                 </div>

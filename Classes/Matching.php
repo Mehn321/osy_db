@@ -47,12 +47,17 @@ class Matching
     public function createMatchFromArray($data)
     {
         try {
+            $osy_id = $data['osy_id'] ?? $data['profile_id'] ?? null;
+            if (!$osy_id) {
+                throw new Exception('OSY profile ID is required to create a match');
+            }
+
             $query = "INSERT INTO {$this->table} 
                      (osy_id, opportunity_id, status, created_at) 
                      VALUES (?, ?, ?, NOW())";
 
             $this->db->execute($query, [
-                $data['profile_id'],
+                $osy_id,
                 $data['opportunity_id'],
                 $data['status'] ?? 'Pending'
             ], "iis");

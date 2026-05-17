@@ -1,11 +1,14 @@
 <?php
 $pageTitle = 'Opportunities';
-require_once __DIR__ . '/../includes/header.php';
+require_once __DIR__ . '/../init.php';
 
 if (!$user->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
+requireRole('lydo');
+
+require_once __DIR__ . '/../includes/header.php';
 
 $opportunity = new Opportunity($database);
 $message = '';

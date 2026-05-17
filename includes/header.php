@@ -114,39 +114,67 @@
             <nav class="flex-1 flex flex-col gap-1">
                 <?php
                 $userRole = $_SESSION['role'] ?? 'staff';
-                $navItems = [
-                    ['name' => 'Dashboard', 'icon' => 'dashboard', 'path' => 'dashboard.php'],
-                    ['name' => 'Profiles', 'icon' => 'people', 'path' => 'profiles.php'],
-                    [
-                        'name' => 'Opportunities',
-                        'icon' => 'work',
-                        'path' => '#',
-                        'osy_only' => true,
-                        'sub_items' => [
-                            ['name' => 'All Opportunities', 'path' => 'opportunities.php'],
-                            ['name' => 'Job Openings', 'path' => 'job-openings.php'],
-                            ['name' => 'Training Programs', 'path' => 'training-programs.php']
-                        ]
-                    ],
-                    ['name' => 'Matching', 'icon' => 'psychology', 'path' => 'matching.php', 'osy_only' => true],
-                    ['name' => 'Notifications', 'icon' => 'notifications', 'path' => 'notifications.php'],
-                    ['name' => 'My Notifications', 'icon' => 'notifications_active', 'path' => 'my-notifications.php'],
-                    ['name' => 'Templates', 'icon' => 'description', 'path' => 'notification-templates.php'],
-                    ['name' => 'Reports', 'icon' => 'assessment', 'path' => 'reports.php'],
-                    ['name' => 'SK Chairmen', 'icon' => 'supervisor_account', 'path' => 'manage-sk-chairmen.php', 'roles' => ['lydo']],
-                    ['name' => 'Provider Approvals', 'icon' => 'how_to_reg', 'path' => 'provider-approvals.php', 'roles' => ['lydo']],
-                    ['name' => 'Youth Verification', 'icon' => 'verified_user', 'path' => 'verify-youth.php', 'roles' => ['sk_chairman']],
-                    ['name' => 'Audit Logs', 'icon' => 'history_edu', 'path' => 'audit-logs.php', 'roles' => ['lydo']],
-                ];
+
+                // Role-specific navigation menus
+                if ($userRole === 'lydo') {
+                    $navItems = [
+                        ['name' => 'Dashboard',          'icon' => 'dashboard',          'path' => 'dashboard.php'],
+                        ['name' => 'Youth Profiles',     'icon' => 'people',             'path' => 'profiles.php'],
+                        ['name' => 'Member Registry',    'icon' => 'list_alt',           'path' => 'member-registry.php'],
+                        [
+                            'name' => 'Opportunities', 'icon' => 'work', 'path' => '#',
+                            'sub_items' => [
+                                ['name' => 'All Opportunities',  'path' => 'opportunities.php'],
+                                ['name' => 'Job Openings',       'path' => 'job-openings.php'],
+                                ['name' => 'Training Programs',  'path' => 'training-programs.php'],
+                            ]
+                        ],
+                        ['name' => 'Skills Matching',    'icon' => 'psychology',         'path' => 'matching.php'],
+                        ['name' => 'Notifications',      'icon' => 'campaign',           'path' => 'notifications.php'],
+                        ['name' => 'Msg Templates',      'icon' => 'description',        'path' => 'notification-templates.php'],
+                        ['name' => 'Reports',            'icon' => 'assessment',         'path' => 'reports.php'],
+                        ['name' => 'SK Chairmen',        'icon' => 'supervisor_account', 'path' => 'manage-sk-chairmen.php'],
+                        ['name' => 'Provider Approvals', 'icon' => 'how_to_reg',         'path' => 'provider-approvals.php'],
+                        ['name' => 'Audit Logs',         'icon' => 'history_edu',        'path' => 'audit-logs.php'],
+                        ['name' => 'My Notifications',   'icon' => 'notifications_active','path' => 'my-notifications.php'],
+                    ];
+                } elseif ($userRole === 'sk_chairman') {
+                    $navItems = [
+                        ['name' => 'Dashboard',          'icon' => 'dashboard',          'path' => 'dashboard.php'],
+                        ['name' => 'My Barangay Youth',  'icon' => 'groups',             'path' => 'sk-barangay-youth.php'],
+                        ['name' => 'Verify Youth',       'icon' => 'verified_user',      'path' => 'verify-youth.php'],
+                        ['name' => 'My Notifications',   'icon' => 'notifications_active','path' => 'my-notifications.php'],
+                    ];
+                } elseif ($userRole === 'employer') {
+                    $navItems = [
+                        ['name' => 'Dashboard',          'icon' => 'dashboard',          'path' => 'dashboard.php'],
+                        ['name' => 'My Job Openings',    'icon' => 'work',               'path' => 'my-job-openings.php'],
+                        ['name' => 'My Notifications',   'icon' => 'notifications_active','path' => 'my-notifications.php'],
+                    ];
+                } elseif ($userRole === 'training_provider') {
+                    $navItems = [
+                        ['name' => 'Dashboard',          'icon' => 'dashboard',          'path' => 'dashboard.php'],
+                        ['name' => 'My Programs',        'icon' => 'school',             'path' => 'my-training-programs.php'],
+                        ['name' => 'My Notifications',   'icon' => 'notifications_active','path' => 'my-notifications.php'],
+                    ];
+                } elseif ($userRole === 'youth') {
+                    $navItems = [
+                        ['name' => 'Dashboard',          'icon' => 'dashboard',          'path' => 'dashboard.php'],
+                        ['name' => 'Opportunities',      'icon' => 'work',               'path' => 'opportunities.php'],
+                        ['name' => 'My Notifications',   'icon' => 'notifications_active','path' => 'my-notifications.php'],
+                    ];
+                } else {
+                    $navItems = [
+                        ['name' => 'Dashboard',          'icon' => 'dashboard',          'path' => 'dashboard.php'],
+                        ['name' => 'My Notifications',   'icon' => 'notifications_active','path' => 'my-notifications.php'],
+                    ];
+                }
 
                 $current_page = basename($_SERVER['PHP_SELF']);
                 $basePath = str_replace('\\', '/', dirname(dirname($_SERVER['SCRIPT_NAME'])));
                 $basePath = $basePath === '/' ? '' : $basePath;
 
                 foreach ($navItems as $index => $item):
-                    if (isset($item['roles']) && !in_array($userRole, $item['roles'], true)) {
-                        continue;
-                    }
                     $hasSubItems = isset($item['sub_items']);
                     $isActive = $current_page == $item['path'];
                     $isSubActive = false;
@@ -229,8 +257,17 @@
                         <span class="material-symbols-outlined text-blue-900 dark:text-blue-200">account_circle</span>
                     </div>
                     <div class="text-sm hidden sm:block">
-                        <p class="font-semibold text-slate-900 dark:text-white"><?php echo $_SESSION['fullname'] ?? 'User'; ?></p>
-                        <p class="text-xs text-slate-500 dark:text-slate-400"><?php echo ucfirst($_SESSION['role'] ?? 'staff'); ?></p>
+                        <p class="font-semibold text-slate-900 dark:text-white"><?php echo htmlspecialchars($_SESSION['fullname'] ?? 'User'); ?></p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400"><?php
+                            $roleLabels = [
+                                'lydo'              => 'LYDO / Administrator',
+                                'sk_chairman'       => 'SK Chairman',
+                                'employer'          => 'Employer',
+                                'training_provider' => 'Training Provider',
+                                'youth'             => 'Youth Member',
+                            ];
+                            echo $roleLabels[$_SESSION['role'] ?? ''] ?? ucfirst($_SESSION['role'] ?? 'User');
+                        ?></p>
                     </div>
                 </div>
             </div>

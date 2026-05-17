@@ -6,6 +6,7 @@ if (!$user->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
+requireRole('lydo');
 
 $opportunity = new Opportunity($database);
 $message = '';

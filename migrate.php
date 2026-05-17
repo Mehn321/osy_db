@@ -65,7 +65,7 @@ try {
     $existingUserCols = array_column($database->fetchAll("SHOW COLUMNS FROM `users`"), 'Field');
     $roleColumn = $database->fetchOne("SHOW COLUMNS FROM `users` LIKE 'role'");
     if ($roleColumn && strpos($roleColumn['Type'], 'lydo') === false) {
-        $conn->query("ALTER TABLE `users` MODIFY `role` ENUM('admin','staff','manager','viewer','lydo','sk_chairman','youth','employer','training_provider') DEFAULT 'staff'");
+        $conn->query("ALTER TABLE `users` MODIFY `role` ENUM('admin','lydo','sk_chairman','youth','employer','training_provider') DEFAULT 'lydo'");
     }
 
     if (!in_array('status', $existingUserCols)) {
@@ -146,7 +146,7 @@ try {
     }
 
     if (!in_array('recipient_type', $existingNotifCols)) {
-        $conn->query("ALTER TABLE `notifications` ADD COLUMN `recipient_type` ENUM('All','OSY','Staff','Specific') DEFAULT 'All' AFTER `type`");
+        $conn->query("ALTER TABLE `notifications` ADD COLUMN `recipient_type` ENUM('All','OSY','Specific') DEFAULT 'All' AFTER `type`");
     }
 
     // ── 5. audit_logs table – create action history ─────────────────────────────
@@ -256,6 +256,12 @@ try {
         PRIMARY KEY (`id`),
         KEY `idx_ai_usage_date` (`created_at`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    // ── 9. Merge admin → lydo role ────────────────────────────────────────────
+    $adminCount = $database->fetchOne("SELECT COUNT(*) as cnt FROM users WHERE role = 'admin'");
+    if (($adminCount['cnt'] ?? 0) > 0) {
+        $conn->query("UPDATE users SET role = 'lydo' WHERE role = 'admin'");
+    }
 } catch (Exception $e) {
     // Silent – migrations must never interrupt page loads
     error_log('OSY Migration Error: ' . $e->getMessage());

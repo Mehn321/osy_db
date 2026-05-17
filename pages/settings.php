@@ -1,11 +1,14 @@
 <?php
 $pageTitle = 'Settings';
-require_once __DIR__ . '/../includes/header.php';
+require_once __DIR__ . '/../init.php';
 
 if (!$user->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
+requireRole('lydo');
+
+require_once __DIR__ . '/../includes/header.php';
 
 $message = '';
 $messageType = '';

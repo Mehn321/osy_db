@@ -3,7 +3,10 @@ $pageTitle = 'Audit Logs';
 require_once __DIR__ . '/../init.php';
 require_once __DIR__ . '/../Classes/AuditLog.php';
 
-requireLogin();
+if (!$user->isLoggedIn()) {
+    header('Location: login.php');
+    exit;
+}
 requireRole('lydo');
 
 $auditLog = new AuditLog($database);

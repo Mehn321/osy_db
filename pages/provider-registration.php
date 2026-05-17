@@ -2,25 +2,68 @@
 $pageTitle = 'Provider Registration';
 require_once __DIR__ . '/../init.php';
 require_once __DIR__ . '/../Classes/User.php';
-require_once __DIR__ . '/../Classes/Reference.php';
 
 $userModel = new User($database);
-$reference = new Reference($database);
-$barangays = $reference->getByCategory('barangay');
-
 $message = '';
 $messageType = 'success';
+$errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_provider'])) {
     try {
+        // Validate password fields
+        $password = $_POST['password'] ?? '';
+        $confirmPassword = $_POST['confirm_password'] ?? '';
+        
+        if (empty($password)) {
+            throw new Exception('Password is required.');
+        }
+        if (strlen($password) < 6) {
+            throw new Exception('Password must be at least 6 characters.');
+        }
+        if ($password !== $confirmPassword) {
+            throw new Exception('Passwords do not match.');
+        }
+        
+        $documentPath = null;
+        if (!empty($_FILES['provider_document']['name'])) {
+            $allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+            if ($_FILES['provider_document']['error'] !== UPLOAD_ERR_OK) {
+                throw new Exception('Error uploading proof of legitimacy document.');
+            }
+            if (!in_array($_FILES['provider_document']['type'], $allowedTypes, true)) {
+                throw new Exception('Document must be a PDF, PNG, or JPEG file.');
+            }
+            if ($_FILES['provider_document']['size'] > 5 * 1024 * 1024) {
+                throw new Exception('Document must be smaller than 5MB.');
+            }
+
+            $uploadDir = __DIR__ . '/../uploads/providers';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0755, true);
+            }
+
+            $extension = pathinfo($_FILES['provider_document']['name'], PATHINFO_EXTENSION);
+            $filename = 'provider_doc_' . time() . '_' . uniqid() . '.' . $extension;
+            $targetPath = $uploadDir . '/' . $filename;
+
+            if (!move_uploaded_file($_FILES['provider_document']['tmp_name'], $targetPath)) {
+                throw new Exception('Failed to save the uploaded document.');
+            }
+
+            $documentPath = '/uploads/providers/' . $filename;
+        } else {
+            throw new Exception('Please upload a proof of legitimacy document.');
+        }
+
         $data = [
             'username' => trim($_POST['username']),
             'email' => trim($_POST['email']),
+            'password' => trim($_POST['password']),
             'fullname' => trim($_POST['fullname']),
             'role' => $_POST['provider_type'],
-            'barangay' => trim($_POST['barangay']),
+            'barangay' => trim($_POST['address']),
             'provider_type' => trim($_POST['provider_type']),
-            'provider_document_path' => null // Will be uploaded later if needed
+            'provider_document_path' => $documentPath
         ];
 
         $result = $userModel->createUser($data);
@@ -33,8 +76,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_provider']))
             $messageType = 'error';
         }
     } catch (Exception $e) {
-        $message = 'Error: ' . $e->getMessage();
+        $errors[] = $e->getMessage();
         $messageType = 'error';
+        $message = 'There was an issue submitting your registration. Please fix the highlighted errors and try again.';
     }
 }
 
@@ -117,7 +161,17 @@ if ($user->isLoggedIn()) {
                     </div>
                 <?php endif; ?>
 
-                <form method="POST" class="space-y-6">
+                <?php if (!empty($errors)): ?>
+                    <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+                        <ul class="list-disc list-inside text-sm text-red-800">
+                            <?php foreach ($errors as $error): ?>
+                                <li><?php echo htmlspecialchars($error); ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                <?php endif; ?>
+
+                <form method="POST" enctype="multipart/form-data" class="space-y-6">
                     <input type="hidden" name="register_provider" value="1">
 
                     <!-- Provider Type Selection -->
@@ -155,15 +209,31 @@ if ($user->isLoggedIn()) {
                         <input type="email" name="email" required class="w-full bg-slate-100 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900" placeholder="your@email.com">
                     </div>
 
-                    <!-- Barangay -->
+                    <!-- Password -->
                     <div class="space-y-2">
-                        <label class="block text-sm font-bold text-slate-700">Barangay</label>
-                        <select name="barangay" required class="w-full bg-slate-100 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900">
-                            <option value="">Select your barangay</option>
-                            <?php foreach ($barangays as $barangay): ?>
-                                <option value="<?php echo htmlspecialchars($barangay); ?>"><?php echo htmlspecialchars($barangay); ?></option>
-                            <?php endforeach; ?>
-                        </select>
+                        <label class="block text-sm font-bold text-slate-700">Password</label>
+                        <input type="password" name="password" id="password" required class="w-full bg-slate-100 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900" placeholder="Choose a secure password">
+                        <p class="text-xs text-slate-500">Password must be at least 6 characters long.</p>
+                    </div>
+
+                    <!-- Confirm Password -->
+                    <div class="space-y-2">
+                        <label class="block text-sm font-bold text-slate-700">Confirm Password</label>
+                        <input type="password" name="confirm_password" id="confirm_password" required class="w-full bg-slate-100 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900" placeholder="Confirm your password">
+                        <p id="password-match-error" class="text-xs text-red-600 hidden">Passwords do not match.</p>
+                    </div>
+
+                    <!-- Address -->
+                    <div class="space-y-2">
+                        <label class="block text-sm font-bold text-slate-700">Address</label>
+                        <input type="text" name="address" required class="w-full bg-slate-100 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900" placeholder="Enter your address">
+                    </div>
+
+                    <!-- Proof of Legitimacy Document -->
+                    <div class="space-y-2">
+                        <label class="block text-sm font-bold text-slate-700">Proof of Legitimacy</label>
+                        <input type="file" name="provider_document" accept="application/pdf,image/png,image/jpeg" required class="w-full text-sm text-slate-900">
+                        <p class="text-xs text-slate-500">Upload a business permit, training certification, or other valid document (PDF, JPEG, PNG).</p>
                     </div>
 
                     <!-- Submit Button -->
@@ -191,6 +261,19 @@ if ($user->isLoggedIn()) {
                 .replace(/[^a-z0-9]/g, '')
                 .substring(0, 20);
             document.querySelector('input[name="username"]').value = username;
+        });
+
+        // Real-time password matching validation
+        const passwordInput = document.getElementById('password');
+        const confirmPasswordInput = document.getElementById('confirm_password');
+        const passwordMatchError = document.getElementById('password-match-error');
+
+        confirmPasswordInput.addEventListener('input', function() {
+            if (passwordInput.value !== confirmPasswordInput.value) {
+                passwordMatchError.classList.remove('hidden');
+            } else {
+                passwordMatchError.classList.add('hidden');
+            }
         });
     </script>
 </body>

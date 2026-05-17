@@ -163,6 +163,24 @@ INSERT INTO `users` (`username`, `email`, `password`, `fullname`, `role`, `is_ac
 ('blopez', 'blopez@civichorizon.ph', '$2y$10$6.nh1uzJzWTAy0z5ct4JNeKiXHFFTEEklpDmYdo/58g8/m7DDHw8G', 'Benjamin Lopez', 'viewer', 1);
 
 -- ============================================
+-- SAMPLE DATA: LYDO Account (manages SK Chairmen)
+-- Password: LYDO@123
+-- ============================================
+INSERT INTO `users` (`username`, `email`, `password`, `fullname`, `role`, `is_active`) VALUES
+('lydo_admin', 'lydo@civichorizon.ph', '$2y$10$74CB.sxwb2sONbteWTduE.ajOmHaNdfZy5jE2rNmufaoNM6hqWLSO', 'Maria Teresa Lim', 'lydo', 1);
+
+-- ============================================
+-- SAMPLE DATA: SK Chairman Accounts (5 Barangay-level accounts)
+-- Password for all: SKChair@123
+-- ============================================
+INSERT INTO `users` (`username`, `email`, `password`, `fullname`, `role`, `is_active`) VALUES
+('sk_baga', 'sk.baga@civichorizon.ph', '$2y$10$e0eApVt55PQuF.siSOq9KutvezhsNbSLgxy8KSXvP/rpFan/Oc/wK', 'Carlos Reyes', 'sk_chairman', 1),
+('sk_bangko', 'sk.bangko@civichorizon.ph', '$2y$10$e0eApVt55PQuF.siSOq9KutvezhsNbSLgxy8KSXvP/rpFan/Oc/wK', 'Angela Mendoza', 'sk_chairman', 1),
+('sk_camanucan', 'sk.camanucan@civichorizon.ph', '$2y$10$e0eApVt55PQuF.siSOq9KutvezhsNbSLgxy8KSXvP/rpFan/Oc/wK', 'Jerome Villanueva', 'sk_chairman', 1),
+('sk_delapaz', 'sk.delapaz@civichorizon.ph', '$2y$10$e0eApVt55PQuF.siSOq9KutvezhsNbSLgxy8KSXvP/rpFan/Oc/wK', 'Patricia Santos', 'sk_chairman', 1),
+('sk_poblacion', 'sk.poblacion@civichorizon.ph', '$2y$10$e0eApVt55PQuF.siSOq9KutvezhsNbSLgxy8KSXvP/rpFan/Oc/wK', 'Marco Dela Cruz', 'sk_chairman', 1);
+
+-- ============================================
 -- SAMPLE DATA: OSY Profiles (Sample Data)
 -- ============================================
 INSERT INTO `osy_profiles` 

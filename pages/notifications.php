@@ -2,10 +2,8 @@
 $pageTitle = 'Notifications';
 require_once __DIR__ . '/../init.php';
 
-if (!$user->isLoggedIn()) {
-    header('Location: login.php');
-    exit;
-}
+requireLogin();
+requireRole('lydo');
 
 $notification = new Notification($database);
 require_once __DIR__ . '/../Classes/OSYProfile.php';
@@ -21,6 +19,11 @@ $messageType = '';
 // Notification broadcasting is handled via AJAX → api/send_notification.php
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['delete_notification'])) {
+        if (!$user->isLoggedIn()) {
+            header('Location: login.php');
+            exit;
+        }
+        requireRole('lydo');
         $result = $notification->delete($_POST['notification_id']);
         $message = $result['message'];
         $messageType = $result['success'] ? 'success' : 'error';
@@ -43,8 +46,14 @@ if (isset($_GET['sent'])) {
 require_once __DIR__ . '/../includes/header.php';
 
 
-if (isset($_GET['sent'])) { $message = 'Notification sent successfully!'; $messageType = 'success'; }
-if (isset($_GET['deleted'])) { $message = 'Notification deleted successfully!'; $messageType = 'success'; }
+if (isset($_GET['sent'])) {
+    $message = 'Notification sent successfully!';
+    $messageType = 'success';
+}
+if (isset($_GET['deleted'])) {
+    $message = 'Notification deleted successfully!';
+    $messageType = 'success';
+}
 
 $notifications = $notification->getAll(20);
 ?>
@@ -62,12 +71,12 @@ $notifications = $notification->getAll(20);
 </div>
 
 <?php if ($message): ?>
-<div class="mb-6 p-4 <?php echo $messageType === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'; ?> rounded-xl">
-    <p class="<?php echo $messageType === 'success' ? 'text-green-800' : 'text-red-800'; ?> flex items-center gap-2">
-        <span class="material-symbols-outlined text-base"><?php echo $messageType === 'success' ? 'check_circle' : 'error'; ?></span>
-        <?php echo htmlspecialchars($message); ?>
-    </p>
-</div>
+    <div class="mb-6 p-4 <?php echo $messageType === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'; ?> rounded-xl">
+        <p class="<?php echo $messageType === 'success' ? 'text-green-800' : 'text-red-800'; ?> flex items-center gap-2">
+            <span class="material-symbols-outlined text-base"><?php echo $messageType === 'success' ? 'check_circle' : 'error'; ?></span>
+            <?php echo htmlspecialchars($message); ?>
+        </p>
+    </div>
 <?php endif; ?>
 
 <!-- Notifications List Filter -->
@@ -81,14 +90,14 @@ $notifications = $notification->getAll(20);
 <!-- Notifications List -->
 <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
     <?php if (!empty($notifications)): ?>
-    <div class="divide-y divide-slate-200 dark:divide-slate-700">
-        <?php foreach ($notifications as $notif): ?>
-            <div class="notif-item p-6 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors relative group"
-                 data-search="<?php echo strtolower(htmlspecialchars($notif['title'] . ' ' . (str_replace(["\r", "\n"], ' ', $notif['message'])))); ?>">
-                <div class="flex items-start justify-between mb-3">
-                    <div>
-                        <div class="flex items-center gap-2 mb-2">
-                            <span class="inline-flex px-3 py-1 text-xs font-bold rounded-full 
+        <div class="divide-y divide-slate-200 dark:divide-slate-700">
+            <?php foreach ($notifications as $notif): ?>
+                <div class="notif-item p-6 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors relative group"
+                    data-search="<?php echo strtolower(htmlspecialchars($notif['title'] . ' ' . (str_replace(["\r", "\n"], ' ', $notif['message'])))); ?>">
+                    <div class="flex items-start justify-between mb-3">
+                        <div>
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="inline-flex px-3 py-1 text-xs font-bold rounded-full 
                             <?php
                             if ($notif['type'] == 'Opportunity') echo 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
                             elseif ($notif['type'] == 'Match') echo 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
@@ -96,47 +105,47 @@ $notifications = $notification->getAll(20);
                             else echo 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400';
                             ?>
                         ">
-                                <?php echo htmlspecialchars($notif['type']); ?>
-                            </span>
-                            <span class="px-3 py-1 text-xs font-bold rounded-full bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300">
-                                <?php echo htmlspecialchars($notif['status']); ?>
-                            </span>
-                            <span class="px-3 py-1 text-xs font-bold rounded-full bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400">
-                                <?php echo htmlspecialchars($notif['recipient_type'] ?? 'All'); ?>
-                            </span>
+                                    <?php echo htmlspecialchars($notif['type']); ?>
+                                </span>
+                                <span class="px-3 py-1 text-xs font-bold rounded-full bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300">
+                                    <?php echo htmlspecialchars($notif['status']); ?>
+                                </span>
+                                <span class="px-3 py-1 text-xs font-bold rounded-full bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400">
+                                    <?php echo htmlspecialchars($notif['recipient_type'] ?? 'All'); ?>
+                                </span>
+                            </div>
+                            <h3 class="font-bold text-slate-900 dark:text-white text-lg"><?php echo htmlspecialchars($notif['title']); ?></h3>
                         </div>
-                        <h3 class="font-bold text-slate-900 dark:text-white text-lg"><?php echo htmlspecialchars($notif['title']); ?></h3>
-                    </div>
-                    <div class="relative">
-                        <button onclick="toggleDropdown(<?php echo $notif['id']; ?>)" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
-                            <span class="material-symbols-outlined">more_vert</span>
-                        </button>
-                        <div id="dropdown-<?php echo $notif['id']; ?>" class="hidden absolute right-0 top-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl py-1 w-44 z-10">
-                            <button onclick="viewNotification(<?php echo $notif['id']; ?>)" class="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2">
-                                <span class="material-symbols-outlined text-base">visibility</span>
-                                View Full
+                        <div class="relative">
+                            <button onclick="toggleDropdown(<?php echo $notif['id']; ?>)" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
+                                <span class="material-symbols-outlined">more_vert</span>
                             </button>
-                            <form method="POST" onsubmit="return confirm('Delete this notification?')">
-                                <input type="hidden" name="notification_id" value="<?php echo $notif['id']; ?>">
-                                <button type="submit" name="delete_notification" value="1" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2">
-                                    <span class="material-symbols-outlined text-base">delete</span>
-                                    Delete
+                            <div id="dropdown-<?php echo $notif['id']; ?>" class="hidden absolute right-0 top-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl py-1 w-44 z-10">
+                                <button onclick="viewNotification(<?php echo $notif['id']; ?>)" class="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-base">visibility</span>
+                                    View Full
                                 </button>
-                            </form>
+                                <form method="POST" onsubmit="return confirm('Delete this notification?')">
+                                    <input type="hidden" name="notification_id" value="<?php echo $notif['id']; ?>">
+                                    <button type="submit" name="delete_notification" value="1" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-base">delete</span>
+                                        Delete
+                                    </button>
+                                </form>
+                            </div>
                         </div>
                     </div>
+                    <p class="text-slate-600 dark:text-slate-300 text-sm mb-4"><?php echo htmlspecialchars($notif['message']); ?></p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400"><?php echo date('M d, Y H:i', strtotime($notif['created_at'])); ?></p>
                 </div>
-                <p class="text-slate-600 dark:text-slate-300 text-sm mb-4"><?php echo htmlspecialchars($notif['message']); ?></p>
-                <p class="text-xs text-slate-500 dark:text-slate-400"><?php echo date('M d, Y H:i', strtotime($notif['created_at'])); ?></p>
-            </div>
-        <?php endforeach; ?>
-    </div>
+            <?php endforeach; ?>
+        </div>
     <?php else: ?>
-    <div class="p-12 text-center">
-        <span class="material-symbols-outlined text-4xl text-slate-300 mb-2">notifications_off</span>
-        <p class="text-slate-500 font-medium">No notifications yet</p>
-        <p class="text-sm text-slate-400 mt-1">Click "Send New Notification" to create one.</p>
-    </div>
+        <div class="p-12 text-center">
+            <span class="material-symbols-outlined text-4xl text-slate-300 mb-2">notifications_off</span>
+            <p class="text-slate-500 font-medium">No notifications yet</p>
+            <p class="text-sm text-slate-400 mt-1">Click "Send New Notification" to create one.</p>
+        </div>
     <?php endif; ?>
 </div>
 
@@ -152,7 +161,7 @@ $notifications = $notification->getAll(20);
                     <label class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block">Notification Title</label>
                     <input type="text" name="title" required placeholder="Alert title..." class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white">
                 </div>
-                
+
                 <div class="space-y-4 pt-2">
                     <div>
                         <label class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block">Choose a Template (Optional)</label>
@@ -244,7 +253,7 @@ $notifications = $notification->getAll(20);
                             <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-colors">
                                 <input type="checkbox" name="specific_ids[]" value="<?php echo $p['id']; ?>" class="w-4 h-4 text-blue-900 border-slate-300 rounded focus:ring-blue-900">
                                 <span class="text-sm text-slate-800 dark:text-slate-200 font-medium">
-                                    <?php echo htmlspecialchars($p['first_name'] . ' ' . $p['last_name']); ?> 
+                                    <?php echo htmlspecialchars($p['first_name'] . ' ' . $p['last_name']); ?>
                                     <span class="text-xs text-slate-500">(<?php echo htmlspecialchars($p['profile_type']); ?>)</span>
                                 </span>
                             </label>
@@ -277,134 +286,137 @@ $notifications = $notification->getAll(20);
                     </button>
                 </div>
             </form>
-            
+
             <script>
-            // Live Preview JS
-            var sampleProfile = {
-                name: "<?php echo !empty($allProfiles) ? addslashes($allProfiles[0]['first_name'] . ' ' . $allProfiles[0]['last_name']) : 'Juan Dela Cruz'; ?>",
-                barangay: "<?php echo !empty($allProfiles) ? addslashes($allProfiles[0]['barangay'] ?? 'Barangay 1') : 'Barangay 1'; ?>"
-            };
+                // Live Preview JS
+                var sampleProfile = {
+                    name: "<?php echo !empty($allProfiles) ? addslashes($allProfiles[0]['first_name'] . ' ' . $allProfiles[0]['last_name']) : 'Juan Dela Cruz'; ?>",
+                    barangay: "<?php echo !empty($allProfiles) ? addslashes($allProfiles[0]['barangay'] ?? 'Barangay 1') : 'Barangay 1'; ?>"
+                };
 
-            function getVarValue(id, fallback) {
-                var el = document.getElementById(id);
-                return el && el.value.trim() ? el.value.trim() : fallback;
-            }
-
-            function applyTemplate() {
-                const sel = document.getElementById('templateSelect');
-                if (sel.value) {
-                    document.getElementById('customMessageArea').value = sel.value;
-                    // Auto-open the variable panel if placeholders detected
-                    var hasVars = /\{\{(opportunity|company|course|percentage)\}\}/.test(sel.value);
-                    if (hasVars) openVarPanel();
-                }
-                updateLivePreview();
-            }
-
-            function toggleVarPanel() {
-                var panel = document.getElementById('varPanel');
-                var icon  = document.getElementById('varPanelIcon');
-                if (panel.classList.contains('hidden')) {
-                    openVarPanel();
-                } else {
-                    panel.classList.add('hidden');
-                    icon.textContent = 'expand_more';
-                }
-            }
-
-            function openVarPanel() {
-                document.getElementById('varPanel').classList.remove('hidden');
-                document.getElementById('varPanelIcon').textContent = 'expand_less';
-            }
-
-            function updateLivePreview() {
-                let text = document.getElementById('customMessageArea').value;
-                // Per-recipient vars replaced with sample profile data
-                text = text.replace(/\{\{name\}\}/g,  sampleProfile.name);
-                text = text.replace(/\{\{barangay\}\}/g, sampleProfile.barangay);
-                // Broadcast-wide vars replaced with input values
-                text = text.replace(/\{\{opportunity\}\}/g, getVarValue('tpl_opportunity', '[opportunity]'));
-                text = text.replace(/\{\{company\}\}/g,     getVarValue('tpl_company',     '[company]'));
-                text = text.replace(/\{\{course\}\}/g,      getVarValue('tpl_course',      '[course]'));
-                text = text.replace(/\{\{percentage\}\}/g,  getVarValue('tpl_percentage',  '[percentage]'));
-                document.getElementById('livePreviewBox').textContent = text;
-            }
-
-            document.addEventListener("DOMContentLoaded", () => {
-                updateLivePreview();
-            });
-
-            function toggleSpecificRecipients() {
-                const group = document.getElementById('target_group_select').value;
-                document.getElementById('specific_recipients_container').style.display = (group === 'Specific') ? 'block' : 'none';
-            }
-
-            function submitNotificationAjax() {
-                var titleVal   = document.querySelector('[name="title"]').value.trim();
-                var msgVal     = document.getElementById('customMessageArea').value.trim();
-                var typeVal    = document.querySelector('[name="type"]').value;
-                var groupVal   = document.getElementById('target_group_select').value;
-                var sendSms    = document.querySelector('[name="send_sms"]').checked;
-                var sendEmail  = document.querySelector('[name="send_email"]').checked;
-
-                if (!titleVal || !msgVal) {
-                    showNotifToast('Please fill in the title and message.', 'error');
-                    return;
+                function getVarValue(id, fallback) {
+                    var el = document.getElementById(id);
+                    return el && el.value.trim() ? el.value.trim() : fallback;
                 }
 
-                var btn = document.getElementById('broadcastBtn');
-                btn.disabled = true;
-                btn.innerHTML = '<span class="material-symbols-outlined text-base animate-spin">progress_activity</span> Sending...';
-
-                var formData = new FormData();
-                formData.append('title',        titleVal);
-                formData.append('message',      msgVal);
-                formData.append('type',         typeVal);
-                formData.append('target_group', groupVal);
-                if (sendSms)   formData.append('send_sms',   '1');
-                if (sendEmail) formData.append('send_email', '1');
-
-                // Broadcast-wide template variables
-                formData.append('tpl_opportunity', document.getElementById('tpl_opportunity')?.value.trim() || '');
-                formData.append('tpl_company',     document.getElementById('tpl_company')?.value.trim()     || '');
-                formData.append('tpl_course',      document.getElementById('tpl_course')?.value.trim()      || '');
-                formData.append('tpl_percentage',  document.getElementById('tpl_percentage')?.value.trim()  || '');
-
-                // Specific IDs
-                if (groupVal === 'Specific') {
-                    document.querySelectorAll('[name="specific_ids[]"]').forEach(cb => {
-                        if (cb.checked) formData.append('specific_ids[]', cb.value);
-                    });
+                function applyTemplate() {
+                    const sel = document.getElementById('templateSelect');
+                    if (sel.value) {
+                        document.getElementById('customMessageArea').value = sel.value;
+                        // Auto-open the variable panel if placeholders detected
+                        var hasVars = /\{\{(opportunity|company|course|percentage)\}\}/.test(sel.value);
+                        if (hasVars) openVarPanel();
+                    }
+                    updateLivePreview();
                 }
 
-                fetch('../api/send_notification.php', { method: 'POST', body: formData })
-                    .then(r => r.json())
-                    .then(data => {
-                        if (data.success) {
-                            // Close modal
-                            document.getElementById('sendModal').classList.add('hidden');
+                function toggleVarPanel() {
+                    var panel = document.getElementById('varPanel');
+                    var icon = document.getElementById('varPanelIcon');
+                    if (panel.classList.contains('hidden')) {
+                        openVarPanel();
+                    } else {
+                        panel.classList.add('hidden');
+                        icon.textContent = 'expand_more';
+                    }
+                }
 
-                            // Prepend new notification row to the list
-                            var n = data.notification;
-                            if (n) {
-                                var typeBadge = {
-                                    'Opportunity': 'bg-blue-100 text-blue-700',
-                                    'Match':       'bg-green-100 text-green-700',
-                                    'Reminder':    'bg-orange-100 text-orange-700',
-                                }[n.type] || 'bg-purple-100 text-purple-700';
+                function openVarPanel() {
+                    document.getElementById('varPanel').classList.remove('hidden');
+                    document.getElementById('varPanelIcon').textContent = 'expand_less';
+                }
 
-                                var listEl = document.querySelector('.divide-y');
-                                if (!listEl) {
-                                    // Replace empty-state with list
-                                    var wrapper = document.querySelector('.bg-white.dark\\:bg-slate-800.rounded-xl');
-                                    if (wrapper) wrapper.innerHTML = '<div class="divide-y divide-slate-200 dark:divide-slate-700"></div>';
-                                    listEl = document.querySelector('.divide-y');
-                                }
-                                if (listEl) {
-                                    var row = document.createElement('div');
-                                    row.className = 'notif-item p-6 hover:bg-slate-50 transition-colors relative group';
-                                    row.setAttribute('data-search', n.title.toLowerCase() + ' ' + n.message.toLowerCase());
-                                    row.innerHTML = `
+                function updateLivePreview() {
+                    let text = document.getElementById('customMessageArea').value;
+                    // Per-recipient vars replaced with sample profile data
+                    text = text.replace(/\{\{name\}\}/g, sampleProfile.name);
+                    text = text.replace(/\{\{barangay\}\}/g, sampleProfile.barangay);
+                    // Broadcast-wide vars replaced with input values
+                    text = text.replace(/\{\{opportunity\}\}/g, getVarValue('tpl_opportunity', '[opportunity]'));
+                    text = text.replace(/\{\{company\}\}/g, getVarValue('tpl_company', '[company]'));
+                    text = text.replace(/\{\{course\}\}/g, getVarValue('tpl_course', '[course]'));
+                    text = text.replace(/\{\{percentage\}\}/g, getVarValue('tpl_percentage', '[percentage]'));
+                    document.getElementById('livePreviewBox').textContent = text;
+                }
+
+                document.addEventListener("DOMContentLoaded", () => {
+                    updateLivePreview();
+                });
+
+                function toggleSpecificRecipients() {
+                    const group = document.getElementById('target_group_select').value;
+                    document.getElementById('specific_recipients_container').style.display = (group === 'Specific') ? 'block' : 'none';
+                }
+
+                function submitNotificationAjax() {
+                    var titleVal = document.querySelector('[name="title"]').value.trim();
+                    var msgVal = document.getElementById('customMessageArea').value.trim();
+                    var typeVal = document.querySelector('[name="type"]').value;
+                    var groupVal = document.getElementById('target_group_select').value;
+                    var sendSms = document.querySelector('[name="send_sms"]').checked;
+                    var sendEmail = document.querySelector('[name="send_email"]').checked;
+
+                    if (!titleVal || !msgVal) {
+                        showNotifToast('Please fill in the title and message.', 'error');
+                        return;
+                    }
+
+                    var btn = document.getElementById('broadcastBtn');
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="material-symbols-outlined text-base animate-spin">progress_activity</span> Sending...';
+
+                    var formData = new FormData();
+                    formData.append('title', titleVal);
+                    formData.append('message', msgVal);
+                    formData.append('type', typeVal);
+                    formData.append('target_group', groupVal);
+                    if (sendSms) formData.append('send_sms', '1');
+                    if (sendEmail) formData.append('send_email', '1');
+
+                    // Broadcast-wide template variables
+                    formData.append('tpl_opportunity', document.getElementById('tpl_opportunity')?.value.trim() || '');
+                    formData.append('tpl_company', document.getElementById('tpl_company')?.value.trim() || '');
+                    formData.append('tpl_course', document.getElementById('tpl_course')?.value.trim() || '');
+                    formData.append('tpl_percentage', document.getElementById('tpl_percentage')?.value.trim() || '');
+
+                    // Specific IDs
+                    if (groupVal === 'Specific') {
+                        document.querySelectorAll('[name="specific_ids[]"]').forEach(cb => {
+                            if (cb.checked) formData.append('specific_ids[]', cb.value);
+                        });
+                    }
+
+                    fetch('../api/send_notification.php', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.success) {
+                                // Close modal
+                                document.getElementById('sendModal').classList.add('hidden');
+
+                                // Prepend new notification row to the list
+                                var n = data.notification;
+                                if (n) {
+                                    var typeBadge = {
+                                        'Opportunity': 'bg-blue-100 text-blue-700',
+                                        'Match': 'bg-green-100 text-green-700',
+                                        'Reminder': 'bg-orange-100 text-orange-700',
+                                    } [n.type] || 'bg-purple-100 text-purple-700';
+
+                                    var listEl = document.querySelector('.divide-y');
+                                    if (!listEl) {
+                                        // Replace empty-state with list
+                                        var wrapper = document.querySelector('.bg-white.dark\\:bg-slate-800.rounded-xl');
+                                        if (wrapper) wrapper.innerHTML = '<div class="divide-y divide-slate-200 dark:divide-slate-700"></div>';
+                                        listEl = document.querySelector('.divide-y');
+                                    }
+                                    if (listEl) {
+                                        var row = document.createElement('div');
+                                        row.className = 'notif-item p-6 hover:bg-slate-50 transition-colors relative group';
+                                        row.setAttribute('data-search', n.title.toLowerCase() + ' ' + n.message.toLowerCase());
+                                        row.innerHTML = `
                                         <div class="flex items-start justify-between mb-3">
                                             <div>
                                                 <div class="flex items-center gap-2 mb-2">
@@ -417,34 +429,37 @@ $notifications = $notification->getAll(20);
                                         </div>
                                         <p class="text-slate-600 text-sm mb-4">${escapeHtml(n.message)}</p>
                                         <p class="text-xs text-slate-500">Just now</p>`;
-                                    listEl.prepend(row);
+                                        listEl.prepend(row);
+                                    }
                                 }
+
+                                showNotifToast('✅ ' + data.message, 'success');
+                            } else {
+                                showNotifToast('❌ ' + data.message, 'error');
                             }
+                        })
+                        .catch(() => showNotifToast('Network error. Please try again.', 'error'))
+                        .finally(() => {
+                            btn.disabled = false;
+                            btn.innerHTML = '<span class="material-symbols-outlined text-base">broadcast_on_personal</span> Broadcast Notification';
+                        });
+                }
 
-                            showNotifToast('✅ ' + data.message, 'success');
-                        } else {
-                            showNotifToast('❌ ' + data.message, 'error');
-                        }
-                    })
-                    .catch(() => showNotifToast('Network error. Please try again.', 'error'))
-                    .finally(() => {
-                        btn.disabled = false;
-                        btn.innerHTML = '<span class="material-symbols-outlined text-base">broadcast_on_personal</span> Broadcast Notification';
-                    });
-            }
+                function escapeHtml(str) {
+                    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+                }
 
-            function escapeHtml(str) {
-                return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-            }
-
-            function showNotifToast(msg, type) {
-                var toast = document.createElement('div');
-                toast.className = 'fixed bottom-6 right-6 z-50 max-w-sm px-5 py-3 rounded-xl shadow-xl text-sm font-semibold '
-                    + (type === 'error' ? 'bg-red-600 text-white' : 'bg-green-600 text-white');
-                toast.textContent = msg;
-                document.body.appendChild(toast);
-                setTimeout(() => { toast.style.opacity='0'; setTimeout(() => toast.remove(), 400); }, 5000);
-            }
+                function showNotifToast(msg, type) {
+                    var toast = document.createElement('div');
+                    toast.className = 'fixed bottom-6 right-6 z-50 max-w-sm px-5 py-3 rounded-xl shadow-xl text-sm font-semibold ' +
+                        (type === 'error' ? 'bg-red-600 text-white' : 'bg-green-600 text-white');
+                    toast.textContent = msg;
+                    document.body.appendChild(toast);
+                    setTimeout(() => {
+                        toast.style.opacity = '0';
+                        setTimeout(() => toast.remove(), 400);
+                    }, 5000);
+                }
             </script>
 
         </div>
@@ -505,7 +520,7 @@ $notifications = $notification->getAll(20);
     function filterNotifications() {
         const searchVal = document.getElementById('notif_search').value.toLowerCase();
         const items = document.querySelectorAll('.notif-item');
-        
+
         items.forEach(item => {
             const dataSearch = item.getAttribute('data-search');
             if (searchVal && !dataSearch.includes(searchVal)) {

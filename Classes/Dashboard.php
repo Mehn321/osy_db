@@ -34,6 +34,44 @@ class Dashboard
     }
 
     /**
+     * Get statistics for SK Chairman (Barangay-scoped)
+     */
+    public function getSKStats($barangay)
+    {
+        $stats = [];
+        
+        $res = $this->db->fetchOne("SELECT COUNT(*) as cnt FROM osy_profiles WHERE barangay = ?", [$barangay]);
+        $stats['total_kk'] = $res['cnt'] ?? 0;
+        
+        $res = $this->db->fetchOne("SELECT COUNT(*) as cnt FROM osy_profiles WHERE barangay = ? AND (verification_status = 'Pending' OR registration_status = 'Submitted')", [$barangay]);
+        $stats['pending_verification'] = $res['cnt'] ?? 0;
+        
+        $res = $this->db->fetchOne("SELECT COUNT(*) as cnt FROM osy_profiles WHERE barangay = ? AND verification_status = 'Verified'", [$barangay]);
+        $stats['verified_youth'] = $res['cnt'] ?? 0;
+        
+        return $stats;
+    }
+
+    /**
+     * Get statistics for Provider (Employer/Training Provider)
+     */
+    public function getProviderStats($userId)
+    {
+        $stats = [];
+        
+        $res = $this->db->fetchOne("SELECT COUNT(*) as cnt FROM opportunities WHERE created_by = ?", [$userId]);
+        $stats['total_posted'] = $res['cnt'] ?? 0;
+        
+        // Count matches/applications for their opportunities
+        $res = $this->db->fetchOne("SELECT COUNT(*) as cnt FROM osy_matches m 
+                                   JOIN opportunities o ON m.opportunity_id = o.id 
+                                   WHERE o.created_by = ?", [$userId]);
+        $stats['total_applications'] = $res['cnt'] ?? 0;
+        
+        return $stats;
+    }
+
+    /**
      * Get total KK (all registered youth)
      */
     public function getTotalKK()
@@ -149,6 +187,16 @@ class Dashboard
     }
 
     /**
+     * Get recent registrations by barangay
+     */
+    public function getRecentRegistrationsByBarangay($barangay, $limit = 5)
+    {
+        $query = "SELECT id, first_name, last_name, email, age, primary_skill, status, created_at 
+                 FROM osy_profiles WHERE barangay = ? ORDER BY created_at DESC LIMIT ?";
+        return $this->db->fetchAll($query, [$barangay, $limit], "si");
+    }
+
+    /**
      * Get recent opportunities
      */
     public function getRecentOpportunities($limit = 5)
@@ -156,6 +204,16 @@ class Dashboard
         $query = "SELECT id, title, type, location, deadline, status, created_at 
                  FROM opportunities ORDER BY created_at DESC LIMIT ?";
         return $this->db->fetchAll($query, [$limit], "i");
+    }
+
+    /**
+     * Get recent opportunities by provider
+     */
+    public function getRecentOpportunitiesByProvider($userId, $limit = 5)
+    {
+        $query = "SELECT id, title, type, location, deadline, status, created_at 
+                 FROM opportunities WHERE created_by = ? ORDER BY created_at DESC LIMIT ?";
+        return $this->db->fetchAll($query, [$userId, $limit], "ii");
     }
 
     /**

@@ -32,10 +32,10 @@ class Notification
                 $data['title'],
                 $data['message'],
                 $data['type'], // 'Opportunity', 'Match', 'System', 'Reminder'
-                $data['recipient_type'] ?? 'All', // 'All', 'OSY', 'Staff', 'Specific'
+                $data['recipient_type'] ?? 'All', // 'All', 'OSY', 'Specific'
                 $recipientId,
                 $_SESSION['user_id']
-            ], "ssssisi");
+            ], "sssssi");
 
             return [
                 'success' => true,
@@ -56,9 +56,9 @@ class Notification
     public function broadcastToMatches($opportunity_id, $title, $message)
     {
         try {
-            // Get matched OSY for this opportunity
-            $query = "INSERT INTO {$this->table} (title, message, type, recipient_type, status, created_by, created_at)
-                     SELECT ?, ?, 'Opportunity', 'Specific', 'Sent', ?, NOW()
+            // Get matched OSY for this opportunity and insert one notification per candidate
+            $query = "INSERT INTO {$this->table} (title, message, type, recipient_type, recipient_id, status, created_by, created_at)
+                     SELECT ?, ?, 'Opportunity', 'Specific', p.created_by, 'Sent', ?, NOW()
                      FROM osy_profiles p
                      JOIN osy_matches m ON p.id = m.osy_id
                      WHERE m.opportunity_id = ? AND m.match_score >= 75";
@@ -68,6 +68,27 @@ class Notification
             return [
                 'success' => true,
                 'message' => 'Notification broadcast successfully'
+            ];
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Delete notification
+     */
+    public function delete($id)
+    {
+        try {
+            $query = "DELETE FROM {$this->table} WHERE id = ?";
+            $this->db->execute($query, [$id], "i");
+
+            return [
+                'success' => true,
+                'message' => 'Notification deleted successfully'
             ];
         } catch (Exception $e) {
             return [
@@ -124,12 +145,12 @@ class Notification
     public function broadcastToRole($role, $title, $message, $type = 'System')
     {
         try {
-            $query = "INSERT INTO {$this->table} (title, message, type, recipient_type, status, created_by, created_at)
-                     SELECT ?, ?, ?, 'Specific', 'Sent', ?, NOW()
-                     FROM users 
-                     WHERE role = ? AND status = 'Active'";
+            $query = "INSERT INTO {$this->table} (title, message, type, recipient_type, recipient_id, status, created_by, created_at)
+                     SELECT ?, ?, ?, 'Specific', u.id, 'Sent', ?, NOW()
+                     FROM users u
+                     WHERE u.role = ? AND u.status = 'Active'";
 
-            $this->db->execute($query, [$title, $message, $type, $_SESSION['user_id'], $role], "sssss");
+            $this->db->execute($query, [$title, $message, $type, $_SESSION['user_id'], $role], "ssssi");
 
             return [
                 'success' => true,
@@ -149,12 +170,12 @@ class Notification
     public function broadcastToBarangay($barangay_id, $title, $message, $type = 'System')
     {
         try {
-            $query = "INSERT INTO {$this->table} (title, message, type, recipient_type, status, created_by, created_at)
-                     SELECT ?, ?, ?, 'Specific', 'Sent', ?, NOW()
-                     FROM users 
-                     WHERE barangay = ? AND status = 'Active'";
+            $query = "INSERT INTO {$this->table} (title, message, type, recipient_type, recipient_id, status, created_by, created_at)
+                     SELECT ?, ?, ?, 'Specific', u.id, 'Sent', ?, NOW()
+                     FROM users u
+                     WHERE u.barangay = ? AND u.status = 'Active'";
 
-            $this->db->execute($query, [$title, $message, $type, $_SESSION['user_id'], $barangay_id], "sssss");
+            $this->db->execute($query, [$title, $message, $type, $_SESSION['user_id'], $barangay_id], "sssii");
 
             return [
                 'success' => true,
@@ -194,8 +215,6 @@ class Notification
 
         if ($role === 'youth') {
             $query .= " OR n.recipient_type = 'OSY'";
-        } elseif (in_array($role, ['lydo', 'sk_chairman', 'employer', 'training_provider', 'admin'], true)) {
-            $query .= " OR n.recipient_type = 'Staff'";
         }
 
         $query .= ") ORDER BY n.created_at DESC LIMIT ?";
@@ -224,8 +243,6 @@ class Notification
             } elseif ($notification['recipient_type'] === 'Specific' && $notification['recipient_id'] == $user_id) {
                 $canAccess = true;
             } elseif ($notification['recipient_type'] === 'OSY' && $role === 'youth') {
-                $canAccess = true;
-            } elseif ($notification['recipient_type'] === 'Staff' && in_array($role, ['lydo', 'sk_chairman', 'employer', 'training_provider', 'admin'], true)) {
                 $canAccess = true;
             }
 
@@ -267,8 +284,6 @@ class Notification
 
         if ($role === 'youth') {
             $query .= " OR n.recipient_type = 'OSY'";
-        } elseif (in_array($role, ['lydo', 'sk_chairman', 'employer', 'training_provider', 'admin'], true)) {
-            $query .= " OR n.recipient_type = 'Staff'";
         }
 
         $query .= ")";

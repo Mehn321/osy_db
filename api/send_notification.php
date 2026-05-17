@@ -58,7 +58,7 @@ switch ($target_group) {
     break;
   case 'Non-OSY':
     $recipients = array_values(array_filter($allProfiles, fn($p) => $p['profile_type'] !== 'OSY'));
-    $recipient_type_db = 'Non-OSY';
+    $recipient_type_db = 'OSY';
     break;
   case 'Unemployed':
     $recipients = array_values(array_filter($allProfiles, fn($p) => ($p['status'] ?? '') === 'Unemployed'));
@@ -81,6 +81,7 @@ switch ($target_group) {
   case 'Specific':
     $specificIds = $_POST['specific_ids'] ?? [];
     $recipients  = array_values(array_filter($allProfiles, fn($p) => in_array($p['id'], $specificIds)));
+    $recipient_type_db = 'Specific';
     break;
 }
 
@@ -219,12 +220,38 @@ if ($smsEnabled || $emailEnabled) {
 
 // ── Log to DB ─────────────────────────────────────────────────────────────────
 $notification = new Notification($database);
-$result = $notification->create([
-  'title'          => $title,
-  'message'        => $message_text,
-  'type'           => $type,
-  'recipient_type' => $recipient_type_db,
-]);
+$result = ['success' => true, 'message' => 'Notification created successfully', 'id' => null];
+
+if ($recipient_type_db === 'Specific' && $target_group === 'Specific') {
+  $created = 0;
+  foreach ($recipients as $rec) {
+    $recipientId = $rec['created_by'] ?? null;
+    if (!$recipientId) {
+      continue;
+    }
+
+    $note = $notification->create([
+      'title'          => $title,
+      'message'        => replaceTemplateVars($message_text, $rec, $broadcastVars),
+      'type'           => $type,
+      'recipient_type' => 'Specific',
+      'recipient_id'   => $recipientId
+    ]);
+
+    if ($note['success']) {
+      $created++;
+    }
+  }
+  $result['id'] = $created > 0 ? 1 : null;
+  $result['message'] = "Notification broadcast successfully to {$created} specific recipient(s).";
+} else {
+  $result = $notification->create([
+    'title'          => $title,
+    'message'        => $message_text,
+    'type'           => $type,
+    'recipient_type' => $recipient_type_db,
+  ]);
+}
 
 $summary = 'Notification broadcast successfully to ' . count($recipients) . ' recipient(s).';
 if ($smsEnabled || $emailEnabled) {

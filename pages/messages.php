@@ -6,6 +6,7 @@ if (!$user->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
+requireRole(['lydo', 'staff']);
 
 require_once __DIR__ . '/../Classes/Messages.php';
 $messagesObj = new Messages($database);

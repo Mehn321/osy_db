@@ -190,7 +190,7 @@
               `title` varchar(255) NOT NULL,
               `message` text NOT NULL,
               `type` enum('Opportunity','Match','System','Reminder') DEFAULT 'System',
-              `recipient_type` enum('All','OSY','Staff','Specific') DEFAULT 'All',
+              `recipient_type` enum('All','OSY','Specific') DEFAULT 'All',
               `recipient_id` int(11) DEFAULT NULL,
               `status` enum('Sent','Read','Failed') DEFAULT 'Sent',
               `created_by` int(11) DEFAULT NULL,

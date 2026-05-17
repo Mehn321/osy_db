@@ -30,8 +30,16 @@ if ($_SESSION['role'] !== 'youth' || $_SESSION['status'] !== 'Active') {
 require_once __DIR__ . '/../Classes/Matching.php';
 $matching = new Matching($database);
 
+// Get OSY profile for the logged-in youth
+$osyProfileClass = new OSYProfile($database);
+$profile = $osyProfileClass->getByUserId($_SESSION['user_id']);
+if (!$profile) {
+    echo json_encode(['success' => false, 'message' => 'Youth profile not found.']);
+    exit;
+}
+
 // Check if youth already applied
-$existingMatch = $matching->getMatchByYouthAndOpportunity($_SESSION['user_id'], $opportunity_id);
+$existingMatch = $matching->getMatchByYouthAndOpportunity($profile['id'], $opportunity_id);
 if ($existingMatch) {
     echo json_encode(['success' => false, 'message' => 'You have already applied to this opportunity']);
     exit;
@@ -39,7 +47,7 @@ if ($existingMatch) {
 
 // Create new match/application
 $result = $matching->createMatchFromArray([
-    'profile_id' => $_SESSION['user_id'],
+    'profile_id' => $profile['id'],
     'opportunity_id' => $opportunity_id,
     'status' => 'Pending'
 ]);

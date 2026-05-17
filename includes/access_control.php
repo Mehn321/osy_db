@@ -27,6 +27,7 @@ function requireRole($roles)
     }
 
     $currentRole = $_SESSION['role'] ?? null;
+
     if (!in_array($currentRole, $roles, true)) {
         header('HTTP/1.1 403 Forbidden');
         echo 'Access denied.';

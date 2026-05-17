@@ -23,7 +23,7 @@ class User
     /**
      * Register a new user
      */
-    public function register($username, $email, $password, $fullname, $role = 'staff')
+    public function register($username, $email, $password, $fullname, $role = 'youth')
     {
         try {
             // Check if username exists
@@ -98,6 +98,11 @@ class User
             }
 
             $role = $user['role'];
+            // Auto-convert legacy admin role to lydo
+            if ($role === 'admin') {
+                $role = 'lydo';
+                $this->db->execute("UPDATE users SET role = 'lydo' WHERE id = ?", [$user['id']], "i");
+            }
             $status = $user['status'] ?? 'Active';
 
             if (in_array($role, ['employer', 'training_provider']) && $status !== 'Active') {
@@ -293,7 +298,7 @@ class User
             }
 
             $role = $data['role'];
-            $validRoles = ['admin', 'staff', 'manager', 'viewer', 'lydo', 'sk_chairman', 'youth', 'employer', 'training_provider'];
+            $validRoles = ['lydo', 'sk_chairman', 'youth', 'employer', 'training_provider'];
             if (!in_array($role, $validRoles, true)) {
                 throw new Exception("Invalid role specified");
             }
@@ -319,7 +324,7 @@ class User
                 $data['temp_password_required'] ?? 1,
                 $data['approval_remark'] ?? null,
                 $data['created_by'] ?? null
-            ], "ssssssssssisi");
+            ], "sssssssssiss");
 
             $createdId = $this->db->lastInsertId();
             return [
