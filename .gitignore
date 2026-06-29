@@ -1,0 +1,12 @@
+# Local configuration and logs
+config/local.php
+email_log.txt
+sms_log.txt
+/scratch/
+/vendor/
+/node_modules/
+.env
+.env.local
+.env.production
+.env.development
+.env.staging

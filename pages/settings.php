@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $activeTab = 'security';
     } elseif (isset($_POST['update_notifications'])) {
-        $fields = ['traccar_token', 'gmail_user', 'gmail_app_password'];
+        $fields = ['traccar_token', 'traccar_api_url', 'gmail_user', 'gmail_app_password'];
         foreach ($fields as $f) {
             $database->execute(
                 "UPDATE system_settings SET setting_value = ? WHERE setting_key = ?",
@@ -225,10 +225,17 @@ $scoringPct = $syncStats['total_possible'] > 0
                             <span class="material-symbols-outlined text-xl">sms</span>
                             <h4 class="font-bold uppercase tracking-widest text-xs">Traccar SMS Gateway (Cloud Mode)</h4>
                         </div>
-                        <div class="p-5 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-200 dark:border-slate-700">
-                            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Traccar Cloud Token</label>
-                            <input type="password" name="traccar_token" value="<?php echo htmlspecialchars($sys_settings['traccar_token'] ?? ''); ?>" placeholder="Enter Traccar Cloud Token" class="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-900" />
-                            <p class="text-[10px] text-slate-500 mt-2 italic">Found in Traccar Android App > Cloud > Cloud Token.</p>
+                        <div class="p-5 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-200 dark:border-slate-700 space-y-4">
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Traccar Cloud Token</label>
+                                <input type="password" name="traccar_token" value="<?php echo htmlspecialchars($sys_settings['traccar_token'] ?? ''); ?>" placeholder="Enter Traccar Cloud Token" class="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-900" />
+                                <p class="text-[10px] text-slate-500 mt-2 italic">Found in Traccar Android App > Cloud > Cloud Token.</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Traccar Gateway API URL(s)</label>
+                                <input type="text" name="traccar_api_url" value="<?php echo htmlspecialchars($sys_settings['traccar_api_url'] ?? ''); ?>" placeholder="e.g. http://192.168.100.41:8082/, https://www.traccar.org/sms/" class="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-900" />
+                                <p class="text-[10px] text-slate-500 mt-2 italic">Comma-separated list of URLs (local IPs or cloud endpoints) to try sequentially.</p>
+                            </div>
                         </div>
                     </div>
 

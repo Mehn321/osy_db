@@ -19,9 +19,15 @@ try {
         UNIQUE KEY `uq_setting_key` (`setting_key`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
-    foreach (['traccar_token', 'gmail_user', 'gmail_app_password'] as $k) {
+    $defaultSettings = [
+        'traccar_token' => '',
+        'traccar_api_url' => 'http://192.168.100.41:8082/, http://172.18.11.218:8082/, https://www.traccar.org/sms/',
+        'gmail_user' => '',
+        'gmail_app_password' => ''
+    ];
+    foreach ($defaultSettings as $k => $val) {
         $conn->query("INSERT IGNORE INTO `system_settings` (`setting_key`, `setting_value`)
-                      VALUES ('" . $database->escape($k) . "', '')");
+                      VALUES ('" . $database->escape($k) . "', '" . $database->escape($val) . "')");
     }
 
     // ── 2. messages table ─────────────────────────────────────────────────────

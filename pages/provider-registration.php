@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_provider']))
         // Validate password fields
         $password = $_POST['password'] ?? '';
         $confirmPassword = $_POST['confirm_password'] ?? '';
-        
+
         if (empty($password)) {
             throw new Exception('Password is required.');
         }
@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_provider']))
         if ($password !== $confirmPassword) {
             throw new Exception('Passwords do not match.');
         }
-        
+
         $documentPath = null;
         if (!empty($_FILES['provider_document']['name'])) {
             $allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
@@ -173,6 +173,7 @@ if ($user->isLoggedIn()) {
 
                 <form method="POST" enctype="multipart/form-data" class="space-y-6">
                     <input type="hidden" name="register_provider" value="1">
+                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(getCsrfToken()); ?>">
 
                     <!-- Provider Type Selection -->
                     <div class="space-y-2">

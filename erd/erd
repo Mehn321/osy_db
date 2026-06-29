@@ -1,0 +1,209 @@
+    127.0.0.1/municipal_kk_profiling_final/		http://localhost/phpmyadmin/index.php?route=/database/sql&db=municipal_kk_profiling_final
+
+    Showing rows 0 - 192 (193 total, Query took 0.4167 seconds.)
+
+
+    SELECT 'mysql' dbms,t.TABLE_SCHEMA,t.TABLE_NAME,c.COLUMN_NAME,c.ORDINAL_POSITION,c.DATA_TYPE,c.CHARACTER_MAXIMUM_LENGTH,n.CONSTRAINT_TYPE,k.REFERENCED_TABLE_SCHEMA,k.REFERENCED_TABLE_NAME,k.REFERENCED_COLUMN_NAME 
+    FROM INFORMATION_SCHEMA.TABLES t 
+    LEFT JOIN INFORMATION_SCHEMA.COLUMNS c ON t.TABLE_SCHEMA=c.TABLE_SCHEMA AND t.TABLE_NAME=c.TABLE_NAME 
+    LEFT JOIN INFORMATION_SCHEMA.KEY_COLUMN_USAGE k ON c.TABLE_SCHEMA=k.TABLE_SCHEMA AND c.TABLE_NAME=k.TABLE_NAME AND c.COLUMN_NAME=k.COLUMN_NAME 
+    LEFT JOIN INFORMATION_SCHEMA.TABLE_CONSTRAINTS n ON k.CONSTRAINT_SCHEMA=n.CONSTRAINT_SCHEMA AND k.CONSTRAINT_NAME=n.CONSTRAINT_NAME AND k.TABLE_SCHEMA=n.TABLE_SCHEMA AND k.TABLE_NAME=n.TABLE_NAME 
+    WHERE t.TABLE_TYPE='BASE TABLE' 
+    AND t.TABLE_SCHEMA = 'municipal_kk_profiling_final';
+
+
+    dbms	TABLE_SCHEMA	TABLE_NAME	COLUMN_NAME	ORDINAL_POSITION	DATA_TYPE	CHARACTER_MAXIMUM_LENGTH	CONSTRAINT_TYPE	REFERENCED_TABLE_SCHEMA	REFERENCED_TABLE_NAME	REFERENCED_COLUMN_NAME	
+    mysql	municipal_kk_profiling_final	ai_usage_log	id	1	int	NULL	PRIMARY KEY	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	audit_logs	id	1	int	NULL	PRIMARY KEY	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	audit_logs	actor_id	2	int	NULL	FOREIGN KEY	municipal_kk_profiling_final	users	id	
+    mysql	municipal_kk_profiling_final	barangays	id	1	int	NULL	PRIMARY KEY	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	barangays	name	2	varchar	100	UNIQUE	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	education_levels	id	1	int	NULL	PRIMARY KEY	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	education_levels	name	2	varchar	100	UNIQUE	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	govt_id_types	id	1	int	NULL	PRIMARY KEY	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	govt_id_types	name	2	varchar	100	UNIQUE	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	interests	id	1	int	NULL	PRIMARY KEY	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	interests	name	2	varchar	100	UNIQUE	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	messages	id	1	int	NULL	PRIMARY KEY	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	notifications	id	1	int	NULL	PRIMARY KEY	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	notifications	created_by	8	int	NULL	FOREIGN KEY	municipal_kk_profiling_final	users	id	
+    mysql	municipal_kk_profiling_final	notification_reads	id	1	int	NULL	PRIMARY KEY	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	notification_reads	notification_id	2	int	NULL	UNIQUE	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	notification_reads	user_id	3	int	NULL	UNIQUE	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	notification_reads	notification_id	2	int	NULL	FOREIGN KEY	municipal_kk_profiling_final	notifications	id	
+    mysql	municipal_kk_profiling_final	notification_reads	user_id	3	int	NULL	FOREIGN KEY	municipal_kk_profiling_final	users	id	
+    mysql	municipal_kk_profiling_final	notification_recipients	notification_id	1	int	NULL	PRIMARY KEY	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	notification_recipients	profile_id	2	int	NULL	PRIMARY KEY	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	notification_recipients	notification_id	1	int	NULL	FOREIGN KEY	municipal_kk_profiling_final	notifications	id	
+    mysql	municipal_kk_profiling_final	notification_recipients	profile_id	2	int	NULL	FOREIGN KEY	municipal_kk_profiling_final	youth_profiles	id	
+    mysql	municipal_kk_profiling_final	notification_templates	id	1	int	NULL	PRIMARY KEY	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	notification_templates	created_by	7	int	NULL	FOREIGN KEY	municipal_kk_profiling_final	users	id	
+    mysql	municipal_kk_profiling_final	opportunities	id	1	int	NULL	PRIMARY KEY	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	opportunities	created_by	18	int	NULL	FOREIGN KEY	municipal_kk_profiling_final	users	id	
+    mysql	municipal_kk_profiling_final	opportunities	provider_id	17	int	NULL	FOREIGN KEY	municipal_kk_profiling_final	users	id	
+    mysql	municipal_kk_profiling_final	opportunity_benefits	id	1	int	NULL	PRIMARY KEY	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	opportunity_benefits	opportunity_id	2	int	NULL	FOREIGN KEY	municipal_kk_profiling_final	opportunities	id	
+    mysql	municipal_kk_profiling_final	ai_usage_log	endpoint	2	varchar	100	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	ai_usage_log	model	3	varchar	100	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	ai_usage_log	prompt_tokens	4	int	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	ai_usage_log	response_tokens	5	int	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	ai_usage_log	total_tokens	6	int	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	ai_usage_log	http_status	7	int	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	ai_usage_log	success	8	tinyint	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	ai_usage_log	created_at	9	datetime	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	audit_logs	actor_role	3	varchar	50	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	audit_logs	action	4	varchar	255	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	audit_logs	target_type	5	varchar	100	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	audit_logs	target_id	6	int	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	audit_logs	metadata	7	text	65535	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	audit_logs	created_at	8	datetime	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	barangays	is_active	3	tinyint	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	barangays	created_at	4	datetime	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	education_levels	sort_order	3	int	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	education_levels	is_active	4	tinyint	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	govt_id_types	is_active	3	tinyint	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	interests	is_active	3	tinyint	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	messages	sender_type	2	enum	6	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	messages	sender_id	3	int	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	messages	recipient_type	4	enum	5	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	messages	recipient_id	5	int	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	messages	message	6	text	65535	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	messages	sms_status	7	enum	7	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	messages	email_status	8	enum	7	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	messages	sms_error	9	text	65535	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	messages	email_error	10	text	65535	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	messages	is_read	11	tinyint	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	messages	created_at	12	datetime	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	notifications	title	2	varchar	255	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	notifications	message	3	text	65535	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	notifications	type	4	enum	11	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	notifications	recipient_type	5	enum	8	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	notifications	recipient_id	6	int	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	notifications	status	7	enum	6	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	notifications	created_at	9	datetime	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	notification_reads	read_at	4	datetime	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	notification_recipients	is_read	3	tinyint	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	notification_recipients	read_at	4	datetime	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	notification_templates	name	2	varchar	255	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	notification_templates	subject	3	varchar	255	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	notification_templates	body	4	text	65535	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	notification_templates	type	5	enum	9	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	notification_templates	is_active	6	tinyint	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	notification_templates	created_at	8	datetime	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	notification_templates	updated_at	9	datetime	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	opportunities	title	2	varchar	255	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	opportunities	type	3	enum	19	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	opportunities	location	4	varchar	255	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	opportunities	description	5	text	65535	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	opportunities	total_slots	6	int	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	opportunities	deadline	7	date	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	opportunities	status	8	enum	7	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	opportunities	employment_type	9	varchar	50	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	opportunities	work_schedule	10	varchar	50	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	opportunities	experience_req	11	varchar	50	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	opportunities	training_provider	12	varchar	255	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	opportunities	duration	13	varchar	100	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	opportunities	modality	14	varchar	100	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	opportunities	certification	15	varchar	255	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	opportunities	compensation	16	varchar	100	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	opportunities	created_at	19	datetime	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	opportunities	updated_at	20	datetime	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	opportunity_benefits	benefit	3	varchar	255	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	opportunity_required_skills	opportunity_id	1	int	NULL	PRIMARY KEY	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	opportunity_required_skills	skill_id	2	int	NULL	PRIMARY KEY	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	opportunity_required_skills	opportunity_id	1	int	NULL	FOREIGN KEY	municipal_kk_profiling_final	opportunities	id	
+    mysql	municipal_kk_profiling_final	opportunity_required_skills	skill_id	2	int	NULL	FOREIGN KEY	municipal_kk_profiling_final	skills	id	
+
+    mysql	municipal_kk_profiling_final	osy_matches	id	1	int	NULL	PRIMARY KEY	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	osy_matches	profile_id	2	int	NULL	UNIQUE	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	osy_matches	opportunity_id	3	int	NULL	UNIQUE	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	osy_matches	opportunity_id	3	int	NULL	FOREIGN KEY	municipal_kk_profiling_final	opportunities	id	
+    mysql	municipal_kk_profiling_final	osy_matches	profile_id	2	int	NULL	FOREIGN KEY	municipal_kk_profiling_final	youth_profiles	id	
+    mysql	municipal_kk_profiling_final	profile_govt_ids	id	1	int	NULL	PRIMARY KEY	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	profile_govt_ids	profile_id	2	int	NULL	UNIQUE	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	profile_govt_ids	govt_id_type_id	3	int	NULL	UNIQUE	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	profile_govt_ids	govt_id_type_id	3	int	NULL	FOREIGN KEY	municipal_kk_profiling_final	govt_id_types	id	
+    mysql	municipal_kk_profiling_final	profile_govt_ids	profile_id	2	int	NULL	FOREIGN KEY	municipal_kk_profiling_final	youth_profiles	id	
+    mysql	municipal_kk_profiling_final	profile_interests	profile_id	1	int	NULL	PRIMARY KEY	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	profile_interests	interest_id	2	int	NULL	PRIMARY KEY	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	profile_interests	interest_id	2	int	NULL	FOREIGN KEY	municipal_kk_profiling_final	interests	id	
+    mysql	municipal_kk_profiling_final	profile_interests	profile_id	1	int	NULL	FOREIGN KEY	municipal_kk_profiling_final	youth_profiles	id	
+    mysql	municipal_kk_profiling_final	profile_skills	profile_id	1	int	NULL	PRIMARY KEY	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	profile_skills	skill_id	2	int	NULL	PRIMARY KEY	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	profile_skills	profile_id	1	int	NULL	FOREIGN KEY	municipal_kk_profiling_final	youth_profiles	id	
+    mysql	municipal_kk_profiling_final	profile_skills	skill_id	2	int	NULL	FOREIGN KEY	municipal_kk_profiling_final	skills	id	
+    mysql	municipal_kk_profiling_final	skills	id	1	int	NULL	PRIMARY KEY	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	skills	name	2	varchar	100	UNIQUE	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	system_references	id	1	int	NULL	PRIMARY KEY	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	system_settings	id	1	int	NULL	PRIMARY KEY	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	system_settings	setting_key	2	varchar	100	UNIQUE	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	users	id	1	int	NULL	PRIMARY KEY	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	users	username	2	varchar	50	UNIQUE	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	users	email	3	varchar	100	UNIQUE	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	users	created_by	15	int	NULL	FOREIGN KEY	municipal_kk_profiling_final	users	id	
+    mysql	municipal_kk_profiling_final	youth_profiles	id	1	int	NULL	PRIMARY KEY	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	youth_profiles	user_id	2	int	NULL	UNIQUE	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	youth_profiles	approved_by	23	int	NULL	FOREIGN KEY	municipal_kk_profiling_final	users	id	
+    mysql	municipal_kk_profiling_final	youth_profiles	barangay_id	12	int	NULL	FOREIGN KEY	municipal_kk_profiling_final	barangays	id	
+    mysql	municipal_kk_profiling_final	youth_profiles	created_by	25	int	NULL	FOREIGN KEY	municipal_kk_profiling_final	users	id	
+    mysql	municipal_kk_profiling_final	youth_profiles	education_level_id	13	int	NULL	FOREIGN KEY	municipal_kk_profiling_final	education_levels	id	
+    mysql	municipal_kk_profiling_final	youth_profiles	user_id	2	int	NULL	FOREIGN KEY	municipal_kk_profiling_final	users	id	
+    mysql	municipal_kk_profiling_final	opportunity_required_skills	importance	3	enum	12	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	osy_matches	match_score	4	int	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	osy_matches	status	5	enum	11	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	osy_matches	notes	6	text	65535	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	osy_matches	ai_insight	7	text	65535	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	osy_matches	created_at	8	datetime	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	osy_matches	updated_at	9	datetime	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	profile_govt_ids	id_number	4	varchar	100	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	profile_govt_ids	id_image_path	5	varchar	255	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	profile_govt_ids	verified_at	6	datetime	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	profile_govt_ids	created_at	7	datetime	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	profile_interests	created_at	3	datetime	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	profile_skills	is_primary	3	tinyint	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	profile_skills	created_at	4	datetime	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	skills	category	3	varchar	50	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	skills	is_active	4	tinyint	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	system_references	type	2	varchar	50	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	system_references	name	3	varchar	100	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	system_references	description	4	text	65535	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	system_references	is_active	5	tinyint	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	system_references	display_order	6	int	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	system_references	created_at	7	datetime	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	system_references	updated_at	8	datetime	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	system_settings	setting_value	3	text	65535	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	system_settings	updated_at	4	datetime	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	users	password	4	varchar	255	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	users	fullname	5	varchar	100	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	users	role	6	enum	17	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	users	status	7	enum	9	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	users	barangay	8	varchar	100	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	users	provider_type	9	enum	17	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	users	provider_document_path	10	varchar	255	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	users	temp_password_required	11	tinyint	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	users	approval_remark	12	text	65535	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	users	is_active	13	tinyint	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	users	last_login	14	datetime	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	users	created_at	16	datetime	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	users	updated_at	17	datetime	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	youth_profiles	profile_type	3	enum	7	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	youth_profiles	first_name	4	varchar	50	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	youth_profiles	middle_name	5	varchar	50	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	youth_profiles	last_name	6	varchar	50	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	youth_profiles	email	7	varchar	100	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	youth_profiles	phone	8	varchar	20	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	youth_profiles	gender	9	enum	6	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	youth_profiles	date_of_birth	10	date	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	youth_profiles	civil_status	11	enum	11	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	youth_profiles	reason_for_not_in_school	14	text	65535	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	youth_profiles	engagement_status	15	enum	18	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	youth_profiles	status	16	enum	11	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	youth_profiles	image_path	17	varchar	255	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	youth_profiles	registration_status	18	enum	9	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	youth_profiles	verification_status	19	enum	15	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	youth_profiles	verification_remark	20	text	65535	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	youth_profiles	consent_accepted	21	tinyint	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	youth_profiles	identity_document_path	22	varchar	255	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	youth_profiles	approved_at	24	datetime	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	youth_profiles	created_at	26	datetime	NULL	NULL	NULL	NULL	NULL	
+    mysql	municipal_kk_profiling_final	youth_profiles	updated_at	27	datetime	NULL	NULL	NULL	NULL	NULL	

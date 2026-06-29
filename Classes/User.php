@@ -121,11 +121,20 @@ class User
                 throw new Exception("Your registration has been declined. Please contact your SK Chairman for next steps.");
             }
 
+            if ($role === 'youth' && $status === 'Action Required') {
+                throw new Exception("Your registration requires action. Please review your profile or contact your SK Chairman.");
+            }
+
+            // Regenerate session ID to prevent session fixation
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_regenerate_id(true);
+            }
+
             // Set session
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['username'] = $user['username'];
             $_SESSION['fullname'] = $user['fullname'];
-            $_SESSION['role'] = $user['role'];
+            $_SESSION['role'] = $role;
             $_SESSION['email'] = $user['email'];
             $_SESSION['status'] = $status;
             $_SESSION['barangay'] = $user['barangay'] ?? null;
@@ -135,7 +144,7 @@ class User
             $this->username = $user['username'];
             $this->email = $user['email'];
             $this->fullname = $user['fullname'];
-            $this->role = $user['role'];
+            $this->role = $role;
 
             return [
                 'success' => true,
@@ -264,7 +273,7 @@ class User
             }
 
             $hashed = password_hash($new_password, PASSWORD_BCRYPT);
-            $query = "UPDATE users SET password = ? WHERE id = ?";
+            $query = "UPDATE users SET password = ?, temp_password_required = 0 WHERE id = ?";
             $this->db->execute($query, [$hashed, $user_id], "si");
 
             return [

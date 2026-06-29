@@ -249,6 +249,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
                 json_encode(['barangay' => $address, 'id_type' => $govtIdType])
             );
 
+            // 4. Send notification to the active SK Chairman of this barangay
+            $skChairman = $database->fetchOne(
+                "SELECT id FROM users WHERE role = 'sk_chairman' AND barangay = ? AND status = 'Active' LIMIT 1",
+                [$address],
+                "s"
+            );
+            if ($skChairman) {
+                $notifObj = new Notification($database);
+                $notifObj->sendToUser(
+                    $skChairman['id'],
+                    'New Youth Registration awaiting review',
+                    "A new youth member ($firstName $lastName) has self-registered in barangay $address and is awaiting verification.",
+                    'System',
+                    $userId
+                );
+            }
+
             // Success message with next steps
             $message = 'Sign up successful! Your registration has been submitted for approval. Your SK Chairman will review your information and documents. Please check back for updates.';
             $messageType = 'success';
@@ -277,9 +294,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <style>
-    * {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
+        * {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
     </style>
 </head>
 
@@ -317,33 +334,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
                     <div class="px-8 py-8">
                         <!-- Messages -->
                         <?php if ($message): ?>
-                        <div
-                            class="mb-6 p-4 <?php echo $messageType === 'error' ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'; ?> rounded-xl">
-                            <p
-                                class="<?php echo $messageType === 'error' ? 'text-red-800' : 'text-green-800'; ?> flex items-center gap-2">
-                                <span
-                                    class="material-symbols-outlined text-base"><?php echo $messageType === 'error' ? 'error' : 'check_circle'; ?></span>
-                                <?php echo htmlspecialchars($message); ?>
-                            </p>
-                        </div>
+                            <div
+                                class="mb-6 p-4 <?php echo $messageType === 'error' ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200'; ?> rounded-xl">
+                                <p
+                                    class="<?php echo $messageType === 'error' ? 'text-red-800' : 'text-green-800'; ?> flex items-center gap-2">
+                                    <span
+                                        class="material-symbols-outlined text-base"><?php echo $messageType === 'error' ? 'error' : 'check_circle'; ?></span>
+                                    <?php echo htmlspecialchars($message); ?>
+                                </p>
+                            </div>
                         <?php endif; ?>
 
                         <?php if (!empty($errors)): ?>
-                        <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-                            <ul class="space-y-2">
-                                <?php foreach ($errors as $error): ?>
-                                <li class="text-red-800 flex items-start gap-2">
-                                    <span class="material-symbols-outlined text-base flex-shrink-0 mt-0.5">error</span>
-                                    <span><?php echo htmlspecialchars($error); ?></span>
-                                </li>
-                                <?php endforeach; ?>
-                            </ul>
-                        </div>
+                            <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+                                <ul class="space-y-2">
+                                    <?php foreach ($errors as $error): ?>
+                                        <li class="text-red-800 flex items-start gap-2">
+                                            <span class="material-symbols-outlined text-base flex-shrink-0 mt-0.5">error</span>
+                                            <span><?php echo htmlspecialchars($error); ?></span>
+                                        </li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </div>
                         <?php endif; ?>
 
                         <!-- Form -->
                         <form method="POST" enctype="multipart/form-data" class="space-y-6">
                             <input type="hidden" name="signup" value="1">
+                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(getCsrfToken()); ?>">
 
                             <!-- STEP 1: Account Credentials -->
                             <div>
@@ -818,35 +836,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
         </div>
     </div>
     <script>
-    function updateAge() {
-        const dobInput = document.querySelector('[name="date_of_birth"]');
-        const ageInput = document.querySelector('[name="age"]');
-        if (!dobInput || !ageInput) return;
+        function updateAge() {
+            const dobInput = document.querySelector('[name="date_of_birth"]');
+            const ageInput = document.querySelector('[name="age"]');
+            if (!dobInput || !ageInput) return;
 
-        const dobValue = dobInput.value;
-        if (!dobValue) {
-            ageInput.value = '';
-            return;
+            const dobValue = dobInput.value;
+            if (!dobValue) {
+                ageInput.value = '';
+                return;
+            }
+
+            const dob = new Date(dobValue);
+            const today = new Date();
+            let age = today.getFullYear() - dob.getFullYear();
+            const monthDiff = today.getMonth() - dob.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
+                age--;
+            }
+
+            ageInput.value = age >= 0 ? age : '';
         }
 
-        const dob = new Date(dobValue);
-        const today = new Date();
-        let age = today.getFullYear() - dob.getFullYear();
-        const monthDiff = today.getMonth() - dob.getMonth();
-        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) {
-            age--;
-        }
-
-        ageInput.value = age >= 0 ? age : '';
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        updateAge();
-        const dobInput = document.querySelector('[name="date_of_birth"]');
-        if (dobInput) {
-            dobInput.addEventListener('change', updateAge);
-        }
-    });
+        document.addEventListener('DOMContentLoaded', function() {
+            updateAge();
+            const dobInput = document.querySelector('[name="date_of_birth"]');
+            if (dobInput) {
+                dobInput.addEventListener('change', updateAge);
+            }
+        });
     </script>
 </body>
 

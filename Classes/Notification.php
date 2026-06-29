@@ -27,6 +27,7 @@ class Notification
                      VALUES (?, ?, ?, ?, ?, 'Sent', ?, NOW())";
 
             $recipientId = isset($data['recipient_id']) ? $data['recipient_id'] : null;
+            $createdBy = $data['created_by'] ?? $_SESSION['user_id'] ?? null;
 
             $this->db->execute($query, [
                 $data['title'],
@@ -34,7 +35,7 @@ class Notification
                 $data['type'], // 'Opportunity', 'Match', 'System', 'Reminder'
                 $data['recipient_type'] ?? 'All', // 'All', 'OSY', 'Specific'
                 $recipientId,
-                $_SESSION['user_id']
+                $createdBy
             ], "sssssi");
 
             return [
@@ -128,14 +129,15 @@ class Notification
     /**
      * Send notification to specific user
      */
-    public function sendToUser($user_id, $title, $message, $type = 'System')
+    public function sendToUser($user_id, $title, $message, $type = 'System', $created_by = null)
     {
         return $this->create([
             'title' => $title,
             'message' => $message,
             'type' => $type,
             'recipient_type' => 'Specific',
-            'recipient_id' => $user_id
+            'recipient_id' => $user_id,
+            'created_by' => $created_by
         ]);
     }
 
@@ -167,7 +169,7 @@ class Notification
     /**
      * Broadcast notification to users in specific barangay
      */
-    public function broadcastToBarangay($barangay_id, $title, $message, $type = 'System')
+    public function broadcastToBarangay($barangay, $title, $message, $type = 'System')
     {
         try {
             $query = "INSERT INTO {$this->table} (title, message, type, recipient_type, recipient_id, status, created_by, created_at)
@@ -175,7 +177,7 @@ class Notification
                      FROM users u
                      WHERE u.barangay = ? AND u.status = 'Active'";
 
-            $this->db->execute($query, [$title, $message, $type, $_SESSION['user_id'], $barangay_id], "sssii");
+            $this->db->execute($query, [$title, $message, $type, $_SESSION['user_id'] ?? null, $barangay], "sssis");
 
             return [
                 'success' => true,

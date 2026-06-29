@@ -16,7 +16,7 @@ $programs = $database->fetchAll($query, [$userId]);
 
 $totalPrograms = count($programs);
 $activePrograms = 0;
-foreach($programs as $p) if($p['status'] === 'Open') $activePrograms++;
+foreach ($programs as $p) if ($p['status'] === 'Open') $activePrograms++;
 ?>
 
 <div class="mb-10">
@@ -25,7 +25,7 @@ foreach($programs as $p) if($p['status'] === 'Open') $activePrograms++;
             <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">My Training Programs</h2>
             <p class="text-slate-600 dark:text-slate-400 font-medium">Manage your educational and vocational training offerings.</p>
         </div>
-        <a href="create-opportunity.php?type=training" class="inline-flex items-center gap-2 bg-indigo-900 dark:bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-800 transition-all shadow-lg shadow-indigo-900/20">
+        <a href="training-programs.php?create=1" class="inline-flex items-center gap-2 bg-indigo-900 dark:bg-indigo-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-indigo-800 transition-all shadow-lg shadow-indigo-900/20">
             <span class="material-symbols-outlined">school</span> Add New Program
         </a>
     </div>
@@ -66,7 +66,7 @@ foreach($programs as $p) if($p['status'] === 'Open') $activePrograms++;
             </thead>
             <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
                 <?php if (!empty($programs)): ?>
-                    <?php foreach ($programs as $prog): 
+                    <?php foreach ($programs as $prog):
                         $appCountRes = $database->fetchOne("SELECT COUNT(*) as cnt FROM osy_matches WHERE opportunity_id = ?", [$prog['id']]);
                         $appCount = $appCountRes['cnt'] ?? 0;
                     ?>
@@ -92,10 +92,10 @@ foreach($programs as $p) if($p['status'] === 'Open') $activePrograms++;
                             </td>
                             <td class="px-6 py-4 text-right">
                                 <div class="flex items-center justify-end gap-2">
-                                    <a href="opportunity-detail.php?id=<?php echo $prog['id']; ?>" class="p-2 text-slate-400 hover:text-indigo-900 transition-colors" title="View Students">
+                                    <a href="matching.php?opportunity_id=<?php echo $prog['id']; ?>" class="p-2 text-slate-400 hover:text-indigo-900 transition-colors" title="View Applicants">
                                         <span class="material-symbols-outlined text-xl">group</span>
                                     </a>
-                                    <a href="edit-opportunity.php?id=<?php echo $prog['id']; ?>" class="p-2 text-slate-400 hover:text-indigo-900 transition-colors" title="Edit Program">
+                                    <a href="training-programs.php?edit_id=<?php echo $prog['id']; ?>" class="p-2 text-slate-400 hover:text-indigo-900 transition-colors" title="Edit Program">
                                         <span class="material-symbols-outlined text-xl">edit</span>
                                     </a>
                                 </div>
@@ -107,7 +107,7 @@ foreach($programs as $p) if($p['status'] === 'Open') $activePrograms++;
                         <td colspan="5" class="px-6 py-20 text-center text-slate-500">
                             <span class="material-symbols-outlined text-5xl opacity-20 mb-4 block">school</span>
                             <p class="text-lg font-medium">You haven't posted any training programs yet.</p>
-                            <a href="create-opportunity.php?type=training" class="text-indigo-900 font-bold hover:underline mt-2 inline-block">Post your first program</a>
+                            <a href="training-programs.php?create=1" class="text-indigo-900 font-bold hover:underline mt-2 inline-block">Post your first program</a>
                         </td>
                     </tr>
                 <?php endif; ?>

@@ -1,0 +1,36 @@
+services:
+  app:
+    build: .
+    container_name: osy_db_app
+    ports:
+      - "${APP_PORT:-8080}:80"
+    volumes:
+      - .:/var/www/html
+    environment:
+      - DB_HOST=${DB_HOST:-db}
+      - DB_USER=${DB_USER:-root}
+      - DB_PASS=${DB_PASS}
+      - DB_NAME=${DB_NAME:-municipal_kk_profiling}
+      - DB_PORT=${DB_PORT:-3306}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.0
+    container_name: osy_db_mysql
+    ports:
+      - "3307:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_PASS}
+      - MYSQL_DATABASE=${DB_NAME:-municipal_kk_profiling}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      # Optional: Auto-load the dump on fresh database creation
+      - ./database_dump.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
+
+volumes:
+  mysql_data:

@@ -17,7 +17,7 @@ $jobs = $database->fetchAll($query, [$userId]);
 // Handle dynamic counts
 $totalJobs = count($jobs);
 $activeJobs = 0;
-foreach($jobs as $j) if($j['status'] === 'Open') $activeJobs++;
+foreach ($jobs as $j) if ($j['status'] === 'Open') $activeJobs++;
 ?>
 
 <div class="mb-10">
@@ -26,7 +26,7 @@ foreach($jobs as $j) if($j['status'] === 'Open') $activeJobs++;
             <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">My Job Openings</h2>
             <p class="text-slate-600 dark:text-slate-400 font-medium">Manage and monitor the employment opportunities you have posted.</p>
         </div>
-        <a href="create-opportunity.php?type=job" class="inline-flex items-center gap-2 bg-blue-900 dark:bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-800 transition-all shadow-lg shadow-blue-900/20">
+        <a href="job-openings.php?create=1" class="inline-flex items-center gap-2 bg-blue-900 dark:bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-800 transition-all shadow-lg shadow-blue-900/20">
             <span class="material-symbols-outlined">add</span> Post New Job
         </a>
     </div>
@@ -67,7 +67,7 @@ foreach($jobs as $j) if($j['status'] === 'Open') $activeJobs++;
             </thead>
             <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
                 <?php if (!empty($jobs)): ?>
-                    <?php foreach ($jobs as $job): 
+                    <?php foreach ($jobs as $job):
                         // Fetch applicant count for this specific job
                         $appCountRes = $database->fetchOne("SELECT COUNT(*) as cnt FROM osy_matches WHERE opportunity_id = ?", [$job['id']]);
                         $appCount = $appCountRes['cnt'] ?? 0;
@@ -96,10 +96,10 @@ foreach($jobs as $j) if($j['status'] === 'Open') $activeJobs++;
                             </td>
                             <td class="px-6 py-4 text-right">
                                 <div class="flex items-center justify-end gap-2">
-                                    <a href="opportunity-detail.php?id=<?php echo $job['id']; ?>" class="p-2 text-slate-400 hover:text-blue-900 transition-colors" title="View Applicants">
+                                    <a href="matching.php?opportunity_id=<?php echo $job['id']; ?>" class="p-2 text-slate-400 hover:text-blue-900 transition-colors" title="View Applicants">
                                         <span class="material-symbols-outlined text-xl">group</span>
                                     </a>
-                                    <a href="edit-opportunity.php?id=<?php echo $job['id']; ?>" class="p-2 text-slate-400 hover:text-blue-900 transition-colors" title="Edit Job">
+                                    <a href="job-openings.php?edit_id=<?php echo $job['id']; ?>" class="p-2 text-slate-400 hover:text-blue-900 transition-colors" title="Edit Job">
                                         <span class="material-symbols-outlined text-xl">edit</span>
                                     </a>
                                 </div>
@@ -111,7 +111,7 @@ foreach($jobs as $j) if($j['status'] === 'Open') $activeJobs++;
                         <td colspan="5" class="px-6 py-20 text-center text-slate-500">
                             <span class="material-symbols-outlined text-5xl opacity-20 mb-4 block">work_off</span>
                             <p class="text-lg font-medium">You haven't posted any job openings yet.</p>
-                            <a href="create-opportunity.php?type=job" class="text-blue-900 font-bold hover:underline mt-2 inline-block">Create your first posting</a>
+                            <a href="job-openings.php?create=1" class="text-blue-900 font-bold hover:underline mt-2 inline-block">Create your first posting</a>
                         </td>
                     </tr>
                 <?php endif; ?>

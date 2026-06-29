@@ -42,6 +42,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_chairman'])) {
             $messageType = 'success';
 
             $createdId = $result['id'] ?? $result['user_id'] ?? null;
+
+            // 1. Create a system notification for the new SK Chairman
+            $notifObj = new Notification($database);
+            $notifObj->sendToUser(
+                $createdId,
+                'Account Created',
+                "Welcome to the Youth Profiling System! Your SK Chairman account has been created by the LYDO. Your temporary password is: $newChairmanPassword. Please change it on your first login.",
+                'System',
+                $_SESSION['user_id']
+            );
+
+            // 2. Send welcome email with login credentials
+            try {
+                require_once __DIR__ . '/../Classes/EmailService.php';
+                $emailService = new EmailService($database);
+                $emailBody = "
+                    <h3>Welcome to the Municipal Youth Profiling System</h3>
+                    <p>Hello <strong>" . htmlspecialchars($fullname) . "</strong>,</p>
+                    <p>Your SK Chairman account for Barangay <strong>" . htmlspecialchars($barangay) . "</strong> has been created by the LYDO.</p>
+                    <p>Here are your temporary credentials to log in:</p>
+                    <ul>
+                        <li><strong>Username:</strong> " . htmlspecialchars($username) . "</li>
+                        <li><strong>Temporary Password:</strong> " . htmlspecialchars($newChairmanPassword) . "</li>
+                    </ul>
+                    <p>Please log in and change your password to continue using the system.</p>
+                ";
+                $emailService->send($email, 'SK Chairman Account Created', $emailBody);
+            } catch (Exception $ex) {
+                // Silently log or capture email delivery error so it doesn't block the UI
+                $message .= ' (Email notification could not be sent)';
+            }
+
             $auditLog->logAction(
                 $_SESSION['user_id'],
                 $_SESSION['role'],

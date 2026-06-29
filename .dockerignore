@@ -1,0 +1,9 @@
+.git
+.vscode
+scratch/
+email_log.txt
+sms_log.txt
+.env
+config/local.php
+node_modules/
+vendor/

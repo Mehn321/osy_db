@@ -291,8 +291,8 @@ class Matching
     public function generateMatches($opportunity_id)
     {
         try {
-            // Get all OSY profiles
-            $osy_list = $this->db->fetchAll("SELECT id FROM osy_profiles");
+            // Get all verified OSY profiles
+            $osy_list = $this->db->fetchAll("SELECT id FROM osy_profiles WHERE verification_status = 'Verified'");
 
             $created = 0;
 

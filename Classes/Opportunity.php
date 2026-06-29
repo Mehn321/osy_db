@@ -55,10 +55,26 @@ class Opportunity
                 $_SESSION['user_id']  // created_by
             ], "ssssssssssssssiii");
 
+            $opportunityId = $this->db->lastInsertId();
+
+            // Auto-generate matches for the newly created opportunity
+            require_once __DIR__ . '/Matching.php';
+            $matching = new Matching($this->db);
+            $matching->generateMatches($opportunityId);
+
+            // Broadcast match alerts to youth matching this opportunity (score >= 75)
+            require_once __DIR__ . '/Notification.php';
+            $notif = new Notification($this->db);
+            $notif->broadcastToMatches(
+                $opportunityId,
+                "New Matched Opportunity: " . $data['title'],
+                "A new opportunity '" . $data['title'] . "' has been posted that aligns with your profile skills. Check your matches to apply!"
+            );
+
             return [
                 'success' => true,
                 'message' => 'Opportunity created successfully',
-                'id' => $this->db->lastInsertId()
+                'id' => $opportunityId
             ];
         } catch (Exception $e) {
             return [
@@ -277,6 +293,90 @@ class Opportunity
             $query .= " AND (o.title LIKE ? OR o.description LIKE ? OR o.location LIKE ?)";
             $params = array_merge($params, ['%' . $search . '%', '%' . $search . '%', '%' . $search . '%']);
             $types .= 'sss';
+        }
+
+        $query .= " ORDER BY o.created_at DESC";
+
+        return $this->db->fetchAll($query, $params, $types);
+    }
+
+    /**
+     * Add required skill to opportunity
+     */
+    public function addRequiredSkill($opportunityId, $skill, $importanceLevel = 'Required')
+    {
+        try {
+            $query = "INSERT INTO opportunity_required_skills (opportunity_id, skill, importance_level) VALUES (?, ?, ?)";
+            $this->db->execute($query, [$opportunityId, $skill, $importanceLevel], "iss");
+            return ['success' => true, 'message' => 'Skill added successfully'];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get required skills for opportunity
+     */
+    public function getRequiredSkills($opportunityId)
+    {
+        $query = "SELECT * FROM opportunity_required_skills WHERE opportunity_id = ? ORDER BY importance_level, created_at";
+        return $this->db->fetchAll($query, [$opportunityId], "i");
+    }
+
+    /**
+     * Remove required skill from opportunity
+     */
+    public function removeRequiredSkill($skillId)
+    {
+        try {
+            $query = "DELETE FROM opportunity_required_skills WHERE id = ?";
+            $this->db->execute($query, [$skillId], "i");
+            return ['success' => true, 'message' => 'Skill removed successfully'];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Update required skills for opportunity (bulk operation)
+     */
+    public function updateRequiredSkills($opportunityId, $skills)
+    {
+        try {
+            // Delete existing skills
+            $this->db->execute("DELETE FROM opportunity_required_skills WHERE opportunity_id = ?", [$opportunityId], "i");
+
+            // Add new skills
+            if (is_array($skills) && !empty($skills)) {
+                foreach ($skills as $skill) {
+                    $skillName = $skill['skill'] ?? $skill;
+                    $importance = $skill['importance_level'] ?? 'Required';
+                    $this->addRequiredSkill($opportunityId, $skillName, $importance);
+                }
+            }
+
+            return ['success' => true, 'message' => 'Skills updated successfully'];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Get opportunities by required skill
+     */
+    public function getByRequiredSkill($skill, $filters = [])
+    {
+        $query = "SELECT DISTINCT o.* FROM {$this->table} o 
+                 INNER JOIN opportunity_required_skills ors ON o.id = ors.opportunity_id 
+                 WHERE ors.skill LIKE ? AND o.status = 'Open'";
+
+        $params = ['%' . $skill . '%'];
+        $types = 's';
+
+        if (isset($filters['type']) && $filters['type'] != 'All') {
+            $query .= " AND o.type = ?";
+            $params[] = $filters['type'];
+            $types .= 's';
         }
 
         $query .= " ORDER BY o.created_at DESC";

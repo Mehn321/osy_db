@@ -12,7 +12,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $result = $user->login($username, $password);
 
     if ($result['success']) {
-        header('Location: dashboard.php');
+        if (!empty($_SESSION['temp_password_required'])) {
+            header('Location: password-reset.php');
+        } else {
+            header('Location: dashboard.php');
+        }
         exit;
     } else {
         $login_error = $result['message'];
@@ -96,6 +100,9 @@ if ($user->isLoggedIn()) {
                 <?php endif; ?>
 
                 <form method="POST" class="space-y-6">
+                    <!-- CSRF Token -->
+                    <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(getCsrfToken()); ?>">
+
                     <!-- Username Input -->
                     <div class="space-y-2">
                         <label class="block text-xs font-bold uppercase tracking-widest text-slate-600 ml-1">Username</label>

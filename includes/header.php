@@ -6,6 +6,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo isset($pageTitle) ? $pageTitle . ' - Integrated Web Based Information System for Youth Profiling and Skills Matching' : 'Integrated Web Based Information System for Youth Profiling and Skills Matching'; ?></title>
+    <meta name="csrf-token" content="<?php echo htmlspecialchars(getCsrfToken()); ?>">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
@@ -122,7 +123,9 @@
                         ['name' => 'Youth Profiles',     'icon' => 'people',             'path' => 'profiles.php'],
                         ['name' => 'Member Registry',    'icon' => 'list_alt',           'path' => 'member-registry.php'],
                         [
-                            'name' => 'Opportunities', 'icon' => 'work', 'path' => '#',
+                            'name' => 'Opportunities',
+                            'icon' => 'work',
+                            'path' => '#',
                             'sub_items' => [
                                 ['name' => 'All Opportunities',  'path' => 'opportunities.php'],
                                 ['name' => 'Job Openings',       'path' => 'job-openings.php'],
@@ -136,37 +139,39 @@
                         ['name' => 'SK Chairmen',        'icon' => 'supervisor_account', 'path' => 'manage-sk-chairmen.php'],
                         ['name' => 'Provider Approvals', 'icon' => 'how_to_reg',         'path' => 'provider-approvals.php'],
                         ['name' => 'Audit Logs',         'icon' => 'history_edu',        'path' => 'audit-logs.php'],
-                        ['name' => 'My Notifications',   'icon' => 'notifications_active','path' => 'my-notifications.php'],
+                        ['name' => 'My Notifications',   'icon' => 'notifications_active', 'path' => 'my-notifications.php'],
                     ];
                 } elseif ($userRole === 'sk_chairman') {
                     $navItems = [
                         ['name' => 'Dashboard',          'icon' => 'dashboard',          'path' => 'dashboard.php'],
                         ['name' => 'My Barangay Youth',  'icon' => 'groups',             'path' => 'sk-barangay-youth.php'],
                         ['name' => 'Verify Youth',       'icon' => 'verified_user',      'path' => 'verify-youth.php'],
-                        ['name' => 'My Notifications',   'icon' => 'notifications_active','path' => 'my-notifications.php'],
+                        ['name' => 'My Notifications',   'icon' => 'notifications_active', 'path' => 'my-notifications.php'],
                     ];
                 } elseif ($userRole === 'employer') {
                     $navItems = [
                         ['name' => 'Dashboard',          'icon' => 'dashboard',          'path' => 'dashboard.php'],
                         ['name' => 'My Job Openings',    'icon' => 'work',               'path' => 'my-job-openings.php'],
-                        ['name' => 'My Notifications',   'icon' => 'notifications_active','path' => 'my-notifications.php'],
+                        ['name' => 'Skills Matching',    'icon' => 'psychology',         'path' => 'matching.php'],
+                        ['name' => 'My Notifications',   'icon' => 'notifications_active', 'path' => 'my-notifications.php'],
                     ];
                 } elseif ($userRole === 'training_provider') {
                     $navItems = [
                         ['name' => 'Dashboard',          'icon' => 'dashboard',          'path' => 'dashboard.php'],
-                        ['name' => 'My Programs',        'icon' => 'school',             'path' => 'my-training-programs.php'],
-                        ['name' => 'My Notifications',   'icon' => 'notifications_active','path' => 'my-notifications.php'],
+                        ['name' => 'My Programs',        'icon' => 'school',             'path' => 'training-programs.php?edit_id=9'],
+                        ['name' => 'My Notifications',   'icon' => 'notifications_active', 'path' => 'my-notifications.php'],
                     ];
                 } elseif ($userRole === 'youth') {
                     $navItems = [
                         ['name' => 'Dashboard',          'icon' => 'dashboard',          'path' => 'dashboard.php'],
+                        ['name' => 'My Profile',         'icon' => 'person',             'path' => 'my-profile.php'],
                         ['name' => 'Opportunities',      'icon' => 'work',               'path' => 'opportunities.php'],
-                        ['name' => 'My Notifications',   'icon' => 'notifications_active','path' => 'my-notifications.php'],
+                        ['name' => 'My Notifications',   'icon' => 'notifications_active', 'path' => 'my-notifications.php'],
                     ];
                 } else {
                     $navItems = [
                         ['name' => 'Dashboard',          'icon' => 'dashboard',          'path' => 'dashboard.php'],
-                        ['name' => 'My Notifications',   'icon' => 'notifications_active','path' => 'my-notifications.php'],
+                        ['name' => 'My Notifications',   'icon' => 'notifications_active', 'path' => 'my-notifications.php'],
                     ];
                 }
 
@@ -226,14 +231,18 @@
             </nav>
 
             <div class="mt-auto pt-4 border-t border-slate-200/50 dark:border-slate-700/50 flex flex-col gap-1">
-                <a href="<?php echo $basePath; ?>/pages/matching.php" class="mb-4 w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-blue-900 to-blue-800 text-white py-2.5 rounded-lg font-semibold text-sm shadow-md hover:opacity-90 transition-opacity">
-                    <span class="material-symbols-outlined text-sm">auto_awesome</span>
-                    Match Skills
-                </a>
-                <a href="<?php echo $basePath; ?>/pages/settings.php" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-transform duration-200 hover:translate-x-1 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
-                    <span class="material-symbols-outlined text-[20px]">settings</span>
-                    <span class="text-sm">Settings</span>
-                </a>
+                <?php if (in_array($userRole, ['lydo', 'employer'])): ?>
+                    <a href="<?php echo $basePath; ?>/pages/matching.php" class="mb-4 w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-blue-900 to-blue-800 text-white py-2.5 rounded-lg font-semibold text-sm shadow-md hover:opacity-90 transition-opacity">
+                        <span class="material-symbols-outlined text-sm">auto_awesome</span>
+                        Match Skills
+                    </a>
+                <?php endif; ?>
+                <?php if ($userRole === 'lydo'): ?>
+                    <a href="<?php echo $basePath; ?>/pages/settings.php" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-transform duration-200 hover:translate-x-1 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+                        <span class="material-symbols-outlined text-[20px]">settings</span>
+                        <span class="text-sm">Settings</span>
+                    </a>
+                <?php endif; ?>
                 <a href="<?php echo $basePath; ?>/pages/logout.php" class="flex items-center gap-3 px-3 py-2 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg hover:translate-x-1 transition-transform duration-200">
                     <span class="material-symbols-outlined text-[20px]">logout</span>
                     <span class="text-sm">Logout</span>
@@ -259,15 +268,15 @@
                     <div class="text-sm hidden sm:block">
                         <p class="font-semibold text-slate-900 dark:text-white"><?php echo htmlspecialchars($_SESSION['fullname'] ?? 'User'); ?></p>
                         <p class="text-xs text-slate-500 dark:text-slate-400"><?php
-                            $roleLabels = [
-                                'lydo'              => 'LYDO / Administrator',
-                                'sk_chairman'       => 'SK Chairman',
-                                'employer'          => 'Employer',
-                                'training_provider' => 'Training Provider',
-                                'youth'             => 'Youth Member',
-                            ];
-                            echo $roleLabels[$_SESSION['role'] ?? ''] ?? ucfirst($_SESSION['role'] ?? 'User');
-                        ?></p>
+                                                                                $roleLabels = [
+                                                                                    'lydo'              => 'LYDO / Administrator',
+                                                                                    'sk_chairman'       => 'SK Chairman',
+                                                                                    'employer'          => 'Employer',
+                                                                                    'training_provider' => 'Training Provider',
+                                                                                    'youth'             => 'Youth Member',
+                                                                                ];
+                                                                                echo $roleLabels[$_SESSION['role'] ?? ''] ?? ucfirst($_SESSION['role'] ?? 'User');
+                                                                                ?></p>
                     </div>
                 </div>
             </div>
@@ -279,6 +288,56 @@
             <?php endif; ?>
 
             <script>
+                // CSRF Protection Helpers
+                function injectCsrfTokens() {
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                    if (!csrfToken) return;
+                    document.querySelectorAll('form[method="post"], form[method="POST"]').forEach(form => {
+                        if (!form.querySelector('input[name="csrf_token"]')) {
+                            const input = document.createElement('input');
+                            input.type = 'hidden';
+                            input.name = 'csrf_token';
+                            input.value = csrfToken;
+                            form.appendChild(input);
+                        }
+                    });
+                }
+
+                // Override global fetch to automatically inject CSRF token
+                const originalFetch = window.fetch;
+                window.fetch = function(url, options = {}) {
+                    options.method = options.method || 'GET';
+                    const method = options.method.toUpperCase();
+                    if (method === 'POST') {
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                        if (csrfToken) {
+                            options.headers = options.headers || {};
+                            if (options.headers instanceof Headers) {
+                                if (!options.headers.has('X-CSRF-Token')) {
+                                    options.headers.append('X-CSRF-Token', csrfToken);
+                                }
+                            } else if (Array.isArray(options.headers)) {
+                                if (!options.headers.some(h => h[0].toLowerCase() === 'x-csrf-token')) {
+                                    options.headers.push(['X-CSRF-Token', csrfToken]);
+                                }
+                            } else {
+                                if (!options.headers['X-CSRF-Token'] && !options.headers['x-csrf-token']) {
+                                    options.headers['X-CSRF-Token'] = csrfToken;
+                                }
+                            }
+                            if (options.body instanceof FormData && !options.body.has('csrf_token')) {
+                                options.body.append('csrf_token', csrfToken);
+                            }
+                        }
+                    }
+                    return originalFetch(url, options);
+                };
+
+                // Run on initial load
+                document.addEventListener('DOMContentLoaded', () => {
+                    injectCsrfTokens();
+                });
+
                 function toggleSidebar() {
                     const sidebar = document.getElementById('sidebar');
                     const overlay = document.getElementById('sidebarOverlay');
@@ -364,6 +423,11 @@
 
                             // Scroll to top
                             window.scrollTo(0, 0);
+                        } else {
+                            // If the loaded page cannot be rendered properly via SPA,
+                            // fall back to a full navigation to avoid incomplete page state.
+                            window.location.href = url;
+                            return;
                         }
                     } catch (error) {
                         if (error.name === 'AbortError') {
@@ -418,6 +482,9 @@
                     console.log('SPA: Re-initializing page state...');
                     // Re-bind global UI events that might be lost
                     document.getElementById('mobileMenuBtn')?.addEventListener('click', toggleSidebar);
+
+                    // Inject CSRF tokens to any newly loaded forms
+                    injectCsrfTokens();
 
                     // Check for page-specific inits
                     if (typeof filterProfiles === 'function') filterProfiles();
@@ -528,6 +595,11 @@
                                 executeScripts(currentMain);
                                 reinitializeState();
                                 window.scrollTo(0, 0);
+                            } else {
+                                // If the response does not contain valid main content,
+                                // fall back to a normal navigation to render the page completely.
+                                window.location.href = response.url;
+                                return;
                             }
                         } catch (error) {
                             if (error.name === 'AbortError') {

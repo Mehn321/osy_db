@@ -93,9 +93,28 @@ if (in_array($_SESSION['role'], ['employer', 'training_provider'])) {
     $filters = [
         'search' => $_GET['search'] ?? '',
         'type' => $_GET['type'] ?? 'All',
-        'location' => $_GET['location'] ?? ''
+        'location' => $_GET['location'] ?? '',
+        'skill' => $_GET['skill'] ?? ''
     ];
-    $opportunities = $opportunity->getForYouth($filters);
+
+    // If skill filter is applied, filter by required skills
+    if (!empty($filters['skill'])) {
+        $opportunities = $opportunity->getByRequiredSkill($filters['skill'], ['type' => $filters['type']]);
+        // Then apply other filters
+        if (!empty($filters['location'])) {
+            $opportunities = array_filter($opportunities, function ($opp) use ($filters) {
+                return stripos($opp['location'], $filters['location']) !== false;
+            });
+        }
+        if (!empty($filters['search'])) {
+            $opportunities = array_filter($opportunities, function ($opp) use ($filters) {
+                return stripos($opp['title'], $filters['search']) !== false ||
+                    stripos($opp['description'], $filters['search']) !== false;
+            });
+        }
+    } else {
+        $opportunities = $opportunity->getForYouth($filters);
+    }
     $isProvider = false;
     $canCreate = false;
 } else {
@@ -155,7 +174,7 @@ if (in_array($_SESSION['role'], ['employer', 'training_provider'])) {
 
 <!-- Filter Bar -->
 <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm mb-8">
-    <form method="GET" class="grid grid-cols-1 lg:grid-cols-4 gap-4 items-end">
+    <form method="GET" class="grid grid-cols-1 lg:grid-cols-<?php echo $_SESSION['role'] === 'youth' ? '5' : '4'; ?> gap-4 items-end">
         <div>
             <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase pl-1">Search</label>
             <input type="text" name="search" value="<?php echo htmlspecialchars($filters['search']); ?>" placeholder="Search opportunities..." class="w-full bg-slate-100 dark:bg-slate-700 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all" />
@@ -170,6 +189,10 @@ if (in_array($_SESSION['role'], ['employer', 'training_provider'])) {
             </select>
         </div>
         <?php if ($_SESSION['role'] === 'youth'): ?>
+            <div>
+                <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase pl-1">Required Skill</label>
+                <input type="text" name="skill" value="<?php echo htmlspecialchars($filters['skill'] ?? ''); ?>" placeholder="Filter by required skill..." class="w-full bg-slate-100 dark:bg-slate-700 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all" />
+            </div>
             <div>
                 <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase pl-1">Location</label>
                 <input type="text" name="location" value="<?php echo htmlspecialchars($filters['location'] ?? ''); ?>" placeholder="Filter by location..." class="w-full bg-slate-100 dark:bg-slate-700 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all" />
