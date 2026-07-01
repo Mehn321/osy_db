@@ -7,7 +7,7 @@ services:
     startCommand: "php -S 0.0.0.0:$PORT -t ."
     envVars:
       - key: DB_HOST
-        sync: false
+        value: public-mysql-187728d1-kkonek-2026.l.aivencloud.com
       - key: DB_USER
         sync: false
       - key: DB_PASS
