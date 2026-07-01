@@ -32,11 +32,15 @@ define('DB_SSL_MODE', getConfiguredValue('DB_SSL_MODE', $localConfig['db']['ssl_
 define('DB_SSL_CA', getConfiguredValue('DB_SSL_CA', $localConfig['db']['ssl_ca'] ?? ''));
 define('DB_SSL_CERT', getConfiguredValue('DB_SSL_CERT', $localConfig['db']['ssl_cert'] ?? ''));
 define('DB_SSL_KEY', getConfiguredValue('DB_SSL_KEY', $localConfig['db']['ssl_key'] ?? ''));
+$sslVerifyServerCertValue = getConfiguredValue('DB_SSL_VERIFY_SERVER_CERT', $localConfig['db']['ssl_verify_server_cert'] ?? '');
+if ($sslVerifyServerCertValue === '') {
+    $sslVerifyServerCertValue = (strpos(DB_HOST, 'aivencloud.com') !== false) ? 'false' : 'true';
+}
 define('DB_SSL_VERIFY_SERVER_CERT', filter_var(
-    getConfiguredValue('DB_SSL_VERIFY_SERVER_CERT', $localConfig['db']['ssl_verify_server_cert'] ?? 'true'),
+    $sslVerifyServerCertValue,
     FILTER_VALIDATE_BOOLEAN,
     FILTER_NULL_ON_FAILURE
-) ?? true);
+) ?? ((strpos(DB_HOST, 'aivencloud.com') !== false) ? false : true));
 
 // Error reporting
 error_reporting(E_ALL);

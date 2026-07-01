@@ -53,6 +53,7 @@ class Database
 
         $attempts = [];
         $useSsl = !empty($this->sslMode) && $this->sslMode !== 'disable';
+        $sslError = null;
 
         if ($useSsl) {
             $caPath = $this->sslCa;
@@ -84,7 +85,8 @@ class Database
                 break;
             }
 
-            $lastError = $mysqli->connect_error;
+            $lastError = $mysqli->connect_error ?: $mysqli->error;
+            $sslError = $lastError;
             $mysqli = mysqli_init();
             if ($attempt['ssl']) {
                 $mysqli->ssl_set($this->sslKey ?: null, $this->sslCert ?: null, null, null, null);
@@ -93,9 +95,13 @@ class Database
 
         if (!isset($this->conn)) {
             $sslSummary = $useSsl ? 'enabled' : 'disabled';
+            $detail = $lastError ?: 'No connection error returned';
+            if ($useSsl && stripos($detail, 'ssl') !== false) {
+                $detail = 'SSL/TLS negotiation failed. ' . $detail;
+            }
             throw new Exception(
                 "Connection failed to MySQL host '{$this->host}' on port {$this->port} for database '{$this->dbname}'. " .
-                    "SSL mode: {$sslSummary}. Last error: " . ($lastError ?: 'No connection error returned')
+                    "SSL mode: {$sslSummary}. Last error: " . $detail
             );
         }
 
