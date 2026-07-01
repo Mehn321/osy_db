@@ -21,7 +21,11 @@ function getConfiguredValue($key, $fallback)
     return $value === null || $value === '' ? $fallback : $value;
 }
 
-define('DB_HOST', getConfiguredValue('DB_HOST', $localConfig['db']['host'] ?? '127.0.0.1'));
+$resolvedDbHost = getConfiguredValue('DB_HOST', $localConfig['db']['host'] ?? '127.0.0.1');
+if (is_string($resolvedDbHost) && stripos($resolvedDbHost, 'aivencloud.com') !== false && stripos($resolvedDbHost, 'public-') !== 0) {
+    $resolvedDbHost = preg_replace('/^mysql-/', 'public-mysql-', $resolvedDbHost, 1);
+}
+define('DB_HOST', $resolvedDbHost);
 define('DB_USER', getConfiguredValue('DB_USER', $localConfig['db']['user'] ?? 'root'));
 define('DB_PASS', getConfiguredValue('DB_PASS', $localConfig['db']['pass'] ?? ''));
 define('DB_NAME', getConfiguredValue('DB_NAME', $localConfig['db']['name'] ?? 'municipal_kk_profiling'));

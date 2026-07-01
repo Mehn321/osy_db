@@ -60,6 +60,9 @@ class Database
             if ($caPath && !preg_match('#^(/|[a-zA-Z]:)#', $caPath)) {
                 $caPath = dirname(__DIR__) . '/' . $caPath;
             }
+            if ($caPath && !file_exists($caPath)) {
+                $caPath = null;
+            }
             $mysqli->ssl_set($this->sslKey ?: null, $this->sslCert ?: null, $caPath ?: null, null, null);
 
             if ($this->sslVerifyServerCert === false && defined('MYSQLI_OPT_SSL_VERIFY_SERVER_CERT')) {
