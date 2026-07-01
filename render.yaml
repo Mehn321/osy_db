@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: osy-db
+    env: php
+    plan: free
+    buildCommand: ""
+    startCommand: "php -S 0.0.0.0:$PORT -t ."
+    envVars:
+      - key: DB_HOST
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASS
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_SSL_MODE
+        sync: false
+      - key: DB_SSL_CA
+        value: config/ca.pem
+      - key: DB_SSL_VERIFY_SERVER_CERT
+        value: true
+      - key: GEMINI_API_KEY
+        sync: false

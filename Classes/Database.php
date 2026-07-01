@@ -16,15 +16,27 @@ class Database
     private $dbname;
     private $port;
     private $charset;
+    private $socket;
+    private $sslMode;
+    private $sslCa;
+    private $sslCert;
+    private $sslKey;
+    private $sslVerifyServerCert;
 
-    public function __construct($host, $user, $pass, $dbname, $port = 3306, $charset = 'utf8mb4')
+    public function __construct($host = null, $user = null, $pass = null, $dbname = null, $port = null, $charset = 'utf8mb4', $socket = null, $sslMode = null, $sslCa = null, $sslCert = null, $sslKey = null, $sslVerifyServerCert = null)
     {
-        $this->host = $host;
-        $this->user = $user;
-        $this->pass = $pass;
-        $this->dbname = $dbname;
-        $this->port = $port;
+        $this->host = $host ?? DB_HOST;
+        $this->user = $user ?? DB_USER;
+        $this->pass = $pass ?? DB_PASS;
+        $this->dbname = $dbname ?? DB_NAME;
+        $this->port = $port ?? DB_PORT;
         $this->charset = $charset;
+        $this->socket = $socket ?? DB_SOCKET;
+        $this->sslMode = $sslMode ?? DB_SSL_MODE;
+        $this->sslCa = $sslCa ?? DB_SSL_CA;
+        $this->sslCert = $sslCert ?? DB_SSL_CERT;
+        $this->sslKey = $sslKey ?? DB_SSL_KEY;
+        $this->sslVerifyServerCert = $sslVerifyServerCert ?? DB_SSL_VERIFY_SERVER_CERT;
         $this->connect();
     }
 
@@ -33,16 +45,46 @@ class Database
      */
     private function connect()
     {
-        $this->conn = new mysqli($this->host, $this->user, $this->pass, $this->dbname, $this->port);
+        $mysqli = mysqli_init();
 
-        if ($this->conn->connect_error) {
-            throw new Exception("Connection failed: " . $this->conn->connect_error);
+        if (!$mysqli) {
+            throw new Exception('Failed to initialize MySQLi.');
         }
 
-        // Set charset
+        if (!empty($this->sslMode) && $this->sslMode !== 'disable') {
+            $caPath = $this->sslCa;
+            if ($caPath && !preg_match('#^(/|[a-zA-Z]:)#', $caPath)) {
+                $caPath = dirname(__DIR__) . '/' . $caPath;
+            }
+            $mysqli->ssl_set($this->sslKey ?: null, $this->sslCert ?: null, $caPath ?: null, null, null);
+
+            if ($this->sslVerifyServerCert === false && defined('MYSQLI_OPT_SSL_VERIFY_SERVER_CERT')) {
+                $mysqli->options(MYSQLI_OPT_SSL_VERIFY_SERVER_CERT, false);
+            }
+        }
+
+        $flags = 0;
+        if (!empty($this->sslMode) && $this->sslMode !== 'disable') {
+            $flags = MYSQLI_CLIENT_SSL;
+        }
+
+        $connected = $this->socket !== ''
+            ? $mysqli->real_connect($this->host, $this->user, $this->pass, $this->dbname, $this->port, $this->socket, $flags)
+            : $mysqli->real_connect($this->host, $this->user, $this->pass, $this->dbname, $this->port, null, $flags);
+
+        if (!$connected) {
+            throw new Exception("Connection failed: " . $mysqli->connect_error);
+        }
+
+        $this->conn = $mysqli;
+
         if (!$this->conn->set_charset($this->charset)) {
             throw new Exception("Error loading character set: " . $this->conn->error);
         }
+
+        // Aiven for MySQL can enforce sql_require_primary_key for new tables.
+        // Disable it for this session so the bundled schema import can succeed.
+        $this->conn->query("SET SESSION sql_require_primary_key = OFF");
     }
 
     /**

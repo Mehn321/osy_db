@@ -445,12 +445,10 @@ $templates = $notification->getAllTemplates();
             </form>
         </div>
     </div>
-</div>
-
-<!-- Broadcast Modal -->
-<div id="broadcastModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
-    <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <!-- Broadcast Modal -->
+    <div id="broadcastModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
                 <div
                     class="p-6 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 rounded-t-2xl">
                     <h3 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
@@ -693,8 +691,7 @@ $templates = $notification->getAllTemplates();
         document.getElementById('opportunityModal').classList.add('hidden');
     }
 
-    // Run URL param checks immediately — works on both initial load and SPA navigation
-    (function() {
+    document.addEventListener('DOMContentLoaded', function() {
         const urlParams = new URLSearchParams(window.location.search);
         if (urlParams.get('create')) {
             openCreateModal('Vocational Training');
@@ -711,17 +708,15 @@ $templates = $notification->getAllTemplates();
                 viewOpportunityDetail(id);
             }
         }
-    })();
 
-    // Use event delegation for broadcast buttons so they work on every render
-    document.addEventListener('click', function(e) {
-        const btn = e.target.closest('.broadcast-btn');
-        if (btn) {
-            const id = parseInt(btn.dataset.oppId, 10);
-            if (!isNaN(id)) {
-                openBroadcastModal(id);
-            }
-        }
+        document.querySelectorAll('.broadcast-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const id = parseInt(this.dataset.oppId, 10);
+                if (!isNaN(id)) {
+                    openBroadcastModal(id);
+                }
+            });
+        });
     });
 
     function deleteOpportunity(id) {

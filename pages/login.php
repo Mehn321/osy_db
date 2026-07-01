@@ -37,16 +37,18 @@ if ($user->isLoggedIn()) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Youth Profiling System</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
+    body {
+        font-family: 'Inter', sans-serif;
+    }
 
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
+    .material-symbols-outlined {
+        font-variation-settings: 'FILL'0, 'wght'400, 'GRAD'0, 'opsz'24;
+    }
     </style>
 </head>
 
@@ -54,12 +56,17 @@ if ($user->isLoggedIn()) {
     <main class="flex-grow flex items-center justify-center px-6 py-12 relative overflow-hidden">
         <!-- Decorative Background -->
         <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-100 rounded-full blur-3xl opacity-50"></div>
-        <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-cyan-100 rounded-full blur-3xl opacity-50"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-cyan-100 rounded-full blur-3xl opacity-50">
+        </div>
 
-        <div class="w-full max-w-[1100px] grid md:grid-cols-2 bg-white rounded-xl overflow-hidden shadow-2xl shadow-blue-200 border border-slate-200">
+        <div
+            class="w-full max-w-[1100px] grid md:grid-cols-2 bg-white rounded-xl overflow-hidden shadow-2xl shadow-blue-200 border border-slate-200">
             <!-- Left Side: Branding -->
-            <div class="hidden md:flex flex-col justify-between p-12 bg-gradient-to-br from-blue-900 to-blue-800 relative overflow-hidden text-white">
-                <div class="absolute inset-0 opacity-20 bg-[url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2220%22 cy=%2220%22 r=%225%22 fill=%22white%22/></svg>')]"></div>
+            <div
+                class="hidden md:flex flex-col justify-between p-12 bg-gradient-to-br from-blue-900 to-blue-800 relative overflow-hidden text-white">
+                <div
+                    class="absolute inset-0 opacity-20 bg-[url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2220%22 cy=%2220%22 r=%225%22 fill=%22white%22/></svg>')]">
+                </div>
                 <div class="relative z-10">
                     <div class="flex items-center gap-2 mb-8">
                         <span class="material-symbols-outlined text-4xl">groups</span>
@@ -69,11 +76,13 @@ if ($user->isLoggedIn()) {
                         Opportunities & Skills<br />for Our Youth.
                     </h1>
                     <p class="text-blue-100 text-lg max-w-sm font-medium">
-                        Securely connect with employment opportunities, training programs, and community support services.
+                        Securely connect with employment opportunities, training programs, and community support
+                        services.
                     </p>
                 </div>
                 <div class="relative z-10">
-                    <div class="flex items-center gap-4 p-4 rounded-xl bg-white/10 border border-white/20 backdrop-blur-md">
+                    <div
+                        class="flex items-center gap-4 p-4 rounded-xl bg-white/10 border border-white/20 backdrop-blur-md">
                         <div class="w-12 h-12 rounded-full bg-green-400 flex items-center justify-center text-blue-900">
                             <span class="material-symbols-outlined">security</span>
                         </div>
@@ -93,10 +102,10 @@ if ($user->isLoggedIn()) {
                 </div>
 
                 <?php if ($login_error): ?>
-                    <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm font-medium">
-                        <span class="material-symbols-outlined text-base align-middle mr-2">error</span>
-                        <?php echo htmlspecialchars($login_error); ?>
-                    </div>
+                <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm font-medium">
+                    <span class="material-symbols-outlined text-base align-middle mr-2">error</span>
+                    <?php echo htmlspecialchars($login_error); ?>
+                </div>
                 <?php endif; ?>
 
                 <form method="POST" class="space-y-6">
@@ -105,31 +114,37 @@ if ($user->isLoggedIn()) {
 
                     <!-- Username Input -->
                     <div class="space-y-2">
-                        <label class="block text-xs font-bold uppercase tracking-widest text-slate-600 ml-1">Username</label>
+                        <label
+                            class="block text-xs font-bold uppercase tracking-widest text-slate-600 ml-1">Username</label>
                         <div class="relative group">
                             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                 <span class="material-symbols-outlined text-slate-400 text-xl">person</span>
                             </div>
-                            <input type="text" name="username" placeholder="admin1" required class="block w-full pl-12 pr-4 py-3 bg-slate-100 border border-transparent focus:border-blue-900 focus:ring-0 rounded-lg transition-all text-slate-900 placeholder:text-slate-400 font-medium" />
+                            <input type="text" name="username" placeholder="admin1" required
+                                class="block w-full pl-12 pr-4 py-3 bg-slate-100 border border-transparent focus:border-blue-900 focus:ring-0 rounded-lg transition-all text-slate-900 placeholder:text-slate-400 font-medium" />
                         </div>
                     </div>
 
                     <!-- Password Input -->
                     <div class="space-y-2">
                         <div class="flex justify-between items-center px-1">
-                            <label class="block text-xs font-bold uppercase tracking-widest text-slate-600">Password</label>
-                            <a href="#" class="text-xs font-bold text-blue-900 hover:underline uppercase tracking-widest">Forgot?</a>
+                            <label
+                                class="block text-xs font-bold uppercase tracking-widest text-slate-600">Password</label>
+                            <a href="password-reset.php"
+                                class="text-xs font-bold text-blue-900 hover:underline uppercase tracking-widest">Forgot?</a>
                         </div>
                         <div class="relative group">
                             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                 <span class="material-symbols-outlined text-slate-400 text-xl">lock</span>
                             </div>
-                            <input type="password" name="password" placeholder="••••••••" required class="block w-full pl-12 pr-4 py-3 bg-slate-100 border border-transparent focus:border-blue-900 focus:ring-0 rounded-lg transition-all text-slate-900 placeholder:text-slate-400 font-medium" />
+                            <input type="password" name="password" placeholder="••••••••" required
+                                class="block w-full pl-12 pr-4 py-3 bg-slate-100 border border-transparent focus:border-blue-900 focus:ring-0 rounded-lg transition-all text-slate-900 placeholder:text-slate-400 font-medium" />
                         </div>
                     </div>
 
                     <!-- Submit Button -->
-                    <button type="submit" class="w-full bg-gradient-to-r from-blue-900 to-blue-800 text-white py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transition-all active:scale-[0.98] mt-8">
+                    <button type="submit"
+                        class="w-full bg-gradient-to-r from-blue-900 to-blue-800 text-white py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transition-all active:scale-[0.98] mt-8">
                         <span class="flex items-center justify-center gap-2">
                             <span class="material-symbols-outlined">login</span>
                             Sign In
@@ -141,14 +156,16 @@ if ($user->isLoggedIn()) {
                 <div class="mt-8 space-y-3 text-center border-t border-slate-200 pt-8">
                     <div>
                         <p class="text-sm text-slate-600 mb-2">Are you a youth looking for opportunities?</p>
-                        <a href="youth-signup.php" class="inline-flex items-center gap-2 text-blue-900 font-semibold hover:underline">
+                        <a href="youth-signup.php"
+                            class="inline-flex items-center gap-2 text-blue-900 font-semibold hover:underline">
                             <span class="material-symbols-outlined text-base">person_add</span>
                             Youth Sign Up
                         </a>
                     </div>
                     <div>
                         <p class="text-sm text-slate-600 mb-2">Are you an employer or training provider?</p>
-                        <a href="provider-registration.php" class="inline-flex items-center gap-2 text-blue-900 font-semibold hover:underline">
+                        <a href="provider-registration.php"
+                            class="inline-flex items-center gap-2 text-blue-900 font-semibold hover:underline">
                             <span class="material-symbols-outlined text-base">business</span>
                             Register as Provider
                         </a>

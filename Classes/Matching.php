@@ -227,6 +227,7 @@ class Matching
     {
         $query = "SELECT m.*, 
                  p.first_name, p.last_name, p.age, p.email, p.phone, p.primary_skill,
+                 p.gender, p.education_level, p.skills, p.interests, p.classification, p.barangay,
                  o.title, o.type
                  FROM {$this->table} m
                  JOIN osy_profiles p ON m.osy_id = p.id

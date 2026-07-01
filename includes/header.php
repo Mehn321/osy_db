@@ -231,12 +231,7 @@
             </nav>
 
             <div class="mt-auto pt-4 border-t border-slate-200/50 dark:border-slate-700/50 flex flex-col gap-1">
-                <?php if (in_array($userRole, ['lydo', 'employer'])): ?>
-                    <a href="<?php echo $basePath; ?>/pages/matching.php" class="mb-4 w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-blue-900 to-blue-800 text-white py-2.5 rounded-lg font-semibold text-sm shadow-md hover:opacity-90 transition-opacity">
-                        <span class="material-symbols-outlined text-sm">auto_awesome</span>
-                        Match Skills
-                    </a>
-                <?php endif; ?>
+
                 <?php if ($userRole === 'lydo'): ?>
                     <a href="<?php echo $basePath; ?>/pages/settings.php" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-transform duration-200 hover:translate-x-1 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
                         <span class="material-symbols-outlined text-[20px]">settings</span>

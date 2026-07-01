@@ -68,10 +68,13 @@ function validateCsrfToken($token)
 // Global CSRF Verification for POST requests
 // Exclude public pages from CSRF validation
 $publicPages = ['login.php', 'youth-signup.php', 'provider-registration.php', 'password-reset.php'];
-$currentPage = basename($_SERVER['PHP_SELF'] ?? '');
+$serverPhpSelf = $_SERVER['PHP_SELF'] ?? '';
+$serverRequestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+$serverRequestUri = $_SERVER['REQUEST_URI'] ?? '';
+$currentPage = basename($serverPhpSelf);
 $isPublicPage = in_array($currentPage, $publicPages);
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$isPublicPage) {
+if ($serverRequestMethod === 'POST' && !$isPublicPage) {
     $token = '';
     if (isset($_SERVER['HTTP_X_CSRF_TOKEN'])) {
         $token = $_SERVER['HTTP_X_CSRF_TOKEN'];
@@ -103,12 +106,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$isPublicPage) {
 
 // Check for forced password reset redirect
 if (isset($_SESSION['user_id']) && !empty($_SESSION['temp_password_required'])) {
-    $currentPage = basename($_SERVER['PHP_SELF']);
-    $requestUri = $_SERVER['REQUEST_URI'] ?? '';
-    $isApi = (strpos($requestUri, '/api/') !== false || strpos($_SERVER['PHP_SELF'], '/api/') !== false);
+    $isApi = (strpos($serverRequestUri, '/api/') !== false || strpos($serverPhpSelf, '/api/') !== false);
 
     if ($currentPage !== 'password-reset.php' && $currentPage !== 'logout.php' && $currentPage !== 'login.php' && !$isApi) {
-        $inPagesDir = (strpos($_SERVER['PHP_SELF'], '/pages/') !== false);
+        $inPagesDir = (strpos($serverPhpSelf, '/pages/') !== false);
         if ($inPagesDir) {
             header('Location: password-reset.php');
         } else {

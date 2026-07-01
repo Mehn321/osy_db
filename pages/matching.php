@@ -6,7 +6,7 @@ if (!$user->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
-requireRole('lydo');
+requireRole(['lydo', 'employer']);
 
 require_once __DIR__ . '/../includes/header.php';
 
@@ -268,13 +268,15 @@ $matches_for_opportunity = $selectedOpportunityId ? $matching->getMatchesForOppo
 <?php
     $pendingMatches = [];
     $acceptedMatches = [];
+    $rejectedMatches = [];
     foreach ($matches_for_opportunity as $match) {
         if ($match['status'] === 'Accepted') {
             $acceptedMatches[] = $match;
         } elseif ($match['status'] === 'Pending') {
             $pendingMatches[] = $match;
+        } elseif ($match['status'] === 'Rejected') {
+            $rejectedMatches[] = $match;
         }
-        // Exclude 'Rejected' explicitly to keep UI clean
     }
 ?>
 
@@ -295,55 +297,89 @@ $matches_for_opportunity = $selectedOpportunityId ? $matching->getMatchesForOppo
     <!-- Kanban Grid -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
         
-        <!-- PENDING COLUMN -->
-        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 h-[800px] flex flex-col">
-            <div class="flex justify-between items-center mb-4 px-2">
-                <h3 class="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
-                    <span class="w-3 h-3 rounded-full bg-orange-400 animate-pulse"></span>
-                    Pending Review
-                </h3>
-                <span id="pendingCount" class="text-xs font-bold text-slate-500 bg-slate-200 dark:bg-slate-700 px-2 py-1 rounded-full"><?php echo count($pendingMatches); ?></span>
+        <!-- LEFT COLUMN: SHORTLISTED / REJECTED TABS -->
+        <div class="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 h-[800px] flex flex-col relative">
+            <div class="flex border-b border-slate-200 dark:border-slate-700 mb-4">
+                <button onclick="switchTab('shortlisted')" id="tabShortlisted" class="flex-1 py-2 text-sm font-bold border-b-2 border-blue-600 text-blue-600">Shortlisted (<span id="pendingCount"><?php echo count($pendingMatches); ?></span>)</button>
+                <button onclick="switchTab('rejected')" id="tabRejected" class="flex-1 py-2 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300">Rejected (<span id="rejectedCount"><?php echo count($rejectedMatches); ?></span>)</button>
             </div>
+
             <div id="colPending" class="flex-1 overflow-y-auto space-y-4 pr-2 pb-4">
                 <?php if (empty($pendingMatches)): ?>
-                    <p id="pendingEmptyMsg" class="text-xs text-center text-slate-400 mt-10">No pending candidates.</p>
+                    <p id="pendingEmptyMsg" class="text-xs text-center text-slate-400 mt-10">No shortlisted candidates.</p>
                 <?php else: ?>
-                    <p id="pendingEmptyMsg" class="hidden text-xs text-center text-slate-400 mt-10">No pending candidates.</p>
+                    <p id="pendingEmptyMsg" class="hidden text-xs text-center text-slate-400 mt-10">No shortlisted candidates.</p>
                 <?php endif; ?>
 
                 <?php foreach ($pendingMatches as $match): ?>
-                    <?php renderMatchCard($match, true); ?>
+                    <?php renderMatchCard($match, 'Pending'); ?>
+                <?php endforeach; ?>
+            </div>
+
+            <div id="colRejected" class="flex-1 overflow-y-auto space-y-4 pr-2 pb-4 hidden">
+                <?php if (empty($rejectedMatches)): ?>
+                    <p id="rejectedEmptyMsg" class="text-xs text-center text-slate-400 mt-10">No rejected candidates.</p>
+                <?php else: ?>
+                    <p id="rejectedEmptyMsg" class="hidden text-xs text-center text-slate-400 mt-10">No rejected candidates.</p>
+                <?php endif; ?>
+
+                <?php foreach ($rejectedMatches as $match): ?>
+                    <?php renderMatchCard($match, 'Rejected'); ?>
                 <?php endforeach; ?>
             </div>
         </div>
 
-        <!-- ACCEPTED COLUMN -->
+        <!-- RIGHT COLUMN: ACCEPTED -->
         <div class="bg-blue-50/50 dark:bg-blue-900/10 rounded-2xl p-4 border border-blue-100 dark:border-blue-800/50 h-[800px] flex flex-col">
             <div class="flex justify-between items-center mb-4 px-2">
                 <h3 class="font-bold text-blue-900 dark:text-blue-300 flex items-center gap-2">
                     <span class="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></span>
-                    Shortlisted / Accepted
+                    Accepted
                 </h3>
                 <span id="acceptedCount" class="text-xs font-bold text-blue-700 bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded-full"><?php echo count($acceptedMatches); ?></span>
             </div>
             <div id="colAccepted" class="flex-1 overflow-y-auto space-y-4 pr-2 pb-4">
                 <?php if (empty($acceptedMatches)): ?>
-                    <p id="acceptedEmptyMsg" class="text-xs text-center text-slate-400 mt-10">No candidates shortlisted yet.</p>
+                    <p id="acceptedEmptyMsg" class="text-xs text-center text-slate-400 mt-10">No candidates accepted yet.</p>
                 <?php else: ?>
-                    <p id="acceptedEmptyMsg" class="hidden text-xs text-center text-slate-400 mt-10">No candidates shortlisted yet.</p>
+                    <p id="acceptedEmptyMsg" class="hidden text-xs text-center text-slate-400 mt-10">No candidates accepted yet.</p>
                 <?php endif; ?>
 
                 <?php foreach ($acceptedMatches as $match): ?>
-                    <?php renderMatchCard($match, false); ?>
+                    <?php renderMatchCard($match, 'Accepted'); ?>
                 <?php endforeach; ?>
             </div>
         </div>
     </div>
 </section>
 
+<!-- Details Modal -->
+<div id="detailsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div class="p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+            <h3 class="text-xl font-bold text-slate-900 dark:text-white">Candidate Details</h3>
+            <button onclick="document.getElementById('detailsModal').classList.add('hidden')" class="text-slate-500 hover:text-slate-700 dark:hover:text-slate-300">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+        <div class="p-6 space-y-4">
+            <div class="grid grid-cols-2 gap-4 text-sm">
+                <div><span class="block text-slate-500 text-xs">Name</span> <span id="mdlName" class="font-bold text-slate-900 dark:text-white"></span></div>
+                <div><span class="block text-slate-500 text-xs">Age</span> <span id="mdlAge" class="font-bold text-slate-900 dark:text-white"></span></div>
+                <div><span class="block text-slate-500 text-xs">Gender</span> <span id="mdlGender" class="font-bold text-slate-900 dark:text-white"></span></div>
+                <div><span class="block text-slate-500 text-xs">Barangay</span> <span id="mdlBarangay" class="font-bold text-slate-900 dark:text-white"></span></div>
+                <div class="col-span-2"><span class="block text-slate-500 text-xs">Education</span> <span id="mdlEdu" class="font-bold text-slate-900 dark:text-white"></span></div>
+                <div class="col-span-2"><span class="block text-slate-500 text-xs">Primary Skill</span> <span id="mdlPrimarySkill" class="font-bold text-slate-900 dark:text-white"></span></div>
+                <div class="col-span-2"><span class="block text-slate-500 text-xs">Other Skills</span> <span id="mdlSkills" class="font-bold text-slate-900 dark:text-white"></span></div>
+                <div class="col-span-2"><span class="block text-slate-500 text-xs">Interests</span> <span id="mdlInterests" class="font-bold text-slate-900 dark:text-white"></span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <?php
 // Extracted card rendering logic since we use it in both columns
-function renderMatchCard($match, $isPending) {
+function renderMatchCard($match, $status) {
     ?>
     <div id="matchCard-<?php echo $match['id']; ?>" class="match-card bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-all duration-300 relative overflow-hidden group"
          data-score="<?php echo $match['match_score']; ?>">
@@ -362,16 +398,27 @@ function renderMatchCard($match, $isPending) {
             </div>
         </div>
         
-        <?php if ($isPending): ?>
         <div id="actionBtns-<?php echo $match['id']; ?>" class="flex gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-            <button onclick="updateMatchStatus(<?php echo $match['id']; ?>, 'Accepted')" class="flex-1 py-1.5 px-3 bg-green-50 text-green-700 hover:bg-green-600 hover:text-white border border-green-200 hover:border-green-600 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95">
-                <span class="material-symbols-outlined text-[16px]">how_to_reg</span> Accept
+            <button onclick="showDetailsModal(<?php echo htmlspecialchars(json_encode($match)); ?>)" class="flex-1 py-1.5 px-3 bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white border border-blue-200 hover:border-blue-600 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95">
+                <span class="material-symbols-outlined text-[16px]">visibility</span> Details
             </button>
-            <button onclick="updateMatchStatus(<?php echo $match['id']; ?>, 'Rejected')" class="flex-1 py-1.5 px-3 bg-slate-50 text-slate-600 hover:bg-red-500 hover:text-white border border-slate-200 hover:border-red-500 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95">
-                <span class="material-symbols-outlined text-[16px]">cancel</span> Reject
-            </button>
+            <?php if ($status === 'Pending'): ?>
+                <button onclick="updateMatchStatus(<?php echo $match['id']; ?>, 'Accepted')" class="flex-1 py-1.5 px-3 bg-green-50 text-green-700 hover:bg-green-600 hover:text-white border border-green-200 hover:border-green-600 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95">
+                    <span class="material-symbols-outlined text-[16px]">how_to_reg</span> Accept
+                </button>
+                <button onclick="updateMatchStatus(<?php echo $match['id']; ?>, 'Rejected')" class="flex-1 py-1.5 px-3 bg-slate-50 text-slate-600 hover:bg-red-500 hover:text-white border border-slate-200 hover:border-red-500 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95">
+                    <span class="material-symbols-outlined text-[16px]">cancel</span> Reject
+                </button>
+            <?php elseif ($status === 'Rejected'): ?>
+                <button onclick="updateMatchStatus(<?php echo $match['id']; ?>, 'Accepted')" class="flex-1 py-1.5 px-3 bg-green-50 text-green-700 hover:bg-green-600 hover:text-white border border-green-200 hover:border-green-600 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95">
+                    <span class="material-symbols-outlined text-[16px]">how_to_reg</span> Accept
+                </button>
+            <?php elseif ($status === 'Accepted'): ?>
+                <button onclick="updateMatchStatus(<?php echo $match['id']; ?>, 'Pending')" class="flex-1 py-1.5 px-3 bg-orange-50 text-orange-700 hover:bg-orange-600 hover:text-white border border-orange-200 hover:border-orange-600 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95">
+                    <span class="material-symbols-outlined text-[16px]">undo</span> Disapprove
+                </button>
+            <?php endif; ?>
         </div>
-        <?php endif; ?>
 
         <!-- AI Insight Section -->
         <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
@@ -390,6 +437,32 @@ function renderMatchCard($match, $isPending) {
 
 <!-- Real-time Logic -->
 <script>
+    function switchTab(tab) {
+        if (tab === 'shortlisted') {
+            document.getElementById('tabShortlisted').className = 'flex-1 py-2 text-sm font-bold border-b-2 border-blue-600 text-blue-600';
+            document.getElementById('tabRejected').className = 'flex-1 py-2 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300';
+            document.getElementById('colPending').classList.remove('hidden');
+            document.getElementById('colRejected').classList.add('hidden');
+        } else {
+            document.getElementById('tabRejected').className = 'flex-1 py-2 text-sm font-bold border-b-2 border-red-600 text-red-600';
+            document.getElementById('tabShortlisted').className = 'flex-1 py-2 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300';
+            document.getElementById('colRejected').classList.remove('hidden');
+            document.getElementById('colPending').classList.add('hidden');
+        }
+    }
+
+    function showDetailsModal(match) {
+        document.getElementById('mdlName').textContent = match.first_name + ' ' + match.last_name;
+        document.getElementById('mdlAge').textContent = match.age || 'N/A';
+        document.getElementById('mdlGender').textContent = match.gender || 'N/A';
+        document.getElementById('mdlBarangay').textContent = match.barangay || 'N/A';
+        document.getElementById('mdlEdu').textContent = match.education_level || 'N/A';
+        document.getElementById('mdlPrimarySkill').textContent = match.primary_skill || 'N/A';
+        document.getElementById('mdlSkills').textContent = match.skills || 'N/A';
+        document.getElementById('mdlInterests').textContent = match.interests || 'N/A';
+        document.getElementById('detailsModal').classList.remove('hidden');
+    }
+
     var currentOpportunityId = <?php echo $selectedOpportunityId ?: 'null'; ?>;
     var currentOpportunityTitle = "<?php echo addslashes($selectedOpportunity['title'] ?? ''); ?>";
 
@@ -407,10 +480,12 @@ function renderMatchCard($match, $isPending) {
 
     async function loadMatchesAJAX(id) {
         const colPending = document.getElementById('colPending');
+        const colRejected = document.getElementById('colRejected');
         const colAccepted = document.getElementById('colAccepted');
         
         // Loading state
         colPending.style.opacity = '0.5';
+        if (colRejected) colRejected.style.opacity = '0.5';
         colAccepted.style.opacity = '0.5';
         
         try {
@@ -438,13 +513,16 @@ function renderMatchCard($match, $isPending) {
                 }
 
                 // Clear columns
-                colPending.innerHTML = result.data.filter(m => m.status === 'Pending').length ? '' : '<p id="pendingEmptyMsg" class="text-xs text-center text-slate-400 mt-10">No pending candidates.</p>';
-                colAccepted.innerHTML = result.data.filter(m => m.status === 'Accepted').length ? '' : '<p id="acceptedEmptyMsg" class="text-xs text-center text-slate-400 mt-10">No candidates shortlisted yet.</p>';
+                colPending.innerHTML = result.data.filter(m => m.status === 'Pending').length ? '' : '<p id="pendingEmptyMsg" class="text-xs text-center text-slate-400 mt-10">No shortlisted candidates.</p>';
+                if(colRejected) colRejected.innerHTML = result.data.filter(m => m.status === 'Rejected').length ? '' : '<p id="rejectedEmptyMsg" class="text-xs text-center text-slate-400 mt-10">No rejected candidates.</p>';
+                colAccepted.innerHTML = result.data.filter(m => m.status === 'Accepted').length ? '' : '<p id="acceptedEmptyMsg" class="text-xs text-center text-slate-400 mt-10">No candidates accepted yet.</p>';
                 
                 result.data.forEach(match => {
-                    const html = renderMatchCardJS(match, match.status === 'Pending');
+                    const html = renderMatchCardJS(match, match.status);
                     if (match.status === 'Pending') {
                         colPending.insertAdjacentHTML('beforeend', html);
+                    } else if (match.status === 'Rejected' && colRejected) {
+                        colRejected.insertAdjacentHTML('beforeend', html);
                     } else if (match.status === 'Accepted') {
                         colAccepted.insertAdjacentHTML('beforeend', html);
                     }
@@ -465,23 +543,43 @@ function renderMatchCard($match, $isPending) {
         }
     }
 
-    function renderMatchCardJS(match, isPending) {
+    function renderMatchCardJS(match, status) {
         const scoreClass = match.match_score >= 85 ? 'text-green-600' : (match.match_score >= 70 ? 'text-yellow-600' : 'text-orange-600');
         const firstLetter = match.first_name ? match.first_name.charAt(0).toUpperCase() : '?';
+        const matchData = JSON.stringify(match).replace(/"/g, '&quot;');
         
-        let actionHtml = '';
-        if (isPending) {
-            actionHtml = `
-                <div id="actionBtns-${match.id}" class="flex gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-                    <button onclick="updateMatchStatus(${match.id}, 'Accepted')" class="flex-1 py-1.5 px-3 bg-green-50 text-green-700 hover:bg-green-600 hover:text-white border border-green-200 hover:border-green-600 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95">
-                        <span class="material-symbols-outlined text-[16px]">how_to_reg</span> Accept
-                    </button>
-                    <button onclick="updateMatchStatus(${match.id}, 'Rejected')" class="flex-1 py-1.5 px-3 bg-slate-50 text-slate-600 hover:bg-red-500 hover:text-white border border-slate-200 hover:border-red-500 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95">
-                        <span class="material-symbols-outlined text-[16px]">cancel</span> Reject
-                    </button>
-                </div>
+        let actionBtns = '';
+        if (status === 'Pending') {
+            actionBtns = `
+                <button onclick="updateMatchStatus(${match.id}, 'Accepted')" class="flex-1 py-1.5 px-3 bg-green-50 text-green-700 hover:bg-green-600 hover:text-white border border-green-200 hover:border-green-600 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95">
+                    <span class="material-symbols-outlined text-[16px]">how_to_reg</span> Accept
+                </button>
+                <button onclick="updateMatchStatus(${match.id}, 'Rejected')" class="flex-1 py-1.5 px-3 bg-slate-50 text-slate-600 hover:bg-red-500 hover:text-white border border-slate-200 hover:border-red-500 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95">
+                    <span class="material-symbols-outlined text-[16px]">cancel</span> Reject
+                </button>
+            `;
+        } else if (status === 'Rejected') {
+            actionBtns = `
+                <button onclick="updateMatchStatus(${match.id}, 'Accepted')" class="flex-1 py-1.5 px-3 bg-green-50 text-green-700 hover:bg-green-600 hover:text-white border border-green-200 hover:border-green-600 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95">
+                    <span class="material-symbols-outlined text-[16px]">how_to_reg</span> Accept
+                </button>
+            `;
+        } else if (status === 'Accepted') {
+            actionBtns = `
+                <button onclick="updateMatchStatus(${match.id}, 'Pending')" class="flex-1 py-1.5 px-3 bg-orange-50 text-orange-700 hover:bg-orange-600 hover:text-white border border-orange-200 hover:border-orange-600 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95">
+                    <span class="material-symbols-outlined text-[16px]">undo</span> Disapprove
+                </button>
             `;
         }
+
+        let actionHtml = `
+            <div id="actionBtns-${match.id}" class="flex gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                <button onclick="showDetailsModal(${matchData})" class="flex-1 py-1.5 px-3 bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white border border-blue-200 hover:border-blue-600 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95">
+                    <span class="material-symbols-outlined text-[16px]">visibility</span> Details
+                </button>
+                ${actionBtns}
+            </div>
+        `;
 
         return `
             <div id="matchCard-${match.id}" class="match-card bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-all duration-300 relative overflow-hidden group"
@@ -539,17 +637,7 @@ function renderMatchCard($match, $isPending) {
             // Animate out
             card.style.transform = 'scale(0.95)';
             setTimeout(() => {
-                card.style.opacity = '1';
-                card.style.pointerEvents = 'auto';
-                card.style.transform = 'none';
-                
-                if (status === 'Accepted') {
-                    document.getElementById('colAccepted').prepend(card);
-                    updateCounts();
-                } else {
-                    card.style.display = 'none'; // Fade out fully rejected
-                    updateCounts();
-                }
+                loadMatchesAJAX(currentOpportunityId);
             }, 300);
             
         } else {
@@ -584,15 +672,19 @@ function renderMatchCard($match, $isPending) {
 
     function updateCounts() {
         const pendingVisible = document.querySelectorAll('#colPending .match-card:not([style*="display: none"])');
+        const rejectedVisible = document.querySelectorAll('#colRejected .match-card:not([style*="display: none"])');
         const acceptedVisible = document.querySelectorAll('#colAccepted .match-card:not([style*="display: none"])');
         
-        document.getElementById('pendingCount').textContent = pendingVisible.length;
-        document.getElementById('acceptedCount').textContent = acceptedVisible.length;
+        if (document.getElementById('pendingCount')) document.getElementById('pendingCount').textContent = pendingVisible.length;
+        if (document.getElementById('rejectedCount')) document.getElementById('rejectedCount').textContent = rejectedVisible.length;
+        if (document.getElementById('acceptedCount')) document.getElementById('acceptedCount').textContent = acceptedVisible.length;
         
         const pMsg = document.getElementById('pendingEmptyMsg');
+        const rMsg = document.getElementById('rejectedEmptyMsg');
         const aMsg = document.getElementById('acceptedEmptyMsg');
         
         if(pMsg) pMsg.style.display = pendingVisible.length ? 'none' : 'block';
+        if(rMsg) rMsg.style.display = rejectedVisible.length ? 'none' : 'block';
         if(aMsg) aMsg.style.display = acceptedVisible.length ? 'none' : 'block';
     }
 
