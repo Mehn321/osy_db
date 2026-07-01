@@ -9,12 +9,13 @@ services:
     environment:
       - DB_HOST=${DB_HOST:-db}
       - DB_USER=${DB_USER:-root}
-      - DB_PASS=${DB_PASS}
+      - DB_PASS=${DB_PASS:-rootpass}
       - DB_NAME=${DB_NAME:-municipal_kk_profiling}
       - DB_PORT=${DB_PORT:-3306}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     restart: unless-stopped
 
   db:
@@ -23,14 +24,20 @@ services:
     ports:
       - "3307:3306"
     environment:
-      - MYSQL_ROOT_PASSWORD=${DB_PASS}
-      - MYSQL_DATABASE=${DB_NAME:-municipal_kk_profiling}
+      MYSQL_ROOT_PASSWORD: ${DB_PASS:-rootpass}
+      MYSQL_ROOT_HOST: "%"
+      MYSQL_DATABASE: ${DB_NAME:-municipal_kk_profiling}
     volumes:
       - mysql_data:/var/lib/mysql
       # Optional: Auto-load the dump on fresh database creation
       - ./database_dump.sql:/docker-entrypoint-initdb.d/init.sql
     restart: unless-stopped
     command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 10s
+      retries: 20
 
 volumes:
   mysql_data:
