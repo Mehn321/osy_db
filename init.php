@@ -20,6 +20,25 @@ require_once __DIR__ . '/Classes/AuditLog.php';
 require_once __DIR__ . '/Classes/Report.php';
 require_once __DIR__ . '/Classes/Dashboard.php';
 
+function renderDatabaseStartupError($message, $context = [])
+{
+    $host = htmlspecialchars($context['host'] ?? DB_HOST ?? 'unknown');
+    $port = htmlspecialchars((string)($context['port'] ?? DB_PORT ?? '3306'));
+    $database = htmlspecialchars($context['database'] ?? DB_NAME ?? 'unknown');
+    $sslMode = htmlspecialchars($context['ssl_mode'] ?? (DB_SSL_MODE ?: 'disabled'));
+    $sslVerify = htmlspecialchars((string)($context['ssl_verify_server_cert'] ?? (DB_SSL_VERIFY_SERVER_CERT ? 'true' : 'false')));
+    $envHost = getenv('DB_HOST') !== false ? 'set' : 'not set';
+    $envName = getenv('DB_NAME') !== false ? 'set' : 'not set';
+
+    http_response_code(503);
+    header('Content-Type: text/html; charset=utf-8');
+    echo '<!DOCTYPE html>';
+    echo '<html lang="en">';
+    echo '<head><meta charset="utf-8"><title>Database Connection Error</title><style>body{font-family:Arial,sans-serif;line-height:1.5;margin:2rem;color:#1f2937;}code{background:#f3f4f6;padding:0.1rem 0.35rem;border-radius:4px;} .box{border:1px solid #e5e7eb;border-radius:8px;padding:1rem 1.25rem;background:#fff7ed;} .muted{color:#6b7280;}</style></head>';
+    echo '<body><h1>Database Connection Error</h1><div class="box"><p>The application could not connect to the MySQL server.</p><p><strong>Details:</strong> ' . htmlspecialchars($message) . '</p><ul><li><strong>Host:</strong> ' . $host . '</li><li><strong>Port:</strong> ' . $port . '</li><li><strong>Database:</strong> ' . $database . '</li><li><strong>SSL mode:</strong> ' . $sslMode . '</li><li><strong>SSL verify:</strong> ' . $sslVerify . '</li><li><strong>Environment DB_HOST:</strong> ' . $envHost . '</li><li><strong>Environment DB_NAME:</strong> ' . $envName . '</li></ul><p class="muted">If this deployment is using Aiven for MySQL, verify that the service allows public connections and that Render’s outbound IPs are allowed in the Aiven firewall or allowlist.</p></div></body></html>';
+    exit;
+}
+
 // Initialize database connection
 try {
     $database = new Database(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT, DB_CHARSET);
@@ -28,7 +47,13 @@ try {
         require_once __DIR__ . '/create_db.php';
         $database = new Database(DB_HOST, DB_USER, DB_PASS, DB_NAME, DB_PORT, DB_CHARSET);
     } else {
-        die('Database Connection Error: ' . $e->getMessage());
+        renderDatabaseStartupError($e->getMessage(), [
+            'host' => DB_HOST,
+            'port' => DB_PORT,
+            'database' => DB_NAME,
+            'ssl_mode' => DB_SSL_MODE ?: 'disabled',
+            'ssl_verify_server_cert' => DB_SSL_VERIFY_SERVER_CERT ? 'true' : 'false',
+        ]);
     }
 }
 

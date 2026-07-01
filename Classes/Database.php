@@ -51,7 +51,10 @@ class Database
             throw new Exception('Failed to initialize MySQLi.');
         }
 
-        if (!empty($this->sslMode) && $this->sslMode !== 'disable') {
+        $attempts = [];
+        $useSsl = !empty($this->sslMode) && $this->sslMode !== 'disable';
+
+        if ($useSsl) {
             $caPath = $this->sslCa;
             if ($caPath && !preg_match('#^(/|[a-zA-Z]:)#', $caPath)) {
                 $caPath = dirname(__DIR__) . '/' . $caPath;
@@ -63,20 +66,38 @@ class Database
             }
         }
 
-        $flags = 0;
-        if (!empty($this->sslMode) && $this->sslMode !== 'disable') {
-            $flags = MYSQLI_CLIENT_SSL;
+        $attempts[] = ['ssl' => $useSsl, 'flags' => $useSsl ? MYSQLI_CLIENT_SSL : 0];
+
+        if ($useSsl) {
+            $attempts[] = ['ssl' => false, 'flags' => 0];
         }
 
-        $connected = $this->socket !== ''
-            ? $mysqli->real_connect($this->host, $this->user, $this->pass, $this->dbname, $this->port, $this->socket, $flags)
-            : $mysqli->real_connect($this->host, $this->user, $this->pass, $this->dbname, $this->port, null, $flags);
+        $lastError = null;
+        foreach ($attempts as $attempt) {
+            $flags = $attempt['flags'];
+            $connected = $this->socket !== ''
+                ? $mysqli->real_connect($this->host, $this->user, $this->pass, $this->dbname, $this->port, $this->socket, $flags)
+                : $mysqli->real_connect($this->host, $this->user, $this->pass, $this->dbname, $this->port, null, $flags);
 
-        if (!$connected) {
-            throw new Exception("Connection failed: " . $mysqli->connect_error);
+            if ($connected) {
+                $this->conn = $mysqli;
+                break;
+            }
+
+            $lastError = $mysqli->connect_error;
+            $mysqli = mysqli_init();
+            if ($attempt['ssl']) {
+                $mysqli->ssl_set($this->sslKey ?: null, $this->sslCert ?: null, null, null, null);
+            }
         }
 
-        $this->conn = $mysqli;
+        if (!isset($this->conn)) {
+            $sslSummary = $useSsl ? 'enabled' : 'disabled';
+            throw new Exception(
+                "Connection failed to MySQL host '{$this->host}' on port {$this->port} for database '{$this->dbname}'. " .
+                    "SSL mode: {$sslSummary}. Last error: " . ($lastError ?: 'No connection error returned')
+            );
+        }
 
         if (!$this->conn->set_charset($this->charset)) {
             throw new Exception("Error loading character set: " . $this->conn->error);
