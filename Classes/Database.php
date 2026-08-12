@@ -70,29 +70,56 @@ class Database
             }
         }
 
-        $attempts[] = ['ssl' => $useSsl, 'flags' => $useSsl ? MYSQLI_CLIENT_SSL : 0];
+        $candidateHosts = [];
+        $candidateHosts[] = $this->host;
+        if ($this->host === 'db' || $this->host === '127.0.0.1' || $this->host === 'localhost') {
+            $candidateHosts[] = '127.0.0.1';
+            $candidateHosts[] = 'localhost';
+            $candidateHosts[] = 'db';
+        }
 
-        if ($useSsl) {
-            $attempts[] = ['ssl' => false, 'flags' => 0];
+        $candidatePorts = [];
+        $candidatePorts[] = $this->port;
+        if ($this->port === 3306 || $this->port === 3307) {
+            $candidatePorts[] = 3306;
+            $candidatePorts[] = 3307;
+        }
+
+        foreach (array_unique($candidateHosts) as $host) {
+            foreach (array_unique($candidatePorts) as $port) {
+                $attempts[] = ['host' => $host, 'port' => $port, 'ssl' => $useSsl, 'flags' => $useSsl ? MYSQLI_CLIENT_SSL : 0];
+                if ($useSsl) {
+                    $attempts[] = ['host' => $host, 'port' => $port, 'ssl' => false, 'flags' => 0];
+                }
+            }
         }
 
         $lastError = null;
         foreach ($attempts as $attempt) {
-            $flags = $attempt['flags'];
-            $connected = $this->socket !== ''
-                ? $mysqli->real_connect($this->host, $this->user, $this->pass, $this->dbname, $this->port, $this->socket, $flags)
-                : $mysqli->real_connect($this->host, $this->user, $this->pass, $this->dbname, $this->port, null, $flags);
+            $connected = false;
+            try {
+                $flags = $attempt['flags'];
+                $connected = $this->socket !== ''
+                    ? $mysqli->real_connect($attempt['host'], $this->user, $this->pass, $this->dbname, $attempt['port'], $this->socket, $flags)
+                    : $mysqli->real_connect($attempt['host'], $this->user, $this->pass, $this->dbname, $attempt['port'], null, $flags);
 
-            if ($connected) {
-                $this->conn = $mysqli;
-                break;
+                if ($connected) {
+                    $this->host = $attempt['host'];
+                    $this->port = $attempt['port'];
+                    $this->conn = $mysqli;
+                    break;
+                }
+            } catch (Throwable $e) {
+                $lastError = $e->getMessage();
             }
 
-            $lastError = $mysqli->connect_error ?: $mysqli->error;
-            $sslError = $lastError;
-            $mysqli = mysqli_init();
-            if ($attempt['ssl']) {
-                $mysqli->ssl_set($this->sslKey ?: null, $this->sslCert ?: null, null, null, null);
+            if (!$connected) {
+                $lastError = $lastError ?: ($mysqli->connect_error ?: $mysqli->error ?: 'Unknown connection error');
+                $sslError = $lastError;
+                $mysqli = mysqli_init();
+                if ($attempt['ssl']) {
+                    $mysqli->ssl_set($this->sslKey ?: null, $this->sslCert ?: null, null, null, null);
+                }
             }
         }
 
@@ -194,6 +221,30 @@ class Database
     {
         $stmt = $this->executeQuery($query, $params, $types);
         return $stmt->affected_rows;
+    }
+
+    /**
+     * Start a database transaction.
+     */
+    public function beginTransaction()
+    {
+        return $this->conn->begin_transaction();
+    }
+
+    /**
+     * Commit the current transaction.
+     */
+    public function commit()
+    {
+        return $this->conn->commit();
+    }
+
+    /**
+     * Roll back the current transaction.
+     */
+    public function rollback()
+    {
+        return $this->conn->rollback();
     }
 
     /**

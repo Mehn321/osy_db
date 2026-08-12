@@ -32,8 +32,8 @@ class Opportunity
             }
 
             $query = "INSERT INTO {$this->table} 
-                     (title, type, employment_type, work_schedule, experience_req, training_provider, duration, modality, location, compensation, benefits, certification, description, total_slots, deadline, status, provider_id, created_by, created_at) 
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Open', ?, ?, NOW())";
+                     (title, type, employment_type, work_schedule, experience_req, training_provider, duration, modality, location, compensation, benefits, certification, description, total_slots, deadline, age_min, age_max, status, provider_id, created_by, created_at) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Open', ?, ?, NOW())";
 
             $this->db->execute($query, [
                 $data['title'],
@@ -51,9 +51,11 @@ class Opportunity
                 $data['description'] ?? null,
                 $data['total_slots'],
                 $data['deadline'],
+                $data['age_min'] ?? null,
+                $data['age_max'] ?? null,
                 $_SESSION['user_id'], // provider_id
                 $_SESSION['user_id']  // created_by
-            ], "ssssssssssssssiii");
+            ]);
 
             $opportunityId = $this->db->lastInsertId();
 
@@ -99,9 +101,13 @@ class Opportunity
     public function getAll($filters = [])
     {
         $query = "SELECT * FROM {$this->table} WHERE 1=1";
+        $params = [];
+        $types = '';
 
         if (isset($filters['type']) && $filters['type'] != 'All') {
-            $query .= " AND type = '{$this->db->escape($filters['type'])}'";
+            $query .= " AND type = ?";
+            $params[] = $filters['type'];
+            $types .= 's';
         }
 
         if (isset($filters['category'])) {
@@ -113,17 +119,22 @@ class Opportunity
         }
 
         if (isset($filters['status']) && $filters['status'] != 'All') {
-            $query .= " AND status = '{$this->db->escape($filters['status'])}'";
+            $query .= " AND status = ?";
+            $params[] = $filters['status'];
+            $types .= 's';
         }
 
-        if (isset($filters['search'])) {
-            $search = $this->db->escape($filters['search']);
-            $query .= " AND (title LIKE '%{$search}%' OR location LIKE '%{$search}%')";
+        if (isset($filters['search']) && $filters['search'] !== '') {
+            $search = '%' . $filters['search'] . '%';
+            $query .= " AND (title LIKE ? OR location LIKE ?)";
+            $params[] = $search;
+            $params[] = $search;
+            $types .= 'ss';
         }
 
         $query .= " ORDER BY created_at DESC";
 
-        return $this->db->fetchAll($query);
+        return $this->db->fetchAll($query, $params, $types);
     }
 
     /**
@@ -168,11 +179,13 @@ class Opportunity
                     'description',
                     'total_slots',
                     'deadline',
+                    'age_min',
+                    'age_max',
                     'status'
                 ])) {
                     $updates[] = "{$key} = ?";
                     $params[] = $value;
-                    $types .= ($key == 'total_slots') ? 'i' : 's';
+                    $types .= ($key == 'total_slots' || $key == 'age_min' || $key == 'age_max') ? 'i' : 's';
                 }
             }
 
@@ -271,10 +284,10 @@ class Opportunity
         $query = "SELECT o.*, u.fullname as provider_name, u.provider_type 
                  FROM {$this->table} o 
                  LEFT JOIN users u ON o.provider_id = u.id 
-                 WHERE o.status = 'Open' AND u.status = 'Active'";
+                 WHERE o.status = ? AND u.status = ?";
 
-        $params = [];
-        $types = '';
+        $params = ['Open', 'Active'];
+        $types = 'ss';
 
         if (isset($filters['type']) && $filters['type'] != 'All') {
             $query .= " AND o.type = ?";

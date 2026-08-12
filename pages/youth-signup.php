@@ -194,6 +194,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
     // If no validation errors, proceed with registration
     if (empty($errors)) {
         try {
+            if (!$database->beginTransaction()) {
+                throw new Exception('Unable to start registration transaction.');
+            }
+
             // 1. Create user account with role=youth, status=Pending
             $userResult = $user->register($username, $email, $password, $firstName . ' ' . $lastName, 'youth');
 
@@ -249,6 +253,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
                 json_encode(['barangay' => $address, 'id_type' => $govtIdType])
             );
 
+            $database->commit();
+
             // 4. Send notification to the active SK Chairman of this barangay
             $skChairman = $database->fetchOne(
                 "SELECT id FROM users WHERE role = 'sk_chairman' AND barangay = ? AND status = 'Active' LIMIT 1",
@@ -277,6 +283,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
             $govtIdType = $govtIdNumber = '';
             $consentAccepted = $dataPrivacyAccepted = 0;
         } catch (Exception $e) {
+            $database->rollback();
             $errors[] = $e->getMessage();
         }
     }

@@ -11,14 +11,68 @@
 $localConfigFile = __DIR__ . '/local.php';
 $localConfig = file_exists($localConfigFile) ? require $localConfigFile : [];
 
-function getConfiguredValue($key, $fallback)
+function loadDotEnvFile($path)
 {
-    $value = getenv($key);
-    if ($value === false || $value === '') {
-        $value = $_ENV[$key] ?? ($_SERVER[$key] ?? null);
+    if (!is_file($path)) {
+        return;
     }
 
-    return $value === null || $value === '' ? $fallback : $value;
+    $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    if ($lines === false) {
+        return;
+    }
+
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line === '' || str_starts_with($line, '#')) {
+            continue;
+        }
+
+        if (strpos($line, '=') === false) {
+            continue;
+        }
+
+        [$name, $value] = explode('=', $line, 2);
+        $name = trim($name);
+        $value = trim($value);
+
+        if (($value[0] ?? '') === '"' && substr($value, -1) === '"') {
+            $value = substr($value, 1, -1);
+        } elseif (($value[0] ?? '') === "'" && substr($value, -1) === "'") {
+            $value = substr($value, 1, -1);
+        }
+
+        if (getenv($name) === false) {
+            putenv($name . '=' . $value);
+        }
+        $_ENV[$name] = $value;
+        $_SERVER[$name] = $value;
+    }
+}
+
+loadDotEnvFile(__DIR__ . '/../.env');
+
+function getConfiguredValue($key, $fallback)
+{
+    $candidates = [];
+
+    if (isset($_SERVER[$key]) && $_SERVER[$key] !== '') {
+        $candidates[] = $_SERVER[$key];
+    }
+    if (isset($_ENV[$key]) && $_ENV[$key] !== '') {
+        $candidates[] = $_ENV[$key];
+    }
+    if (getenv($key) !== false && getenv($key) !== '') {
+        $candidates[] = getenv($key);
+    }
+
+    foreach ($candidates as $candidate) {
+        if ($candidate !== null && $candidate !== '') {
+            return $candidate;
+        }
+    }
+
+    return $fallback;
 }
 
 $resolvedDbHost = getConfiguredValue('DB_HOST', $localConfig['db']['host'] ?? '127.0.0.1');

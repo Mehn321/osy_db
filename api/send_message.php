@@ -15,6 +15,12 @@ if (!$user->isLoggedIn()) {
     exit;
 }
 
+$allowedRoles = ['lydo', 'sk_chairman'];
+if (!in_array($_SESSION['role'] ?? '', $allowedRoles, true) || ($_SESSION['status'] ?? '') !== 'Active') {
+    echo json_encode(['success' => false, 'message' => 'You are not authorized to send messages.']);
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['success' => false, 'message' => 'Method not allowed']);
     exit;

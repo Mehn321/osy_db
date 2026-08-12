@@ -702,8 +702,7 @@ CREATE TABLE `system_settings` (
 INSERT INTO `system_settings` (`id`, `setting_key`, `setting_value`, `updated_at`) VALUES
 (1, 'traccar_token', 'fEcWS61YQW25sobL2c5m5t:APA91bGo_rbxSVtCPGXkGSy5S6z8QfDbEG2gVmDOD1gkNXLYJVAxwkE2uVTei9O8pb4wtOJC1NG_QqFwNEHJCfWQ3mNZSwp2YRKEsctIApUPBrnlBs2_7XA', '2026-05-06 10:11:59'),
 (2, 'gmail_user', 'aclonhemday@gmail.com', '2026-05-06 10:11:59'),
-(3, 'gmail_app_password', 'jsit bytp oppd jcxo', '2026-05-06 10:11:59'),
-(2288, 'traccar_api_url', 'http://192.168.100.41:8082/, http://172.18.11.218:8082/, https://www.traccar.org/sms/', '2026-06-17 21:52:41');
+(3, 'gmail_app_password', 'jsit bytp oppd jcxo', '2026-05-06 10:11:59');
 
 -- --------------------------------------------------------
 

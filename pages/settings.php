@@ -53,11 +53,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $activeTab = 'security';
     } elseif (isset($_POST['update_notifications'])) {
-        $fields = ['traccar_token', 'traccar_api_url', 'gmail_user', 'gmail_app_password'];
+        $fields = ['traccar_token', 'gmail_user', 'gmail_app_password'];
         foreach ($fields as $f) {
+            // Use INSERT ... ON DUPLICATE KEY UPDATE so new keys are created automatically
             $database->execute(
-                "UPDATE system_settings SET setting_value = ? WHERE setting_key = ?",
-                [$_POST[$f] ?? '', $f],
+                "INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)",
+                [$f, $_POST[$f] ?? ''],
                 "ss"
             );
         }
@@ -223,18 +224,21 @@ $scoringPct = $syncStats['total_possible'] > 0
                     <div class="space-y-4">
                         <div class="flex items-center gap-2 text-blue-900 dark:text-blue-400 mb-4">
                             <span class="material-symbols-outlined text-xl">sms</span>
-                            <h4 class="font-bold uppercase tracking-widest text-xs">Traccar SMS Gateway (Cloud Mode)</h4>
+                            <h4 class="font-bold uppercase tracking-widest text-xs">Traccar SMS Gateway</h4>
                         </div>
+
                         <div class="p-5 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-200 dark:border-slate-700 space-y-4">
-                            <div>
-                                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Traccar Cloud Token</label>
-                                <input type="password" name="traccar_token" value="<?php echo htmlspecialchars($sys_settings['traccar_token'] ?? ''); ?>" placeholder="Enter Traccar Cloud Token" class="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-900" />
-                                <p class="text-[10px] text-slate-500 mt-2 italic">Found in Traccar Android App > Cloud > Cloud Token.</p>
+                            <div class="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+                                <p class="text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2">
+                                    <span class="material-symbols-outlined text-sm mt-0.5">info</span>
+                                    <span><strong>Cloud Mode:</strong> SMS is routed through Traccar's cloud relay. Requires a Cloud Token from the Traccar Android App &gt; Cloud &gt; Cloud Token.</span>
+                                </p>
                             </div>
+
                             <div>
-                                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Traccar Gateway API URL(s)</label>
-                                <input type="text" name="traccar_api_url" value="<?php echo htmlspecialchars($sys_settings['traccar_api_url'] ?? ''); ?>" placeholder="e.g. http://192.168.100.41:8082/, https://www.traccar.org/sms/" class="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-900" />
-                                <p class="text-[10px] text-slate-500 mt-2 italic">Comma-separated list of URLs (local IPs or cloud endpoints) to try sequentially.</p>
+                                <label id="traccar-token-label" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Traccar Cloud Token</label>
+                                <input type="password" name="traccar_token" value="<?php echo htmlspecialchars($sys_settings['traccar_token'] ?? ''); ?>" placeholder="Enter Traccar Cloud Token" class="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-900" />
+                                <p class="text-[10px] text-slate-500 mt-2 italic">Found in Traccar Android App &gt; Cloud &gt; Cloud Token.</p>
                             </div>
                         </div>
                     </div>
@@ -594,6 +598,7 @@ $scoringPct = $syncStats['total_possible'] > 0
         tabBtn.classList.remove('text-slate-700', 'dark:text-slate-300', 'hover:bg-slate-50', 'dark:hover:bg-slate-700/50');
         tabBtn.classList.add('bg-blue-50', 'dark:bg-blue-900/20', 'text-blue-900', 'dark:text-blue-400');
     }
+
 </script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

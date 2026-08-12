@@ -79,6 +79,20 @@ class User
     public function login($username, $password)
     {
         try {
+            $normalizedUsername = strtolower(trim($username));
+            $attemptKey = 'login_' . md5($normalizedUsername . '|' . ($_SERVER['REMOTE_ADDR'] ?? ''));
+            $now = time();
+            $lockUntil = $_SESSION['login_lockout_until'][$attemptKey] ?? 0;
+
+            if ($lockUntil > $now) {
+                throw new Exception('Too many failed login attempts. Please wait 15 minutes before trying again.');
+            }
+
+            if ($lockUntil > 0) {
+                unset($_SESSION['login_lockout_until'][$attemptKey]);
+                unset($_SESSION['login_attempts'][$attemptKey]);
+            }
+
             $user = $this->db->fetchOne(
                 "SELECT id, username, email, password, fullname, role, is_active, status, barangay, temp_password_required FROM users WHERE username = ? LIMIT 1",
                 [$username],
@@ -90,6 +104,15 @@ class User
             }
 
             if (!password_verify($password, $user['password'])) {
+                $attempts = $_SESSION['login_attempts'][$attemptKey] ?? 0;
+                $attempts++;
+                $_SESSION['login_attempts'][$attemptKey] = $attempts;
+
+                if ($attempts >= 5) {
+                    $_SESSION['login_lockout_until'][$attemptKey] = $now + 900;
+                    throw new Exception('Too many failed login attempts. Please wait 15 minutes before trying again.');
+                }
+
                 throw new Exception("Invalid password");
             }
 
@@ -124,6 +147,9 @@ class User
             if ($role === 'youth' && $status === 'Action Required') {
                 throw new Exception("Your registration requires action. Please review your profile or contact your SK Chairman.");
             }
+
+            unset($_SESSION['login_attempts'][$attemptKey]);
+            unset($_SESSION['login_lockout_until'][$attemptKey]);
 
             // Regenerate session ID to prevent session fixation
             if (session_status() === PHP_SESSION_ACTIVE) {

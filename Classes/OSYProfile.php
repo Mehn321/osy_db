@@ -6,12 +6,13 @@
  * Handles OSY (Out-of-School Youth) profile management
  */
 
-class OSYProfile
+class OSYProfile 
 {
     private $db;
     private $table = 'osy_profiles';
     private $uploadDir = __DIR__ . '/../uploads/profiles';
     private $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
+    private $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'pdf'];
     private $maxFileSize = 5242880; // 5MB
 
     public function __construct($database)
@@ -36,14 +37,37 @@ class OSYProfile
             throw new Exception("Upload error: " . $file['error']);
         }
 
-        // Validate file type
-        if (!in_array($file['type'], $this->allowedTypes)) {
-            throw new Exception("Invalid file type. Only JPEG, PNG, GIF, and PDF are allowed.");
+        if (!is_uploaded_file($file['tmp_name'])) {
+            throw new Exception("Uploaded file is invalid.");
         }
 
         // Validate file size
         if ($file['size'] > $this->maxFileSize) {
             throw new Exception("File size exceeds maximum limit of 5MB.");
+        }
+
+        $originalName = basename($file['name'] ?? '');
+        $ext = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+        if (!in_array($ext, $this->allowedExtensions, true)) {
+            throw new Exception("Invalid file extension. Only JPG, PNG, GIF, and PDF are allowed.");
+        }
+
+        $detectedMime = null;
+        if (function_exists('finfo_open')) {
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            if ($finfo) {
+                $detectedMime = finfo_file($finfo, $file['tmp_name']);
+                finfo_close($finfo);
+            }
+        }
+
+        if ($detectedMime === null) {
+            $detectedMime = $file['type'] ?? '';
+        }
+
+        // Validate file type based on server-detected content when possible
+        if (!in_array($detectedMime, $this->allowedTypes, true)) {
+            throw new Exception("Invalid file type. Only JPEG, PNG, GIF, and PDF are allowed.");
         }
 
         // Determine upload directory
@@ -61,7 +85,6 @@ class OSYProfile
         }
 
         // Generate unique filename
-        $ext = pathinfo($file['name'], PATHINFO_EXTENSION);
         $filename = $type . '_' . time() . '_' . uniqid() . '.' . $ext;
         $filepath = $uploadDir . '/' . $filename;
 
@@ -123,8 +146,13 @@ class OSYProfile
             // Trigger automated AI scoring in the background
             $scriptPath = realpath(__DIR__ . '/../api/background_recalculate_scores.php');
             if ($scriptPath) {
-                // Windows-specific background process command
-                pclose(popen("start /B php " . escapeshellarg($scriptPath) . " " . intval($id), "r"));
+                $phpBinary = escapeshellarg(PHP_BINARY);
+                $scriptArg = escapeshellarg($scriptPath);
+                $profileIdArg = escapeshellarg((string) intval($id));
+                $command = PHP_OS_FAMILY === 'Windows'
+                    ? 'start /B ' . $phpBinary . ' ' . $scriptArg . ' ' . $profileIdArg . ' > NUL 2>&1'
+                    : $phpBinary . ' ' . $scriptArg . ' ' . $profileIdArg . ' >/dev/null 2>&1 &';
+                shell_exec($command);
             }
 
             return [
@@ -285,8 +313,13 @@ class OSYProfile
             // Trigger automated AI scoring in the background
             $scriptPath = realpath(__DIR__ . '/../api/background_recalculate_scores.php');
             if ($scriptPath) {
-                // Windows-specific background process command
-                pclose(popen("start /B php " . escapeshellarg($scriptPath) . " " . intval($id), "r"));
+                $phpBinary = escapeshellarg(PHP_BINARY);
+                $scriptArg = escapeshellarg($scriptPath);
+                $profileIdArg = escapeshellarg((string) intval($id));
+                $command = PHP_OS_FAMILY === 'Windows'
+                    ? 'start /B ' . $phpBinary . ' ' . $scriptArg . ' ' . $profileIdArg . ' > NUL 2>&1'
+                    : $phpBinary . ' ' . $scriptArg . ' ' . $profileIdArg . ' >/dev/null 2>&1 &';
+                shell_exec($command);
             }
 
             return [

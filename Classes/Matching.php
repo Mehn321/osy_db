@@ -103,7 +103,7 @@ class Matching
 
             // Get opportunity with all relevant fields
             $opportunity = $this->db->fetchOne(
-                "SELECT title, description, location, certification FROM opportunities WHERE id = ? LIMIT 1",
+                "SELECT title, description, location, certification, age_min, age_max FROM opportunities WHERE id = ? LIMIT 1",
                 [$opportunity_id],
                 "i"
             );
@@ -119,10 +119,54 @@ class Matching
             $oppText = strtolower($opportunity['title'] . ' ' . $opportunity['description']);
             $oppLoc = strtolower($opportunity['location']);
 
-            // 1. Primary Skill Match (up to 30 points)
+            // Age range matching (up to 15 points)
+            $userAge = intval($osy['age'] ?? 0);
+            $minAge = intval($opportunity['age_min'] ?? 0);
+            $maxAge = intval($opportunity['age_max'] ?? 0);
+            if ($userAge > 0) {
+                if ($minAge > 0 && $userAge < $minAge) {
+                    $score += 0;
+                } elseif ($maxAge > 0 && $userAge > $maxAge) {
+                    $score += 0;
+                } else {
+                    $score += 15;
+                }
+            }
+
+            // Skill table overlap (up to 35 points)
+            $requiredSkills = $this->db->fetchAll(
+                "SELECT skill FROM opportunity_required_skills WHERE opportunity_id = ?",
+                [$opportunity_id],
+                "i"
+            );
+            $skillMatches = 0;
+            $normalizedUserSkills = [];
+            foreach (array_filter(array_map('trim', preg_split('/[,;]/', strtolower($osy['primary_skill'] . ',' . ($osy['skills'] ?? ''))))) as $skill) {
+                if ($skill !== '') {
+                    $normalizedUserSkills[] = strtolower(trim($skill));
+                }
+            }
+
+            foreach ($requiredSkills as $requiredSkill) {
+                $required = strtolower(trim($requiredSkill['skill']));
+                if ($required === '') {
+                    continue;
+                }
+                if (in_array($required, $normalizedUserSkills, true)) {
+                    $skillMatches++;
+                } elseif (in_array($required, ['computer', 'it', 'technology', 'tech'], true) && !empty(array_intersect($normalizedUserSkills, ['computer', 'it', 'technology', 'tech', 'programming', 'coding', 'software', 'hardware']))) {
+                    $skillMatches++;
+                }
+            }
+
+            if (!empty($requiredSkills)) {
+                $score += min(35, intval(round(($skillMatches / count($requiredSkills)) * 35)));
+            }
+
+            // 1. Primary Skill Match (up to 20 points)
             $pSkill = strtolower($osy['primary_skill']);
             if (strpos($oppText, $pSkill) !== false) {
-                $score += 30;
+                $score += 20;
             } else {
                 // Synonyms Check
                 $synonyms = [
@@ -138,7 +182,7 @@ class Matching
                     if (strpos($pSkill, $key) !== false || in_array($pSkill, $related)) {
                         foreach ($related as $syn) {
                             if (strpos($oppText, $syn) !== false) {
-                                $score += 20; // Partial points for synonym match
+                                $score += 10; // Partial points for synonym match
                                 break 2;
                             }
                         }
@@ -146,55 +190,55 @@ class Matching
                 }
             }
 
-            // 2. Secondary Skills Match (up to 20 points)
+            // 2. Secondary Skills Match (up to 15 points)
             if (!empty($osy['skills'])) {
-                $secondarySkills = array_map('trim', explode(',', strtolower($osy['skills'])));
+                $secondarySkills = array_map('trim', preg_split('/[,;]/', strtolower($osy['skills'])));
                 $skillPoints = 0;
                 foreach ($secondarySkills as $ss) {
                     if (!empty($ss) && $ss !== $pSkill && strpos($oppText, $ss) !== false) {
-                        $skillPoints += 10;
+                        $skillPoints += 5;
                     }
                 }
-                $score += min(20, $skillPoints);
+                $score += min(15, $skillPoints);
             }
 
-            // 3. Interests Alignment (up to 15 points)
+            // 3. Interests Alignment (up to 10 points)
             if (!empty($osy['interests'])) {
-                $interests = array_map('trim', explode(',', strtolower($osy['interests'])));
+                $interests = array_map('trim', preg_split('/[,;]/', strtolower($osy['interests'])));
                 foreach ($interests as $interest) {
                     if (!empty($interest) && strpos($oppText, $interest) !== false) {
-                        $score += 15;
+                        $score += 10;
                         break;
                     }
                 }
             }
 
-            // 4. Education Level Fit (up to 20 points)
+            // 4. Education Level Fit (up to 15 points)
             $eduLevel = $osy['education_level'];
             $reqText = strtolower($opportunity['certification'] . ' ' . $opportunity['description']);
 
             if (strpos($reqText, 'college') !== false || strpos($reqText, 'degree') !== false) {
-                if ($eduLevel == 'College Graduate') $score += 20;
-                elseif ($eduLevel == 'College Undergraduate') $score += 10;
+                if ($eduLevel == 'College Graduate') $score += 15;
+                elseif ($eduLevel == 'College Undergraduate') $score += 8;
             } elseif (strpos($reqText, 'high school') !== false || strpos($reqText, 'shs') !== false) {
                 if (in_array($eduLevel, ['High School Graduate', 'Senior High School Graduate', 'College Undergraduate', 'College Graduate'])) {
-                    $score += 20;
+                    $score += 15;
                 }
             } else {
-                $score += 15; // Generic point if no specific high-level education required
+                $score += 10; // Generic point if no specific high-level education required
             }
 
-            // 5. Location Proximity (up to 15 points)
+            // 5. Location Proximity (up to 10 points)
             $barangay = strtolower($osy['barangay']);
             if (strpos($oppLoc, $barangay) !== false) {
-                $score += 15;
-            } elseif (strpos($oppLoc, 'any') !== false || strpos($oppLoc, 'remote') !== false || empty($opportunity['location'])) {
                 $score += 10;
+            } elseif (strpos($oppLoc, 'any') !== false || strpos($oppLoc, 'remote') !== false || empty($opportunity['location'])) {
+                $score += 5;
             }
 
             // Ensure minimum base score if they have any match
             if ($score > 0 && $score < 40) {
-                $score += 20; // Boost baseline for partial fits
+                $score += 15; // Boost baseline for partial fits
             }
 
             return min(100, max(0, $score));

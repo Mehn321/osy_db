@@ -154,9 +154,10 @@ class GeminiService
         - Req: {$opportunity['certification']}
         
         TASK:
-        Provide a concise 2-sentence explanation of the alignment. 
-        Follow it with a separate line starting with '**Specific Benefit:**' followed by one clear benefit.
-        Tone: Encouraging.";
+        Return a JSON object with two keys: 'summary' and 'specific_benefit'.
+        The 'summary' value should be a concise 2-sentence explanation of the alignment.
+        The 'specific_benefit' value should be one clear benefit.
+        Tone: Encouraging. Return valid JSON only.";
     }
 
     /**
@@ -177,13 +178,22 @@ class GeminiService
         - Req: {$opportunity['certification']}
         
         TASK:
-        Return ONLY a single number from 0 to 100. No text, no explanation.";
+        Return valid JSON only with this structure: {\"score\": 0, \"reasoning\": \"brief explanation\"}.
+        The score must be an integer from 0 to 100. Do not include any extra text.";
 
         $response = $this->generateContent($prompt);
         
         if ($response === false) return false;
-        
-        // Extract first number found in response
+
+        $decoded = json_decode($response, true);
+        if (is_array($decoded) && isset($decoded['score'])) {
+            return max(0, min(100, (int) $decoded['score']));
+        }
+
+        if (preg_match('/"score"\s*:\s*(\d+)/', $response, $matches)) {
+            return max(0, min(100, (int)$matches[1]));
+        }
+
         if (preg_match('/(\d+)/', $response, $matches)) {
             return (int)$matches[1];
         }

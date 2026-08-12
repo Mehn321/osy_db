@@ -299,34 +299,36 @@
                 }
 
                 // Override global fetch to automatically inject CSRF token
-                const originalFetch = window.fetch;
-                window.fetch = function(url, options = {}) {
-                    options.method = options.method || 'GET';
-                    const method = options.method.toUpperCase();
-                    if (method === 'POST') {
-                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-                        if (csrfToken) {
-                            options.headers = options.headers || {};
-                            if (options.headers instanceof Headers) {
-                                if (!options.headers.has('X-CSRF-Token')) {
-                                    options.headers.append('X-CSRF-Token', csrfToken);
+                if (!window.originalFetch) {
+                    window.originalFetch = window.fetch;
+                    window.fetch = function(url, options = {}) {
+                        options.method = options.method || 'GET';
+                        const method = options.method.toUpperCase();
+                        if (method === 'POST') {
+                            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                            if (csrfToken) {
+                                options.headers = options.headers || {};
+                                if (options.headers instanceof Headers) {
+                                    if (!options.headers.has('X-CSRF-Token')) {
+                                        options.headers.append('X-CSRF-Token', csrfToken);
+                                    }
+                                } else if (Array.isArray(options.headers)) {
+                                    if (!options.headers.some(h => h[0].toLowerCase() === 'x-csrf-token')) {
+                                        options.headers.push(['X-CSRF-Token', csrfToken]);
+                                    }
+                                } else {
+                                    if (!options.headers['X-CSRF-Token'] && !options.headers['x-csrf-token']) {
+                                        options.headers['X-CSRF-Token'] = csrfToken;
+                                    }
                                 }
-                            } else if (Array.isArray(options.headers)) {
-                                if (!options.headers.some(h => h[0].toLowerCase() === 'x-csrf-token')) {
-                                    options.headers.push(['X-CSRF-Token', csrfToken]);
+                                if (options.body instanceof FormData && !options.body.has('csrf_token')) {
+                                    options.body.append('csrf_token', csrfToken);
                                 }
-                            } else {
-                                if (!options.headers['X-CSRF-Token'] && !options.headers['x-csrf-token']) {
-                                    options.headers['X-CSRF-Token'] = csrfToken;
-                                }
-                            }
-                            if (options.body instanceof FormData && !options.body.has('csrf_token')) {
-                                options.body.append('csrf_token', csrfToken);
                             }
                         }
-                    }
-                    return originalFetch(url, options);
-                };
+                        return window.originalFetch(url, options);
+                    };
+                }
 
                 // Run on initial load
                 document.addEventListener('DOMContentLoaded', () => {
@@ -354,7 +356,7 @@
                 }
 
                 // --- Single Page Application (SPA) Logic ---
-                let currentSpaController = null;
+                var currentSpaController = currentSpaController || null;
 
                 async function navigateTo(url, pushState = true) {
                     // Cancel any ongoing navigation
@@ -438,7 +440,7 @@
                                 progressBar.style.width = '100%';
                                 setTimeout(() => {
                                     // Re-check after timeout in case a new nav started
-                                    if (currentSpaController && currentSpaController.signal === signal) {
+                                    if (!currentSpaController || currentSpaController.signal === signal) {
                                         progressBar.style.display = 'none';
                                         progressBar.style.width = '0';
                                     }
@@ -451,25 +453,30 @@
 
                 // Script Execution Engine: Manually runs scripts in AJAX-loaded content
                 function executeScripts(container) {
+                    window.__spaExecutedScripts = window.__spaExecutedScripts || new Set();
                     const scripts = container.querySelectorAll('script');
                     scripts.forEach(oldScript => {
+                        const scriptKey = oldScript.src ?
+                            'src:' + oldScript.src :
+                            'inline:' + oldScript.textContent.trim();
+
+                        if (window.__spaExecutedScripts.has(scriptKey)) {
+                            return;
+                        }
+                        window.__spaExecutedScripts.add(scriptKey);
+
                         const newScript = document.createElement('script');
                         Array.from(oldScript.attributes).forEach(attr => {
                             newScript.setAttribute(attr.name, attr.value);
                         });
 
                         if (oldScript.src) {
-                            // For external scripts
                             newScript.src = oldScript.src;
                         } else {
-                            // For inline scripts
                             newScript.textContent = oldScript.textContent;
                         }
 
-                        // Append directly to body to execute, then remove to keep DOM clean
                         document.body.appendChild(newScript);
-                        // We keep it in the DOM if it might be needed for debugging, but typically removing is fine
-                        // document.body.removeChild(newScript); 
                     });
                 }
 
@@ -608,7 +615,7 @@
                                 if (progressBar) {
                                     progressBar.style.width = '100%';
                                     setTimeout(() => {
-                                        if (currentSpaController && currentSpaController.signal === signal) {
+                                        if (!currentSpaController || currentSpaController.signal === signal) {
                                             progressBar.style.display = 'none';
                                             progressBar.style.width = '0';
                                         }

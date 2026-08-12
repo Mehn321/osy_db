@@ -6,7 +6,7 @@ if (!$user->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
-requireRole('lydo');
+requireRole(['lydo', 'employer', 'training_provider', 'youth']);
 
 require_once __DIR__ . '/../includes/header.php';
 
@@ -35,7 +35,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'certification' => $_POST['certification'] ?? null,
                 'description' => $_POST['description'] ?? null,
                 'total_slots' => $_POST['total_slots'],
-                'deadline' => $_POST['deadline']
+                'deadline' => $_POST['deadline'],
+                'age_min' => !empty($_POST['age_min']) ? intval($_POST['age_min']) : null,
+                'age_max' => !empty($_POST['age_max']) ? intval($_POST['age_max']) : null
             ]);
             $message = $result['message'];
             if ($result['success']) {
@@ -60,6 +62,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'description' => $_POST['description'] ?? null,
             'total_slots' => $_POST['total_slots'],
             'deadline' => $_POST['deadline'],
+            'age_min' => !empty($_POST['age_min']) ? intval($_POST['age_min']) : null,
+            'age_max' => !empty($_POST['age_max']) ? intval($_POST['age_max']) : null,
             'status' => $_POST['status']
         ]);
         $message = $result['message'];
@@ -97,6 +101,11 @@ if (in_array($_SESSION['role'], ['employer', 'training_provider'])) {
         'skill' => $_GET['skill'] ?? ''
     ];
 
+    $profile = null;
+    if ($_SESSION['role'] === 'youth') {
+        $profile = $database->fetchOne("SELECT id, age FROM osy_profiles WHERE created_by = ? LIMIT 1", [$_SESSION['user_id']], 'i');
+    }
+
     // If skill filter is applied, filter by required skills
     if (!empty($filters['skill'])) {
         $opportunities = $opportunity->getByRequiredSkill($filters['skill'], ['type' => $filters['type']]);
@@ -114,6 +123,41 @@ if (in_array($_SESSION['role'], ['employer', 'training_provider'])) {
         }
     } else {
         $opportunities = $opportunity->getForYouth($filters);
+    }
+
+    if ($_SESSION['role'] === 'youth' && !empty($profile)) {
+        $acceptedMatchIds = [];
+        $acceptedMatches = $database->fetchAll(
+            "SELECT opportunity_id FROM osy_matches WHERE osy_id = ? AND status = 'Accepted'",
+            [$profile['id']],
+            'i'
+        );
+        foreach ($acceptedMatches as $match) {
+            $acceptedMatchIds[(int)$match['opportunity_id']] = true;
+        }
+
+        $opportunities = array_values(array_filter($opportunities, function ($opp) use ($acceptedMatchIds, $profile) {
+            if ($opp['type'] === 'Job Opening') {
+                return isset($acceptedMatchIds[(int)$opp['id']]);
+            }
+
+            if (!empty($opp['age_min']) || !empty($opp['age_max'])) {
+                $age = intval($profile['age'] ?? 0);
+                $min = intval($opp['age_min'] ?? 0);
+                $max = intval($opp['age_max'] ?? 0);
+                if ($age <= 0) {
+                    return false;
+                }
+                if ($min > 0 && $age < $min) {
+                    return false;
+                }
+                if ($max > 0 && $age > $max) {
+                    return false;
+                }
+            }
+
+            return true;
+        }));
     }
     $isProvider = false;
     $canCreate = false;
@@ -365,6 +409,17 @@ if (in_array($_SESSION['role'], ['employer', 'training_provider'])) {
                     <textarea name="description" id="opp_description" rows="3" placeholder="Details about the opportunity..." class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white"></textarea>
                 </div>
 
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block">Minimum Age</label>
+                        <input type="number" name="age_min" id="opp_age_min" min="1" class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block">Maximum Age</label>
+                        <input type="number" name="age_max" id="opp_age_max" min="1" class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white">
+                    </div>
+                </div>
+
                 <div id="statusContainer" class="hidden">
                     <label class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block">Status</label>
                     <select name="status" id="opp_status" class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white">
@@ -462,6 +517,8 @@ if (in_array($_SESSION['role'], ['employer', 'training_provider'])) {
             document.getElementById('opp_benefits').value = opp.benefits || '';
             document.getElementById('opp_certification').value = opp.certification || '';
             document.getElementById('opp_description').value = opp.description || '';
+            document.getElementById('opp_age_min').value = opp.age_min || '';
+            document.getElementById('opp_age_max').value = opp.age_max || '';
             document.getElementById('opp_status').value = opp.status;
 
             document.getElementById('opportunityModal').classList.remove('hidden');

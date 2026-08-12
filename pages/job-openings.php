@@ -25,7 +25,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'certification' => $_POST['certification'] ?? null,
             'description' => $_POST['description'] ?? null,
             'total_slots' => $_POST['total_slots'],
-            'deadline' => $_POST['deadline']
+            'deadline' => $_POST['deadline'],
+            'age_min' => !empty($_POST['age_min']) ? intval($_POST['age_min']) : null,
+            'age_max' => !empty($_POST['age_max']) ? intval($_POST['age_max']) : null
         ]);
         if ($result['success'] && !empty($requiredSkills)) {
             $opportunity->updateRequiredSkills($result['id'], $requiredSkills);
@@ -46,6 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'description' => $_POST['description'] ?? null,
             'total_slots' => $_POST['total_slots'],
             'deadline' => $_POST['deadline'],
+            'age_min' => !empty($_POST['age_min']) ? intval($_POST['age_min']) : null,
+            'age_max' => !empty($_POST['age_max']) ? intval($_POST['age_max']) : null,
             'status' => $_POST['status']
         ]);
         if ($result['success']) {
@@ -318,6 +322,17 @@ require_once __DIR__ . '/../includes/header.php';
                     <textarea name="description" id="opp_description" rows="3" placeholder="Details about the job role..." class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white"></textarea>
                 </div>
 
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block">Minimum Age</label>
+                        <input type="number" name="age_min" id="opp_age_min" min="1" class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block">Maximum Age</label>
+                        <input type="number" name="age_max" id="opp_age_max" min="1" class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white">
+                    </div>
+                </div>
+
                 <div>
                     <label class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block">Required Skills</label>
                     <input type="text" name="required_skills" id="opp_required_skills" placeholder="e.g., welding, customer service, communication" class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white" />
@@ -427,6 +442,8 @@ require_once __DIR__ . '/../includes/header.php';
             document.getElementById('opp_compensation').value = opp.compensation || '';
             document.getElementById('opp_benefits').value = opp.benefits || '';
             document.getElementById('opp_description').value = opp.description || '';
+            document.getElementById('opp_age_min').value = opp.age_min || '';
+            document.getElementById('opp_age_max').value = opp.age_max || '';
             document.getElementById('opp_required_skills').value = opp.required_skills || '';
             document.getElementById('opp_status').value = opp.status;
 

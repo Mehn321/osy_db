@@ -21,7 +21,6 @@ try {
 
     $defaultSettings = [
         'traccar_token' => '',
-        'traccar_api_url' => 'http://192.168.100.41:8082/, http://172.18.11.218:8082/, https://www.traccar.org/sms/',
         'gmail_user' => '',
         'gmail_app_password' => ''
     ];

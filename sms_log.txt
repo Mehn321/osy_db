@@ -253,3 +253,82 @@
 2026-05-06 04:14:01 | Try URL: http://192.168.100.41:8082/ | To: +9466898063 | Code: 0 | Resp:  | Error: Connection timed out after 5015 milliseconds
 2026-05-06 04:14:06 | Try URL: http://172.18.11.218:8082/ | To: +9466898063 | Code: 0 | Resp:  | Error: Connection timed out after 5007 milliseconds
 2026-05-06 04:14:07 | Try URL: https://www.traccar.org/sms/ | To: +9466898063 | Code: 200 | Resp: {"responses":[{"success":false,"error":{"code":"messaging/invalid-argument","message":"The registration token is not a valid FCM registration token"}}],"successCount":0,"failureCount":1} | Error: 
+2026-07-27 05:50:18 | Traccar Local | URL: http://192.168.100.41:8082 | To: +639123456789 | Code: 401 | Resp:  | Error: 
+2026-07-27 05:50:21 | Traccar Local | URL: http://172.18.11.218:8082 | To: +639123456789 | Code: 0 | Resp:  | Error: Connection timed out after 3076 milliseconds
+2026-07-27 05:51:14 | Traccar Local | URL: http://192.168.100.41:8082 | To: +639631371969 | Code: 401 | Resp:  | Error: 
+2026-07-27 05:51:17 | Traccar Local | URL: http://172.18.11.218:8082 | To: +639631371969 | Code: 0 | Resp:  | Error: Connection timed out after 3076 milliseconds
+2026-07-27 05:51:41 | Traccar Local | URL: http://192.168.100.41:8082 | To: +639631371969 | Code: 401 | Resp:  | Error: 
+2026-07-27 05:51:43 | Traccar Local | URL: http://172.18.11.218:8082 | To: +639631371969 | Code: 0 | Resp:  | Error: Connection timed out after 3075 milliseconds
+2026-07-27 05:52:39 | Traccar Local | URL: http://192.168.100.41:8082 | To: +639631371969 | Code: 401 | Resp:  | Error: 
+2026-07-27 05:52:44 | Traccar Local | URL: http://172.18.11.218:8082 | To: +639631371969 | Code: 0 | Resp:  | Error: Connection timed out after 3076 milliseconds
+2026-07-27 05:56:26 | Traccar Local | URL: http://192.168.100.41:8082/sms | To: +639631371969 | Code: 401 | Resp:  | Error: 
+2026-07-27 05:56:29 | Traccar Local | URL: http://172.18.11.218:8082/sms | To: +639631371969 | Code: 0 | Resp:  | Error: Connection timed out after 3076 milliseconds
+2026-07-27 08:02:44 | Traccar Local | URL: http://192.168.100.41:8082/sms | To: +639631371969 | Code: 401 | Resp:  | Error: 
+2026-07-27 08:02:48 | Traccar Local | URL: http://172.18.11.218:8082/sms | To: +639631371969 | Code: 0 | Resp:  | Error: Failed to connect to 172.18.11.218 port 8082 after 3026 ms: Timeout was reached
+2026-07-27 08:02:48 | Traccar Local | URL: http://192.168.100.41:8082/sms | To: +639631371969 | Code: 401 | Resp:  | Error: 
+2026-07-27 08:02:51 | Traccar Local | URL: http://172.18.11.218:8082/sms | To: +639631371969 | Code: 0 | Resp:  | Error: Failed to connect to 172.18.11.218 port 8082 after 3012 ms: Timeout was reached
+2026-07-27 08:02:51 | Traccar Local | URL: http://192.168.100.41:8082/sms | To: +639631371969 | Code: 401 | Resp:  | Error: 
+2026-07-27 08:02:54 | Traccar Local | URL: http://172.18.11.218:8082/sms | To: +639631371969 | Code: 0 | Resp:  | Error: Failed to connect to 172.18.11.218 port 8082 after 3016 ms: Timeout was reached
+2026-07-27 08:04:52 | Traccar Local | URL: http://192.168.100.41:8082/sms | To: +639123456789 | Code: 401 | Resp:  | Error: 
+2026-07-27 08:04:55 | Traccar Local | URL: http://172.18.11.218:8082/sms | To: +639123456789 | Code: 0 | Resp:  | Error: Failed to connect to 172.18.11.218 port 8082 after 3005 ms: Timeout was reached
+2026-07-27 08:05:37 | Traccar Local | URL: http://192.168.100.41:8082/sms | To: +639123456789 | Code: 500 | Resp: Error: 500 | Error: 
+2026-07-27 08:05:40 | Traccar Local | URL: http://172.18.11.218:8082/sms | To: +639123456789 | Code: 0 | Resp:  | Error: Failed to connect to 172.18.11.218 port 8082 after 3012 ms: Timeout was reached
+2026-08-02 11:34:49 | Traccar Local | URL: http://192.168.100.41:8082 | To: +639631371969 | Code: 0 | Resp:  | Error: Connection timed out after 3074 milliseconds
+2026-08-02 11:34:52 | Traccar Local | URL: http://172.18.11.218:8082 | To: +639631371969 | Code: 0 | Resp:  | Error: Connection timed out after 3075 milliseconds
+2026-08-02 11:35:36 | Traccar Local | URL: http://192.168.100.41:8082 | To: +639631371969 | Code: 0 | Resp:  | Error: Connection timed out after 3076 milliseconds
+2026-08-02 11:35:42 | Traccar Local | URL: http://172.18.11.218:8082 | To: +639631371969 | Code: 0 | Resp:  | Error: Connection timed out after 3077 milliseconds
+2026-08-02 11:35:44 | Traccar Local | URL: http://192.168.100.41:8082 | To: +639631371969 | Code: 0 | Resp:  | Error: Failed to connect to 192.168.100.41 port 8082 after 2547 ms: Could not connect to server
+2026-08-02 11:35:47 | Traccar Local | URL: http://172.18.11.218:8082 | To: +639631371969 | Code: 0 | Resp:  | Error: Connection timed out after 3075 milliseconds
+2026-08-02 11:35:50 | Traccar Local | URL: http://192.168.100.41:8082 | To: +639631371969 | Code: 0 | Resp:  | Error: Connection timed out after 3075 milliseconds
+2026-08-02 11:35:53 | Traccar Local | URL: http://172.18.11.218:8082 | To: +639631371969 | Code: 0 | Resp:  | Error: Connection timed out after 3076 milliseconds
+2026-08-02 12:12:22 | Traccar Local | URL: http://192.168.100.41:8082 | To: +639631371969 | Code: 0 | Resp:  | Error: Connection timed out after 3076 milliseconds
+2026-08-02 12:12:28 | Traccar Local | URL: http://192.168.100.41:8082 | To: +639631371969 | Code: 0 | Resp:  | Error: Connection timed out after 3076 milliseconds
+2026-08-02 12:13:06 | Traccar Local | URL: http://192.168.100.41:8082 | To: +639631371969 | Code: 0 | Resp:  | Error: Connection timed out after 3075 milliseconds
+2026-08-02 12:13:18 | Traccar Local | URL: http://192.168.100.41:8082 | To: +639631371969 | Code: 0 | Resp:  | Error: Connection timed out after 3076 milliseconds
+2026-08-02 12:13:54 | Traccar Local | URL: http://192.168.100.41:8082 | To: +639631371969 | Code: 0 | Resp:  | Error: Connection timed out after 3075 milliseconds
+2026-08-02 12:13:57 | Traccar Local | URL: http://192.168.100.41:8082 | To: +639631371969 | Code: 0 | Resp:  | Error: Connection timed out after 3076 milliseconds
+2026-08-02 14:19:06 | Traccar Local | URL: http://192.168.100.41:8082 | To: +639700751236 | Code: 0 | Resp:  | Error: Failed to connect to 192.168.100.41 port 8082 after 2145 ms: Couldn't connect to server
+2026-08-02 14:29:40 | Traccar Local | URL: http://192.168.100.41:8082 | To: +639700751236 | Code: 0 | Resp:  | Error: Failed to connect to 192.168.100.41 port 8082 after 3014 ms: Timeout was reached
+2026-08-02 13:06:33 | Traccar Local | URL: http://192.168.100.41:8082 | To: +639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 13:06:35 | Traccar Local | URL: http://192.168.100.41:8082 | To: +639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 13:12:56 | Traccar Local | URL: http://192.168.100.41:8082 | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 13:12:56 | Traccar Local | URL: http://192.168.100.41:8082/sms | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 13:12:56 | Traccar Local | URL: http://192.168.100.41:8082 | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 13:12:56 | Traccar Local | URL: http://192.168.100.41:8082/sms | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 13:14:47 | Traccar Local | URL: http://192.168.100.41:8082 | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 13:14:49 | Traccar Local | URL: http://192.168.100.41:8082/sms | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 13:14:49 | Traccar Local | URL: http://192.168.100.41:8082 | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 13:14:49 | Traccar Local | URL: http://192.168.100.41:8082/sms | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 13:15:05 | Traccar Local | URL: http://192.168.100.41:8082 | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 13:15:05 | Traccar Local | URL: http://192.168.100.41:8082/sms | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 13:15:06 | Traccar Local | URL: http://192.168.100.41:8082 | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 13:15:06 | Traccar Local | URL: http://192.168.100.41:8082/sms | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 13:40:54 | Traccar Local | Format: JSON | URL: http://192.168.100.41:8082/sms | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 13:40:54 | Traccar Local Retry-No-Token | URL: http://192.168.100.41:8082/sms | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 13:40:54 | Traccar Local | Format: FORM | URL: http://192.168.100.41:8082/sms | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 13:40:54 | Traccar Local | Format: JSON | URL: http://192.168.100.41:8082 | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 13:40:54 | Traccar Local Retry-No-Token | URL: http://192.168.100.41:8082 | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 13:40:54 | Traccar Local | Format: FORM | URL: http://192.168.100.41:8082 | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 15:42:38 | Traccar Local | Format: JSON | URL: http://192.168.100.41:8082/sms | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 15:42:38 | Traccar Local Retry-No-Token | URL: http://192.168.100.41:8082/sms | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 15:42:39 | Traccar Local | Format: FORM | URL: http://192.168.100.41:8082/sms | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 15:42:39 | Traccar Local | Format: JSON | URL: http://192.168.100.41:8082 | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 15:42:40 | Traccar Local Retry-No-Token | URL: http://192.168.100.41:8082 | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 15:42:40 | Traccar Local | Format: FORM | URL: http://192.168.100.41:8082 | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 13:54:11 | Traccar Local | Format: JSON | URL: http://192.168.100.41:8082/sms | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 13:54:11 | Traccar Local Retry-No-Token | URL: http://192.168.100.41:8082/sms | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 13:54:11 | Traccar Local | Format: FORM | URL: http://192.168.100.41:8082/sms | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 13:54:11 | Traccar Local | Format: JSON | URL: http://192.168.100.41:8082 | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 13:54:11 | Traccar Local Retry-No-Token | URL: http://192.168.100.41:8082 | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 13:54:11 | Traccar Local | Format: FORM | URL: http://192.168.100.41:8082 | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 13:54:11 | Traccar Local | Format: JSON | URL: http://192.168.100.41:8082/sms | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 13:54:11 | Traccar Local Retry-No-Token | URL: http://192.168.100.41:8082/sms | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 13:54:11 | Traccar Local | Format: FORM | URL: http://192.168.100.41:8082/sms | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 13:54:11 | Traccar Local | Format: JSON | URL: http://192.168.100.41:8082 | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 13:54:12 | Traccar Local Retry-No-Token | URL: http://192.168.100.41:8082 | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 13:54:12 | Traccar Local | Format: FORM | URL: http://192.168.100.41:8082 | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 14:14:12 | Traccar Cloud | Format: JSON | URL: http://192.168.100.41:8082/sms | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 14:14:13 | Traccar Cloud | Format: JSON | URL: http://192.168.100.41:8082/sms | To: 639631371969 | Code: 401 | Resp:  | Error: 
+2026-08-02 14:22:13 | Traccar Cloud | Format: JSON | URL: https://www.traccar.org/sms | To: 639631371969 | Code: 200 | Resp: {"successCount":0,"failureCount":1,"responses":[{"success":false,"error":{"code":"messaging/registration-token-not-registered","message":"NotRegistered"}}]} | Error: 
+2026-08-02 14:27:33 | Traccar Cloud | URL: https://www.traccar.org/sms/ | To: 639631371969 | Code: 0 | Resp:  | Error: Connection timed out after 3033 milliseconds
+2026-08-02 14:28:21 | Traccar Cloud | URL: https://www.traccar.org/sms/ | To: 639631371969 | Code: 200 | Resp: {"successCount":0,"failureCount":1,"responses":[{"success":false,"error":{"code":"messaging/registration-token-not-registered","message":"NotRegistered"}}]} | Error: 
