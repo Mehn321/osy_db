@@ -13,9 +13,13 @@ $message = '';
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Prevent duplicate submissions using server-side form nonce
+    if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
+        $message = 'This form has already been submitted or the session expired. Please refresh and try again.';
+    } else {
     $requiredSkills = array_filter(array_map('trim', explode(',', $_POST['required_skills'] ?? '')));
 
-    if (isset($_POST['create_opportunity'])) {
+        if (isset($_POST['create_opportunity'])) {
         $result = $opportunity->create([
             'title' => $_POST['title'],
             'type' => $_POST['type'],
@@ -37,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: job-openings.php?success=created');
             exit;
         }
-    } elseif (isset($_POST['update_opportunity'])) {
+        } elseif (isset($_POST['update_opportunity'])) {
         $result = $opportunity->update($_POST['opportunity_id'], [
             'title' => $_POST['title'],
             'type' => $_POST['type'],
@@ -60,12 +64,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: job-openings.php?success=updated');
             exit;
         }
-    } elseif (isset($_POST['delete_opportunity'])) {
+        } elseif (isset($_POST['delete_opportunity'])) {
         $result = $opportunity->delete($_POST['opportunity_id']);
         $message = $result['message'];
         if ($result['success']) {
             header('Location: job-openings.php?success=deleted');
             exit;
+        }
         }
     }
 }

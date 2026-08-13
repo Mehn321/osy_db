@@ -39,6 +39,7 @@ $lastName = '';
 $gender = '';
 $dateOfBirth = '';
 $address = '';
+$barangay = '';
 $phone = '';
 $age = '';
 $educationLevel = '';
@@ -56,6 +57,10 @@ $consentAccepted = 0;
 $dataPrivacyAccepted = 0;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
+    // Prevent duplicate submissions using server-side form nonce
+    if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
+        $errors[] = 'This form has already been submitted or the session expired. Please refresh the page and try again.';
+    } else {
     // Validate required fields
     $username = trim($_POST['username'] ?? '');
     $email = trim($_POST['email'] ?? '');
@@ -67,6 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
     $gender = $_POST['gender'] ?? '';
     $dateOfBirth = $_POST['date_of_birth'] ?? '';
     $address = trim($_POST['address'] ?? '');
+    $barangay = trim($_POST['barangay'] ?? '');
     $phone = trim($_POST['phone'] ?? '');
     $age = trim($_POST['age'] ?? '');
     $educationLevel = trim($_POST['education_level'] ?? '');
@@ -127,6 +133,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
 
     if (empty($address)) {
         $errors[] = 'Address is required.';
+    }
+
+    if (empty($barangay)) {
+        $errors[] = 'Barangay is required. Please select your barangay.';
     }
 
     if (empty($phone)) {
@@ -219,7 +229,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
                 'date_of_birth' => $dateOfBirth,
                 'education_level' => $educationLevel,
                 'civil_status' => $civilStatus,
-                'barangay' => $address,
+                    'barangay' => $barangay,
                 'primary_skill' => $primarySkill,
                 'skills' => $certifications,
                 'interests' => $interests,
@@ -250,7 +260,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
                 'Youth self-registered with full profile for approval',
                 'OSYProfile',
                 $profileId,
-                json_encode(['barangay' => $address, 'id_type' => $govtIdType])
+                json_encode(['barangay' => $barangay, 'id_type' => $govtIdType])
             );
 
             $database->commit();
@@ -258,7 +268,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
             // 4. Send notification to the active SK Chairman of this barangay
             $skChairman = $database->fetchOne(
                 "SELECT id FROM users WHERE role = 'sk_chairman' AND barangay = ? AND status = 'Active' LIMIT 1",
-                [$address],
+                [$barangay],
                 "s"
             );
             if ($skChairman) {
@@ -286,6 +296,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
             $database->rollback();
             $errors[] = $e->getMessage();
         }
+    }
     }
 }
 ?>
@@ -369,6 +380,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
                         <form method="POST" enctype="multipart/form-data" class="space-y-6">
                             <input type="hidden" name="signup" value="1">
                             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(getCsrfToken()); ?>">
+                            <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
 
                             <!-- STEP 1: Account Credentials -->
                             <div>
@@ -531,14 +543,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
                                         </div>
                                         <div>
                                             <label class="block text-sm font-semibold text-slate-700 mb-2">Address
-                                                *</label>
-                                            <input type="text" name="address" required
-                                                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                placeholder="Enter your address" value="<?php echo htmlspecialchars($address); ?>">
+                                                        *</label>
+                                                    <input type="text" name="address" required
+                                                        class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        placeholder="Enter your street/purok (detailed address)" value="<?php echo htmlspecialchars($address); ?>">
                                         </div>
                                     </div>
                                 </div>
                             </div>
+
+                                    <!-- Barangay Selection -->
+                                    <div class="border-t border-slate-200 pt-6">
+                                        <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                            <span class="material-symbols-outlined text-blue-700">location_on</span>
+                                            Barangay Selection
+                                        </h3>
+                                        <div>
+                                            <?php
+                                            $ref = new Reference($database);
+                                            $barangays = $ref->getByCategory('barangay');
+                                            ?>
+                                            <label class="block text-sm font-semibold text-slate-700 mb-2">Barangay *</label>
+                                            <select name="barangay" required
+                                                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                                <option value="">Select Barangay</option>
+                                                <?php foreach ($barangays as $b): ?>
+                                                    <option value="<?php echo htmlspecialchars($b); ?>" <?php echo ($barangay === $b) ? 'selected' : ''; ?>><?php echo htmlspecialchars($b); ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
+                                        </div>
+                                    </div>
 
                             <!-- STEP 3: Skills & Interests -->
                             <div class="border-t border-slate-200 pt-6">

@@ -21,6 +21,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
   exit;
 }
 
+// Prevent duplicate submissions using server-side form nonce
+if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
+  echo json_encode(['success' => false, 'message' => 'This request has already been submitted or the session expired.']);
+  exit;
+}
+
 $title        = trim($_POST['title']        ?? '');
 $message_text = trim($_POST['message']      ?? '');
 $type         = $_POST['type']              ?? 'System';
@@ -33,6 +39,8 @@ $tplOpportunity = trim($_POST['tpl_opportunity'] ?? '');
 $tplCompany     = trim($_POST['tpl_company']     ?? '');
 $tplCourse      = trim($_POST['tpl_course']      ?? '');
 $tplPercentage  = trim($_POST['tpl_percentage']  ?? '');
+
+$target_barangay = trim($_POST['target_barangay'] ?? '');
 
 if (!$title || !$message_text) {
   echo json_encode(['success' => false, 'message' => 'Title and message are required.']);
@@ -83,6 +91,12 @@ switch ($target_group) {
     $recipients  = array_values(array_filter($allProfiles, fn($p) => in_array($p['id'], $specificIds)));
     $recipient_type_db = 'Specific';
     break;
+}
+
+// If a specific barangay was provided, filter recipients to that barangay
+if (!empty($target_barangay)) {
+  $recipients = array_values(array_filter($recipients, fn($p) => (trim($p['barangay'] ?? '') === trim($target_barangay))));
+  $recipient_type_db = 'Barangay';
 }
 
 /**
@@ -244,6 +258,22 @@ if ($recipient_type_db === 'Specific' && $target_group === 'Specific') {
   }
   $result['id'] = $created > 0 ? 1 : null;
   $result['message'] = "Notification broadcast successfully to {$created} specific recipient(s).";
+} else if ($recipient_type_db === 'Barangay') {
+  // Create per-recipient notifications for barangay-scoped broadcasts
+  $created = 0;
+  foreach ($recipients as $rec) {
+    $recipientId = $rec['created_by'] ?? null;
+    if (!$recipientId) continue;
+    $note = $notification->create([
+      'title' => $title,
+      'message' => replaceTemplateVars($message_text, $rec, $broadcastVars),
+      'type' => $type,
+      'recipient_type' => 'Specific',
+      'recipient_id' => $recipientId
+    ]);
+    if ($note['success']) $created++;
+  }
+  $result = ['success' => true, 'message' => "Notification broadcast successfully to {$created} recipient(s).", 'id' => $created > 0 ? 1 : null];
 } else {
   $result = $notification->create([
     'title'          => $title,

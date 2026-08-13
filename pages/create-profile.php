@@ -11,6 +11,11 @@ $profileType = $_GET['type'] ?? 'OSY';
 
 // Handle Form Submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_profile'])) {
+    // Prevent duplicate submissions using server-side form nonce
+    if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
+        $message = 'This form has already been submitted or the session expired. Please refresh the page and try again.';
+        $messageType = 'error';
+    } else {
     $osyProfile = new OSYProfile($database);
     
     $data = [
@@ -36,14 +41,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_profile'])) {
         'verification_status' => ($_SESSION['role'] === 'sk_chairman') ? 'Verified' : 'Pending' // SK can auto-verify if they encode it
     ];
 
-    $result = $osyProfile->create($data);
-    if ($result['success']) {
-        $returnPage = ($_SESSION['role'] === 'sk_chairman') ? 'sk-barangay-youth.php' : 'profiles.php';
-        header("Location: {$returnPage}?success=created");
-        exit;
-    } else {
-        $message = $result['message'];
-        $messageType = 'error';
+        $result = $osyProfile->create($data);
+        if ($result['success']) {
+            $returnPage = ($_SESSION['role'] === 'sk_chairman') ? 'sk-barangay-youth.php' : 'profiles.php';
+            header("Location: {$returnPage}?success=created");
+            exit;
+        } else {
+            $message = $result['message'];
+            $messageType = 'error';
+        }
     }
 }
 

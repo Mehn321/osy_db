@@ -18,6 +18,10 @@ $messageType = '';
 
 // Handle POST actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
+        $message = 'Duplicate or invalid form submission detected.';
+        $messageType = 'error';
+    } else {
     if (isset($_POST['accept_match'])) {
         $result = $matching->updateMatchStatus(intval($_POST['match_id']), 'Accepted');
         $message = $result['message'];
@@ -185,8 +189,9 @@ $matches_for_opportunity = $selectedOpportunityId ? $matching->getMatchesForOppo
             <h3 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2"><span class="material-symbols-outlined text-blue-600">campaign</span> Configure Broadcast</h3>
             <p class="text-sm text-slate-500 mt-1">Send alerts specifically to candidates you have <span class="font-bold text-green-600">Accepted/Shortlisted</span> for <span id="broadcastOppName"><?php echo htmlspecialchars($selectedOpportunity['title'] ?? ''); ?></span>.</p>
         </div>
-        <form method="POST" class="p-6 space-y-6">
+            <form method="POST" class="p-6 space-y-6">
             <input type="hidden" name="opportunity_id" id="broadcastOppId" value="<?php echo $selectedOpportunityId ?? ''; ?>">
+            <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
             
             <div class="space-y-4">
                 <div>

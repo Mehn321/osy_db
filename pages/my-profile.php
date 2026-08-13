@@ -42,6 +42,11 @@ if (!$profile) {
 
 // Handle profile update
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
+    // Prevent duplicate submissions using server-side form nonce
+    if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
+        $message = 'This form has already been submitted or the session expired. Please refresh and try again.';
+        $messageType = 'error';
+    } else {
     $data = [
         'first_name' => $_POST['first_name'] ?? $profile['first_name'],
         'middle_name' => $_POST['middle_name'] ?? null,
@@ -233,6 +238,7 @@ $currentInterests = $profile['interests'] ? explode(',', $profile['interests']) 
 
     <form method="POST" class="p-8 space-y-6">
         <input type="hidden" name="update_profile" value="1">
+        <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
 
         <!-- Name Section -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">

@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo isset($pageTitle) ? $pageTitle . ' - Integrated Web Based Information System for Youth Profiling and Skills Matching' : 'Integrated Web Based Information System for Youth Profiling and Skills Matching'; ?></title>
     <meta name="csrf-token" content="<?php echo htmlspecialchars(getCsrfToken()); ?>">
+    <meta name="form-nonce" content="<?php echo htmlspecialchars(getFormNonce()); ?>">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
@@ -286,6 +287,7 @@
                 // CSRF Protection Helpers
                 function injectCsrfTokens() {
                     const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                    const formNonce = document.querySelector('meta[name="form-nonce"]')?.getAttribute('content');
                     if (!csrfToken) return;
                     document.querySelectorAll('form[method="post"], form[method="POST"]').forEach(form => {
                         if (!form.querySelector('input[name="csrf_token"]')) {
@@ -295,6 +297,138 @@
                             input.value = csrfToken;
                             form.appendChild(input);
                         }
+
+                        // Inject a server-generated form nonce to help prevent duplicates
+                        if (formNonce && !form.querySelector('input[name="form_nonce"]')) {
+                            const nonceInput = document.createElement('input');
+                            nonceInput.type = 'hidden';
+                            nonceInput.name = 'form_nonce';
+                            nonceInput.value = formNonce;
+                            form.appendChild(nonceInput);
+                        }
+                    });
+                }
+
+                // Debounce helper
+                function debounce(fn, wait) {
+                    let t;
+                    return function(...args) {
+                        clearTimeout(t);
+                        t = setTimeout(() => fn.apply(this, args), wait);
+                    };
+                }
+
+                // Initialize password visibility toggles for all password inputs
+                function initPasswordToggles(context = document) {
+                    // First, bind any existing toggle buttons placed in markup (class: toggle-password-btn)
+                    context.querySelectorAll('button.toggle-password-btn').forEach(btn => {
+                        if (btn.dataset.bound) return;
+                        btn.dataset.bound = '1';
+                        const container = btn.closest('div') || btn.parentNode;
+                        const input = container.querySelector('input[type="password"]');
+                        if (!input) return;
+                        if (input.dataset.hasToggle) return;
+                        input.dataset.hasToggle = '1';
+                        btn.addEventListener('click', () => {
+                            if (input.type === 'password') {
+                                input.type = 'text';
+                                btn.innerHTML = '<span class="material-symbols-outlined">visibility_off</span>';
+                            } else {
+                                input.type = 'password';
+                                btn.innerHTML = '<span class="material-symbols-outlined">visibility</span>';
+                            }
+                        });
+                    });
+
+                    // For any remaining password inputs without a toggle, create one
+                    context.querySelectorAll('input[type="password"]').forEach(input => {
+                        if (input.dataset.hasToggle) return;
+                        input.dataset.hasToggle = '1';
+
+                        // Ensure the input's container can position absolute elements
+                        const wrapper = document.createElement('div');
+                        wrapper.style.position = 'relative';
+                        input.parentNode.insertBefore(wrapper, input);
+                        wrapper.appendChild(input);
+
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700';
+                        btn.style.background = 'transparent';
+                        btn.style.border = 'none';
+                        btn.innerHTML = '<span class="material-symbols-outlined">visibility</span>';
+                        btn.setAttribute('aria-label', 'Toggle password visibility');
+                        wrapper.appendChild(btn);
+
+                        btn.addEventListener('click', () => {
+                            if (input.type === 'password') {
+                                input.type = 'text';
+                                btn.innerHTML = '<span class="material-symbols-outlined">visibility_off</span>';
+                            } else {
+                                input.type = 'password';
+                                btn.innerHTML = '<span class="material-symbols-outlined">visibility</span>';
+                            }
+                        });
+                    });
+                }
+
+                // Prevent double-submission on forms: disable submit buttons after first submit
+                function initFormSubmitGuards(context = document) {
+                    context.querySelectorAll('form').forEach(form => {
+                        if (form.dataset.submitGuard) return;
+                        form.dataset.submitGuard = '1';
+
+                        form.addEventListener('submit', (e) => {
+                            // If already submitted, block
+                            if (form.dataset.submitted === '1') {
+                                e.preventDefault();
+                                return;
+                            }
+                            form.dataset.submitted = '1';
+                            // Disable all submit buttons
+                            form.querySelectorAll('button[type="submit"], input[type="submit"]').forEach(btn => {
+                                btn.disabled = true;
+                                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                            });
+                        });
+                    });
+                }
+
+                // Auto-apply filters: bind inputs/selects with debounce to trigger change handlers
+                function initAutoFilters(context = document) {
+                    context.querySelectorAll('.auto-filter').forEach(el => {
+                        if (el.dataset.autoInit) return;
+                        el.dataset.autoInit = '1';
+
+                        const handler = debounce(() => {
+                            const form = el.closest('form');
+                            if (!form) return;
+                            // Submit the form (GET forms will update URL and trigger SPA navigation)
+                            try { form.requestSubmit(); } catch (e) { form.submit(); }
+                        }, 350);
+
+                        el.addEventListener('input', handler);
+                        el.addEventListener('change', handler);
+                    });
+                }
+
+                // Initialize row action buttons (broadcast/edit/delete) independent of row edit states
+                function initRowActions(context = document) {
+                    context.querySelectorAll('[data-action="broadcast"]').forEach(btn => {
+                        if (btn.dataset.bound) return;
+                        btn.dataset.bound = '1';
+                        btn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            const id = btn.dataset.id;
+                            if (!id) return;
+                            // Call existing broadcast handler if present
+                            if (typeof broadcastRow === 'function') {
+                                broadcastRow(id);
+                                return;
+                            }
+                            // Fallback: fetch endpoint
+                            fetch(btn.getAttribute('data-href') || window.location.href, { method: 'POST' }).then(r => r.json()).then(console.log).catch(console.error);
+                        });
                     });
                 }
 
@@ -490,6 +624,12 @@
 
                     // Check for page-specific inits
                     if (typeof filterProfiles === 'function') filterProfiles();
+
+                    // Initialize common UI helpers
+                    try { initPasswordToggles(); } catch (e) { console.warn('Password toggles init failed', e); }
+                    try { initFormSubmitGuards(); } catch (e) { console.warn('Form submit guard init failed', e); }
+                    try { initAutoFilters(); } catch (e) { console.warn('Auto-filters init failed', e); }
+                    try { initRowActions(); } catch (e) { console.warn('Row actions init failed', e); }
                 }
 
                 function updateSidebarHighlight(url) {

@@ -17,7 +17,11 @@ $messageType = '';
 
 // Handle report generation
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['generate_report'])) {
+    if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
+        $message = 'Duplicate or invalid form submission detected.';
+        $messageType = 'error';
+    } else {
+        if (isset($_POST['generate_report'])) {
         $reportType = $_POST['report_type'];
         $data = [];
 
@@ -116,6 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
         <form method="POST">
+            <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
             <input type="hidden" name="report_type" value="profiles">
             <button type="submit" name="generate_report" value="1" class="w-full py-3 px-4 bg-blue-900 text-white rounded-lg font-semibold hover:bg-blue-800 transition-colors flex items-center justify-center gap-2">
                 <span class="material-symbols-outlined">download</span>
@@ -136,6 +141,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
         <form method="POST">
+            <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
             <input type="hidden" name="report_type" value="opportunities">
             <button type="submit" name="generate_report" value="1" class="w-full py-3 px-4 bg-green-700 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors flex items-center justify-center gap-2">
                 <span class="material-symbols-outlined">download</span>
@@ -156,6 +162,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
         <form method="POST">
+            <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
             <input type="hidden" name="report_type" value="matching">
             <button type="submit" name="generate_report" value="1" class="w-full py-3 px-4 bg-purple-700 text-white rounded-lg font-semibold hover:bg-purple-600 transition-colors flex items-center justify-center gap-2">
                 <span class="material-symbols-outlined">download</span>
@@ -176,6 +183,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </div>
         <form method="POST">
+            <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
             <input type="hidden" name="report_type" value="monthly">
             <button type="submit" name="generate_report" value="1" class="w-full py-3 px-4 bg-orange-700 text-white rounded-lg font-semibold hover:bg-orange-600 transition-colors flex items-center justify-center gap-2">
                 <span class="material-symbols-outlined">download</span>

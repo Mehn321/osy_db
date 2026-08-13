@@ -9,6 +9,10 @@ $messageType = 'success';
 $errors = [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_provider'])) {
+    // Prevent duplicate submissions using server-side form nonce
+    if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
+        $errors[] = 'This form has already been submitted or the session expired. Please refresh the page and try again.';
+    } else {
     try {
         // Validate password fields
         $password = $_POST['password'] ?? '';
@@ -79,6 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_provider']))
         $errors[] = $e->getMessage();
         $messageType = 'error';
         $message = 'There was an issue submitting your registration. Please fix the highlighted errors and try again.';
+    }
     }
 }
 
@@ -174,6 +179,7 @@ if ($user->isLoggedIn()) {
                 <form method="POST" enctype="multipart/form-data" class="space-y-6">
                     <input type="hidden" name="register_provider" value="1">
                     <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(getCsrfToken()); ?>">
+                    <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
 
                     <!-- Provider Type Selection -->
                     <div class="space-y-2">
@@ -213,14 +219,20 @@ if ($user->isLoggedIn()) {
                     <!-- Password -->
                     <div class="space-y-2">
                         <label class="block text-sm font-bold text-slate-700">Password</label>
-                        <input type="password" name="password" id="password" required class="w-full bg-slate-100 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900" placeholder="Choose a secure password">
+                        <div class="relative">
+                            <input type="password" name="password" id="password" required class="w-full bg-slate-100 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900" placeholder="Choose a secure password">
+                            <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 toggle-password-btn"><span class="material-symbols-outlined">visibility</span></button>
+                        </div>
                         <p class="text-xs text-slate-500">Password must be at least 6 characters long.</p>
                     </div>
 
                     <!-- Confirm Password -->
                     <div class="space-y-2">
                         <label class="block text-sm font-bold text-slate-700">Confirm Password</label>
-                        <input type="password" name="confirm_password" id="confirm_password" required class="w-full bg-slate-100 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900" placeholder="Confirm your password">
+                        <div class="relative">
+                            <input type="password" name="confirm_password" id="confirm_password" required class="w-full bg-slate-100 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900" placeholder="Confirm your password">
+                            <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 toggle-password-btn"><span class="material-symbols-outlined">visibility</span></button>
+                        </div>
                         <p id="password-match-error" class="text-xs text-red-600 hidden">Passwords do not match.</p>
                     </div>
 

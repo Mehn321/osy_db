@@ -18,6 +18,10 @@ $message = '';
 $messageType = 'success';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_youth'])) {
+    if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
+        $message = 'Duplicate or invalid form submission detected.';
+        $messageType = 'error';
+    } else {
     $profileId = intval($_POST['profile_id']);
     
     // Scoping check for SK Chairman
@@ -140,6 +144,7 @@ $pendingProfiles = $osyProfile->getPendingByBarangay($_SESSION['barangay']);
                 <div class="mt-6">
                     <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">Rejection remark (optional)</p>
                     <form method="POST" class="space-y-4 mt-4">
+                        <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
                         <input type="hidden" name="verify_youth" value="1">
                         <input type="hidden" name="profile_id" value="<?php echo intval($profile['id']); ?>">
                         <textarea name="remark" rows="3" class="w-full rounded-3xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 py-3 px-4 text-sm text-slate-900 dark:text-white" placeholder="Add a note for the youth member if declined..."></textarea>

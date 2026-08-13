@@ -14,7 +14,12 @@ $message = '';
 // Handle form submissions first so redirect headers work
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    if (isset($_POST['create_profile'])) {
+    // Prevent duplicate submissions using server-side form nonce
+    if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
+        $message = 'This form has already been submitted or the session expired. Please refresh and try again.';
+    } else {
+
+        if (isset($_POST['create_profile'])) {
         $result = $osyProfile->create([
             'profile_type' => $_POST['profile_type'] ?? 'OSY',
             'first_name' => $_POST['first_name'],
@@ -43,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: profiles.php');
             exit;
         }
-    } elseif (isset($_POST['update_profile'])) {
+        } elseif (isset($_POST['update_profile'])) {
         $result = $osyProfile->update($_POST['profile_id'], [
             'first_name' => $_POST['first_name'],
             'middle_name' => $_POST['middle_name'] ?? null,
@@ -69,12 +74,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: profiles.php');
             exit;
         }
-    } elseif (isset($_POST['delete_profile'])) {
+        } elseif (isset($_POST['delete_profile'])) {
         $result = $osyProfile->delete($_POST['profile_id']);
         $message = $result['message'];
         if ($result['success']) {
             header('Location: profiles.php');
             exit;
+        }
         }
     }
 }

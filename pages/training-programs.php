@@ -17,6 +17,9 @@ $message = '';
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
+        $message = 'Duplicate or invalid form submission detected.';
+    } else {
     if (isset($_POST['broadcast_training'])) {
         $opp_id = intval($_POST['opportunity_id']);
         $opp = $opportunity->getById($opp_id);
@@ -134,6 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: training-programs.php?success=deleted');
             exit;
         }
+    }
     }
 }
 
@@ -350,6 +354,7 @@ $templates = $notification->getAllTemplates();
                     <input type="text" name="title" id="opp_title" required
                         class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white">
                 </div>
+                    <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
 
                 <div>
                     <label class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block">Type</label>
@@ -457,6 +462,7 @@ $templates = $notification->getAllTemplates();
                     </h3>
                 </div>
                 <form method="POST" class="p-6 space-y-6">
+                    <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
                     <input type="hidden" name="opportunity_id" id="broadcast_opp_id">
                     <input type="hidden" name="broadcast_training" value="1">
 

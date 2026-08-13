@@ -32,14 +32,19 @@ if ($_SESSION['role'] === 'sk_chairman') {
 
 // Handle delete (Restricted to LYDO only)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_profile'])) {
-    requireRole('lydo'); // Double check role for destructive action
-    $result = $osyProfile->delete(intval($_POST['profile_id']));
+    if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
+        $message = 'Duplicate or invalid form submission detected.';
+        $messageType = 'error';
+    } else {
+        requireRole('lydo'); // Double check role for destructive action
+        $result = $osyProfile->delete(intval($_POST['profile_id']));
     if ($result['success']) {
         header('Location: profiles.php?success=deleted');
         exit;
     } else {
         $message = $result['message'];
         $messageType = 'error';
+    }
     }
 }
 
@@ -251,6 +256,7 @@ $matches = $matching->getMatchesForOSY($profile_id);
                 <?php endif; ?>
                 <form method="POST" onsubmit="return confirm('Are you sure you want to delete this profile? This cannot be undone.')">
                     <input type="hidden" name="profile_id" value="<?php echo $profile['id']; ?>">
+                    <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
                     <button type="submit" name="delete_profile" value="1" class="w-full px-4 py-2 bg-red-100 dark:bg-red-900/20 hover:bg-red-200 dark:hover:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg font-semibold text-sm transition-colors">
                         <span class="flex items-center justify-center gap-2">
                             <span class="material-symbols-outlined text-base">delete</span>

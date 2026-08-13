@@ -19,6 +19,11 @@ $messageType = 'success';
 $newChairmanPassword = null;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_chairman'])) {
+    // Prevent duplicate submissions using server-side form nonce
+    if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
+        $message = 'This form has already been submitted or the session expired. Please refresh and try again.';
+        $messageType = 'error';
+    } else {
     try {
         $username = trim($_POST['username']);
         $email = trim($_POST['email']);
@@ -90,6 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_chairman'])) {
         $message = 'Error: ' . $e->getMessage();
         $messageType = 'error';
     }
+    }
 }
 
 $chairmen = $userModel->getUsersByRole('sk_chairman');
@@ -130,6 +136,7 @@ $chairmen = $userModel->getUsersByRole('sk_chairman');
             <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-4">New SK Chairman Account</h2>
             <form method="POST" class="space-y-6">
                 <input type="hidden" name="create_chairman" value="1">
+                <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
                 <div>
                     <label class="text-sm font-semibold text-slate-700 dark:text-slate-300">Full Name</label>
                     <input name="fullname" required class="w-full mt-2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-700 py-3 px-4 text-sm text-slate-900 dark:text-white" placeholder="Juan dela Cruz">

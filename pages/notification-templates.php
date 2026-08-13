@@ -16,7 +16,11 @@ $notification = new Notification($database);
 $message = '';
 $messageType = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if (isset($_POST['create_template'])) {
+    if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
+        $message = 'Duplicate or invalid form submission detected.';
+        $messageType = 'error';
+    } else {
+        if (isset($_POST['create_template'])) {
         $result = $notification->createTemplate([
             'name' => $_POST['name'],
             'subject' => $_POST['subject'],
@@ -29,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: notification-templates.php?success=created');
             exit;
         }
-    } elseif (isset($_POST['update_template'])) {
+        } elseif (isset($_POST['update_template'])) {
         $result = $notification->updateTemplate(intval($_POST['template_id']), [
             'name' => $_POST['name'],
             'subject' => $_POST['subject'],
@@ -42,13 +46,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: notification-templates.php?success=updated');
             exit;
         }
-    } elseif (isset($_POST['delete_template'])) {
+        } elseif (isset($_POST['delete_template'])) {
         $result = $notification->deleteTemplate($_POST['template_id']);
         $message = $result['message'];
         $messageType = $result['success'] ? 'success' : 'error';
         if ($result['success']) {
             header('Location: notification-templates.php?success=deleted');
             exit;
+        }
         }
     }
 }
@@ -105,6 +110,7 @@ $templates = $notification->getAllTemplates();
                         </button>
                         <form method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this template?')">
                             <input type="hidden" name="template_id" value="<?php echo $template['id']; ?>">
+                            <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
                             <button type="submit" name="delete_template" class="p-2 hover:bg-red-50 rounded-lg text-red-600 hover:text-red-700">
                                 <span class="material-symbols-outlined text-xl">delete</span>
                             </button>
@@ -197,6 +203,7 @@ $templates = $notification->getAllTemplates();
                 <h3 id="tmplModalTitle" class="text-xl font-bold text-slate-900 dark:text-white">Create New Template</h3>
             </div>
             <form id="templateForm" method="POST" class="p-6 space-y-4">
+                <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
                 <input type="hidden" id="tmplId" name="template_id">
                 <input type="hidden" id="tmplAction" name="create_template" value="1">
                 <div>

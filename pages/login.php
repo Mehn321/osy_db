@@ -133,12 +133,13 @@ if ($user->isLoggedIn()) {
                             <a href="password-reset.php"
                                 class="text-xs font-bold text-blue-900 hover:underline uppercase tracking-widest">Forgot?</a>
                         </div>
-                        <div class="relative group">
-                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <span class="material-symbols-outlined text-slate-400 text-xl">lock</span>
+                            <div class="relative">
+                                <input type="password" name="password" placeholder="••••••••" required
+                                    class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                                <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 toggle-password-btn">
+                                    <span class="material-symbols-outlined">visibility</span>
+                                </button>
                             </div>
-                            <input type="password" name="password" placeholder="••••••••" required
-                                class="block w-full pl-12 pr-4 py-3 bg-slate-100 border border-transparent focus:border-blue-900 focus:ring-0 rounded-lg transition-all text-slate-900 placeholder:text-slate-400 font-medium" />
                         </div>
                     </div>
 

@@ -90,6 +90,32 @@ function validateCsrfToken($token)
     return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
 }
 
+// FORM NONCE: Prevent duplicate form submissions server-side
+if (empty($_SESSION['form_nonce'])) {
+    try {
+        $_SESSION['form_nonce'] = bin2hex(random_bytes(16));
+    } catch (Exception $e) {
+        $_SESSION['form_nonce'] = bin2hex(openssl_random_pseudo_bytes(16));
+    }
+}
+
+function getFormNonce()
+{
+    return $_SESSION['form_nonce'] ?? '';
+}
+
+// Consume the form nonce: return true if valid and prevent reuse
+function consumeFormNonce($nonce)
+{
+    if (empty($nonce)) return false;
+    if (isset($_SESSION['form_nonce']) && hash_equals($_SESSION['form_nonce'], $nonce)) {
+        // Invalidate current nonce so re-submission with same token is blocked
+        unset($_SESSION['form_nonce']);
+        return true;
+    }
+    return false;
+}
+
 // Global CSRF Verification for POST requests
 // Exclude public pages from CSRF validation
 $publicPages = ['login.php', 'youth-signup.php', 'provider-registration.php', 'password-reset.php'];

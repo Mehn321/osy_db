@@ -16,6 +16,10 @@ $message = '';
 $messageType = 'success';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['provider_action'])) {
+    if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
+        $message = 'Duplicate or invalid form submission detected.';
+        $messageType = 'error';
+    } else {
     $providerId = intval($_POST['provider_id']);
     $action = $_POST['provider_action'] === 'approve' ? 'Active' : 'Declined';
     $remark = trim($_POST['remark'] ?? '');
@@ -103,6 +107,7 @@ $pendingProviders = $userModel->getUsersByRole('training_provider', ['status' =>
                                     <td class="px-4 py-4">
                                         <form method="POST" class="flex flex-wrap gap-2">
                                             <input type="hidden" name="provider_id" value="<?php echo intval($provider['id']); ?>">
+                                            <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
                                             <textarea name="remark" rows="1" placeholder="Optional remark" class="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 py-2 px-3 text-sm text-slate-900 dark:text-white"></textarea>
                                             <button type="submit" name="provider_action" value="approve" class="rounded-2xl bg-green-700 text-white px-4 py-2 text-xs font-semibold hover:bg-green-600 transition">Approve</button>
                                             <button type="submit" name="provider_action" value="decline" class="rounded-2xl bg-red-700 text-white px-4 py-2 text-xs font-semibold hover:bg-red-600 transition">Decline</button>

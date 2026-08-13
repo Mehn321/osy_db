@@ -12,6 +12,9 @@ $error = '';
 $success = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
+        $error = 'Duplicate or invalid form submission detected.';
+    } else {
     $current_password = $_POST['current_password'] ?? '';
     $new_password = $_POST['new_password'] ?? '';
     $confirm_password = $_POST['confirm_password'] ?? '';
@@ -31,6 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $error = $result['message'];
         }
+    }
     }
 }
 ?>
@@ -74,6 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
 
         <form method="POST" class="space-y-6">
+            <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
             <!-- Hidden CSRF token -->
             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(getCsrfToken()); ?>">
 
@@ -81,7 +86,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <label class="block text-xs font-bold uppercase tracking-widest text-slate-600">Current Temporary Password</label>
                 <div class="relative">
                     <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><span class="material-symbols-outlined text-lg">vpn_key</span></span>
-                    <input type="password" name="current_password" required class="block w-full pl-10 pr-4 py-2.5 bg-slate-100 border border-transparent focus:border-blue-900 focus:ring-0 rounded-lg text-sm" placeholder="Enter temporary password">
+                    <div class="relative">
+                        <input type="password" name="current_password" required class="block w-full pl-4 pr-12 py-2.5 bg-slate-100 border border-transparent focus:border-blue-900 focus:ring-0 rounded-lg text-sm" placeholder="Enter temporary password">
+                        <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 toggle-password-btn"><span class="material-symbols-outlined">visibility</span></button>
+                    </div>
                 </div>
             </div>
 
@@ -89,7 +97,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <label class="block text-xs font-bold uppercase tracking-widest text-slate-600">New Password</label>
                 <div class="relative">
                     <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><span class="material-symbols-outlined text-lg">lock</span></span>
-                    <input type="password" name="new_password" required minlength="6" class="block w-full pl-10 pr-4 py-2.5 bg-slate-100 border border-transparent focus:border-blue-900 focus:ring-0 rounded-lg text-sm" placeholder="At least 6 characters">
+                    <div class="relative">
+                        <input type="password" name="new_password" required minlength="6" class="block w-full pl-4 pr-12 py-2.5 bg-slate-100 border border-transparent focus:border-blue-900 focus:ring-0 rounded-lg text-sm" placeholder="At least 6 characters">
+                        <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 toggle-password-btn"><span class="material-symbols-outlined">visibility</span></button>
+                    </div>
                 </div>
             </div>
 
@@ -97,7 +108,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <label class="block text-xs font-bold uppercase tracking-widest text-slate-600">Confirm New Password</label>
                 <div class="relative">
                     <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><span class="material-symbols-outlined text-lg">lock</span></span>
-                    <input type="password" name="confirm_password" required minlength="6" class="block w-full pl-10 pr-4 py-2.5 bg-slate-100 border border-transparent focus:border-blue-900 focus:ring-0 rounded-lg text-sm" placeholder="Re-enter new password">
+                    <div class="relative">
+                        <input type="password" name="confirm_password" required minlength="6" class="block w-full pl-4 pr-12 py-2.5 bg-slate-100 border border-transparent focus:border-blue-900 focus:ring-0 rounded-lg text-sm" placeholder="Re-enter new password">
+                        <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 toggle-password-btn"><span class="material-symbols-outlined">visibility</span></button>
+                    </div>
                 </div>
             </div>
 

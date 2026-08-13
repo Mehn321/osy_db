@@ -15,6 +15,9 @@ $message = '';
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
+        $message = 'Duplicate or invalid form submission detected.';
+    } else {
     if (isset($_POST['create_opportunity'])) {
         // Only providers can create opportunities
         if (!in_array($_SESSION['role'], ['employer', 'training_provider']) || $_SESSION['status'] !== 'Active') {
@@ -78,6 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: opportunities.php?success=deleted');
             exit;
         }
+    }
     }
 }
 
@@ -221,11 +225,11 @@ if (in_array($_SESSION['role'], ['employer', 'training_provider'])) {
     <form method="GET" class="grid grid-cols-1 lg:grid-cols-<?php echo $_SESSION['role'] === 'youth' ? '5' : '4'; ?> gap-4 items-end">
         <div>
             <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase pl-1">Search</label>
-            <input type="text" name="search" value="<?php echo htmlspecialchars($filters['search']); ?>" placeholder="Search opportunities..." class="w-full bg-slate-100 dark:bg-slate-700 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all" />
+            <input type="text" name="search" value="<?php echo htmlspecialchars($filters['search']); ?>" placeholder="Search opportunities..." class="w-full auto-filter bg-slate-100 dark:bg-slate-700 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all" />
         </div>
         <div>
             <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase pl-1">Type</label>
-            <select name="type" class="w-full bg-slate-100 dark:bg-slate-700 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all">
+            <select name="type" class="w-full auto-filter bg-slate-100 dark:bg-slate-700 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all">
                 <option value="All" <?php echo $filters['type'] === 'All' ? ' selected' : ''; ?>>All Types</option>
                 <option value="Job Opening" <?php echo $filters['type'] === 'Job Opening' ? ' selected' : ''; ?>>Job Opening</option>
                 <option value="Vocational Training" <?php echo $filters['type'] === 'Vocational Training' ? ' selected' : ''; ?>>Vocational Training</option>
@@ -235,11 +239,11 @@ if (in_array($_SESSION['role'], ['employer', 'training_provider'])) {
         <?php if ($_SESSION['role'] === 'youth'): ?>
             <div>
                 <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase pl-1">Required Skill</label>
-                <input type="text" name="skill" value="<?php echo htmlspecialchars($filters['skill'] ?? ''); ?>" placeholder="Filter by required skill..." class="w-full bg-slate-100 dark:bg-slate-700 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all" />
+                <input type="text" name="skill" value="<?php echo htmlspecialchars($filters['skill'] ?? ''); ?>" placeholder="Filter by required skill..." class="w-full auto-filter bg-slate-100 dark:bg-slate-700 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all" />
             </div>
             <div>
                 <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase pl-1">Location</label>
-                <input type="text" name="location" value="<?php echo htmlspecialchars($filters['location'] ?? ''); ?>" placeholder="Filter by location..." class="w-full bg-slate-100 dark:bg-slate-700 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all" />
+                <input type="text" name="location" value="<?php echo htmlspecialchars($filters['location'] ?? ''); ?>" placeholder="Filter by location..." class="w-full auto-filter bg-slate-100 dark:bg-slate-700 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all" />
             </div>
         <?php elseif (!$isProvider): ?>
             <div>
@@ -254,7 +258,6 @@ if (in_array($_SESSION['role'], ['employer', 'training_provider'])) {
             <div></div>
         <?php endif; ?>
         <div class="flex gap-3">
-            <button type="submit" class="w-full py-3 bg-blue-900 text-white rounded-xl font-bold text-sm hover:bg-blue-800 transition-all">Apply Filters</button>
             <a href="opportunities.php" class="w-full py-3 bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white rounded-xl font-bold text-sm text-center hover:bg-slate-200 dark:hover:bg-slate-600 transition-all">Reset</a>
         </div>
     </form>
@@ -355,6 +358,7 @@ if (in_array($_SESSION['role'], ['employer', 'training_provider'])) {
                 <h3 id="modalTitle" class="text-xl font-bold text-slate-900 dark:text-white">Create New Opportunity</h3>
             </div>
             <form id="opportunityForm" method="POST" class="p-6 space-y-4">
+                <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
                 <input type="hidden" id="opportunityId" name="opportunity_id">
                 <input type="hidden" id="isUpdate" name="update_opportunity" value="0">
 
@@ -467,6 +471,7 @@ if (in_array($_SESSION['role'], ['employer', 'training_provider'])) {
                 <form method="POST" class="flex gap-3">
                     <input type="hidden" id="deleteOpportunityId" name="opportunity_id">
                     <input type="hidden" name="delete_opportunity" value="1">
+                    <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
                     <button type="button" onclick="closeDeleteModal()" class="flex-1 px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-bold text-sm hover:bg-slate-200">
                         Cancel
                     </button>

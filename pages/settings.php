@@ -24,6 +24,11 @@ foreach ($raw_settings as $s) {
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Prevent duplicate submissions using server-side form nonce
+    if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
+        $message = 'This request has already been submitted or the session expired. Please refresh and try again.';
+        $messageType = 'error';
+    } else {
     if (isset($_POST['update_profile'])) {
         $result = $user->updateProfile(
             $_SESSION['user_id'],
@@ -156,6 +161,7 @@ $scoringPct = $syncStats['total_possible'] > 0
             <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-8">
                 <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-6">Profile Information</h3>
                 <form method="POST" class="space-y-6">
+                    <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Username</label>
@@ -189,14 +195,21 @@ $scoringPct = $syncStats['total_possible'] > 0
             <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-8">
                 <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-6">Security Settings</h3>
                 <form method="POST" class="space-y-6">
+                    <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Current Password</label>
-                        <input type="password" name="current_password" required placeholder="Enter current password" class="w-full px-4 py-3 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-900" />
+                        <div class="relative">
+                            <input type="password" name="current_password" required placeholder="Enter current password" class="w-full px-4 py-3 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-900" />
+                            <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 toggle-password-btn"><span class="material-symbols-outlined">visibility</span></button>
+                        </div>
                     </div>
 
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">New Password</label>
-                        <input type="password" name="new_password" required placeholder="Enter new password (min 6 chars)" minlength="6" class="w-full px-4 py-3 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-900" />
+                        <div class="relative">
+                            <input type="password" name="new_password" required placeholder="Enter new password (min 6 chars)" minlength="6" class="w-full px-4 py-3 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-900" />
+                            <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 toggle-password-btn"><span class="material-symbols-outlined">visibility</span></button>
+                        </div>
                     </div>
 
                     <div>
@@ -220,6 +233,7 @@ $scoringPct = $syncStats['total_possible'] > 0
                 </div>
 
                 <form method="POST" class="space-y-10">
+                    <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
                     <!-- Traccar SMS Section -->
                     <div class="space-y-4">
                         <div class="flex items-center gap-2 text-blue-900 dark:text-blue-400 mb-4">
@@ -237,7 +251,10 @@ $scoringPct = $syncStats['total_possible'] > 0
 
                             <div>
                                 <label id="traccar-token-label" class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Traccar Cloud Token</label>
-                                <input type="password" name="traccar_token" value="<?php echo htmlspecialchars($sys_settings['traccar_token'] ?? ''); ?>" placeholder="Enter Traccar Cloud Token" class="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-900" />
+                                <div class="relative">
+                                    <input type="password" name="traccar_token" value="<?php echo htmlspecialchars($sys_settings['traccar_token'] ?? ''); ?>" placeholder="Enter Traccar Cloud Token" class="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-900" />
+                                    <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 toggle-password-btn"><span class="material-symbols-outlined">visibility</span></button>
+                                </div>
                                 <p class="text-[10px] text-slate-500 mt-2 italic">Found in Traccar Android App &gt; Cloud &gt; Cloud Token.</p>
                             </div>
                         </div>

@@ -27,6 +27,10 @@ if ($_SESSION['role'] === 'sk_chairman') {
 
 // Handle Form Submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
+    if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
+        $message = 'Duplicate or invalid form submission detected.';
+        $messageType = 'error';
+    } else {
     $data = [
         'first_name' => $_POST['first_name'],
         'middle_name' => $_POST['middle_name'] ?? null,
@@ -56,6 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
     } else {
         $message = $result['message'];
         $messageType = 'error';
+    }
     }
 }
 
@@ -98,6 +103,7 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
 
         <form method="POST" class="p-8 space-y-6">
+            <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
             <input type="hidden" name="update_profile" value="1">
             
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
