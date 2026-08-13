@@ -21,39 +21,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $messageType = 'error';
     } else {
         if (isset($_POST['create_template'])) {
-        $result = $notification->createTemplate([
-            'name' => $_POST['name'],
-            'subject' => $_POST['subject'],
-            'body' => $_POST['body'],
-            'type' => $_POST['type']
-        ]);
-        $message = $result['message'];
-        $messageType = $result['success'] ? 'success' : 'error';
-        if ($result['success']) {
-            header('Location: notification-templates.php?success=created');
-            exit;
-        }
+            $result = $notification->createTemplate([
+                'name' => $_POST['name'],
+                'subject' => $_POST['subject'],
+                'body' => $_POST['body'],
+                'type' => $_POST['type']
+            ]);
+            $message = $result['message'];
+            $messageType = $result['success'] ? 'success' : 'error';
+            if ($result['success']) {
+                header('Location: notification-templates.php?success=created');
+                exit;
+            }
         } elseif (isset($_POST['update_template'])) {
-        $result = $notification->updateTemplate(intval($_POST['template_id']), [
-            'name' => $_POST['name'],
-            'subject' => $_POST['subject'],
-            'body' => $_POST['body'],
-            'type' => $_POST['type']
-        ]);
-        $message = $result['message'];
-        $messageType = $result['success'] ? 'success' : 'error';
-        if ($result['success']) {
-            header('Location: notification-templates.php?success=updated');
-            exit;
-        }
+            $result = $notification->updateTemplate(intval($_POST['template_id']), [
+                'name' => $_POST['name'],
+                'subject' => $_POST['subject'],
+                'body' => $_POST['body'],
+                'type' => $_POST['type']
+            ]);
+            $message = $result['message'];
+            $messageType = $result['success'] ? 'success' : 'error';
+            if ($result['success']) {
+                header('Location: notification-templates.php?success=updated');
+                exit;
+            }
         } elseif (isset($_POST['delete_template'])) {
-        $result = $notification->deleteTemplate($_POST['template_id']);
-        $message = $result['message'];
-        $messageType = $result['success'] ? 'success' : 'error';
-        if ($result['success']) {
-            header('Location: notification-templates.php?success=deleted');
-            exit;
-        }
+            $result = $notification->deleteTemplate($_POST['template_id']);
+            $message = $result['message'];
+            $messageType = $result['success'] ? 'success' : 'error';
+            if ($result['success']) {
+                header('Location: notification-templates.php?success=deleted');
+                exit;
+            }
         }
     }
 }
@@ -96,68 +96,68 @@ $templates = $notification->getAllTemplates();
 <!-- Templates Grid -->
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <?php if (!empty($templates)): ?>
-    <?php foreach ($templates as $template): ?>
-        <div class="bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all flex flex-col">
-            <div class="p-6 border-b border-slate-200 dark:border-slate-700">
-                <div class="flex items-start justify-between mb-3">
-                    <div>
-                        <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1"><?php echo htmlspecialchars($template['type']); ?></p>
-                        <h3 class="text-xl font-bold text-slate-900 dark:text-white"><?php echo htmlspecialchars($template['name']); ?></h3>
-                    </div>
-                    <div class="flex gap-1">
-                        <button onclick="openEditModal(<?php echo $template['id']; ?>)" class="p-2 hover:bg-slate-100 rounded-lg text-slate-600 hover:text-slate-900">
-                            <span class="material-symbols-outlined text-xl">edit</span>
-                        </button>
-                        <form method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this template?')">
-                            <input type="hidden" name="template_id" value="<?php echo $template['id']; ?>">
-                            <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
-                            <button type="submit" name="delete_template" class="p-2 hover:bg-red-50 rounded-lg text-red-600 hover:text-red-700">
-                                <span class="material-symbols-outlined text-xl">delete</span>
+        <?php foreach ($templates as $template): ?>
+            <div class="bg-white dark:bg-slate-800 rounded-2xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all flex flex-col">
+                <div class="p-6 border-b border-slate-200 dark:border-slate-700">
+                    <div class="flex items-start justify-between mb-3">
+                        <div>
+                            <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1"><?php echo htmlspecialchars($template['type']); ?></p>
+                            <h3 class="text-xl font-bold text-slate-900 dark:text-white"><?php echo htmlspecialchars($template['name']); ?></h3>
+                        </div>
+                        <div class="flex gap-1">
+                            <button onclick="openEditModal(<?php echo $template['id']; ?>)" class="p-2 hover:bg-slate-100 rounded-lg text-slate-600 hover:text-slate-900">
+                                <span class="material-symbols-outlined text-xl">edit</span>
                             </button>
-                        </form>
+                            <form method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this template?')">
+                                <input type="hidden" name="template_id" value="<?php echo $template['id']; ?>">
+                                <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
+                                <button type="submit" name="delete_template" class="p-2 hover:bg-red-50 rounded-lg text-red-600 hover:text-red-700">
+                                    <span class="material-symbols-outlined text-xl">delete</span>
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="p-6 space-y-4 flex-1">
-                <?php if ($template['subject']): ?>
+                <div class="p-6 space-y-4 flex-1">
+                    <?php if ($template['subject']): ?>
+                        <div>
+                            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Subject Line</p>
+                            <p class="text-sm font-bold text-slate-900 dark:text-white"><?php echo htmlspecialchars($template['subject']); ?></p>
+                        </div>
+                    <?php endif; ?>
                     <div>
-                        <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Subject Line</p>
-                        <p class="text-sm font-bold text-slate-900 dark:text-white"><?php echo htmlspecialchars($template['subject']); ?></p>
-                    </div>
-                <?php endif; ?>
-                <div>
-                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-2">Message Body</p>
-                    <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed italic">
-                        "<?php echo htmlspecialchars($template['body']); ?>"
-                    </p>
-                    <div class="mt-4 flex flex-wrap gap-2">
-                        <?php
-                        $variables = ['name', 'opportunity', 'company', 'course', 'percentage', 'barangay'];
-                        foreach ($variables as $var):
-                        ?>
-                            <span class="px-2 py-1 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-xs font-bold text-slate-700 dark:text-slate-300 rounded-md">
-                                {{<?php echo $var; ?>}}
-                            </span>
-                        <?php endforeach; ?>
+                        <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase mb-2">Message Body</p>
+                        <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed italic">
+                            "<?php echo htmlspecialchars($template['body']); ?>"
+                        </p>
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            <?php
+                            $variables = ['name', 'opportunity', 'company', 'course', 'percentage', 'barangay'];
+                            foreach ($variables as $var):
+                            ?>
+                                <span class="px-2 py-1 bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-xs font-bold text-slate-700 dark:text-slate-300 rounded-md">
+                                    {{<?php echo $var; ?>}}
+                                </span>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-end p-6">
-                <button onclick="testTemplate(<?php echo $template['id']; ?>)" class="text-xs font-bold text-blue-900 hover:underline flex items-center gap-1">
-                    Test Template
-                    <span class="material-symbols-outlined text-sm">send</span>
-                </button>
+                <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-end p-6">
+                    <button onclick="testTemplate(<?php echo $template['id']; ?>)" class="text-xs font-bold text-blue-900 hover:underline flex items-center gap-1">
+                        Test Template
+                        <span class="material-symbols-outlined text-sm">send</span>
+                    </button>
+                </div>
             </div>
-        </div>
-    <?php endforeach; ?>
+        <?php endforeach; ?>
     <?php else: ?>
-    <div class="lg:col-span-2 text-center py-16 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-        <span class="material-symbols-outlined text-5xl text-slate-300 mb-3">description</span>
-        <p class="text-slate-500 font-semibold text-lg">No templates yet</p>
-        <p class="text-sm text-slate-400 mt-1">Create your first notification template to get started.</p>
-    </div>
+        <div class="lg:col-span-2 text-center py-16 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+            <span class="material-symbols-outlined text-5xl text-slate-300 mb-3">description</span>
+            <p class="text-slate-500 font-semibold text-lg">No templates yet</p>
+            <p class="text-sm text-slate-400 mt-1">Create your first notification template to get started.</p>
+        </div>
     <?php endif; ?>
 </div>
 

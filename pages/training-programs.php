@@ -20,124 +20,124 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
         $message = 'Duplicate or invalid form submission detected.';
     } else {
-    if (isset($_POST['broadcast_training'])) {
-        $opp_id = intval($_POST['opportunity_id']);
-        $opp = $opportunity->getById($opp_id);
+        if (isset($_POST['broadcast_training'])) {
+            $opp_id = intval($_POST['opportunity_id']);
+            $opp = $opportunity->getById($opp_id);
 
-        if ($opp) {
-            $message_text = $_POST['custom_message'];
-            $target_group = $_POST['target_group'];
-            $send_sms = isset($_POST['send_sms']);
-            $send_email = isset($_POST['send_email']);
+            if ($opp) {
+                $message_text = $_POST['custom_message'];
+                $target_group = $_POST['target_group'];
+                $send_sms = isset($_POST['send_sms']);
+                $send_email = isset($_POST['send_email']);
 
-            // Determine Recipients
-            $recipients = [];
-            if ($target_group === 'Specific' && !empty($_POST['specific_ids'])) {
-                foreach ($_POST['specific_ids'] as $id) {
-                    $p = $osyProfile->getById(intval($id));
-                    if ($p) $recipients[] = $p;
-                }
-            } else {
-                // Map frontend groups to OSYProfile filters
-                $filters = [];
-                if ($target_group === 'OSY') {
-                    $filters['profile_type'] = 'OSY';
-                } elseif ($target_group === 'Non-OSY') {
-                    $filters['profile_type'] = 'Regular';
-                } elseif ($target_group === 'Unemployed') {
-                    $filters['status'] = 'Unemployed';
-                } elseif ($target_group === 'In Training') {
-                    $filters['status'] = 'In Training';
-                } elseif ($target_group === 'Employed') {
-                    $filters['status'] = 'Employed';
-                }
-            }
-
-            require_once __DIR__ . '/../Classes/SmsService.php';
-            require_once __DIR__ . '/../Classes/EmailService.php';
-            $sms = new SmsService($database);
-            $email = new EmailService($database);
-
-            $sentCount = 0;
-            foreach ($recipients as $r) {
-                $personalMsg = str_replace(['{{name}}', '{{opportunity}}'], [$r['first_name'], $opp['title']], $message_text);
-
-                if ($send_sms && !empty($r['phone'])) {
-                    $sms->send($r['phone'], $personalMsg);
-                }
-                if ($send_email && !empty($r['email'])) {
-                    $email->send($r['email'], 'New Vocational Opportunity: ' . $opp['title'], "<p>" . nl2br(htmlspecialchars($personalMsg)) . "</p>");
-                }
-                $sentCount++;
-            }
-
-            if ($target_group === 'Specific') {
-                foreach ($recipients as $r) {
-                    if (empty($r['created_by'])) {
-                        continue;
+                // Determine Recipients
+                $recipients = [];
+                if ($target_group === 'Specific' && !empty($_POST['specific_ids'])) {
+                    foreach ($_POST['specific_ids'] as $id) {
+                        $p = $osyProfile->getById(intval($id));
+                        if ($p) $recipients[] = $p;
                     }
+                } else {
+                    // Map frontend groups to OSYProfile filters
+                    $filters = [];
+                    if ($target_group === 'OSY') {
+                        $filters['profile_type'] = 'OSY';
+                    } elseif ($target_group === 'Non-OSY') {
+                        $filters['profile_type'] = 'Regular';
+                    } elseif ($target_group === 'Unemployed') {
+                        $filters['status'] = 'Unemployed';
+                    } elseif ($target_group === 'In Training') {
+                        $filters['status'] = 'In Training';
+                    } elseif ($target_group === 'Employed') {
+                        $filters['status'] = 'Employed';
+                    }
+                }
+
+                require_once __DIR__ . '/../Classes/SmsService.php';
+                require_once __DIR__ . '/../Classes/EmailService.php';
+                $sms = new SmsService($database);
+                $email = new EmailService($database);
+
+                $sentCount = 0;
+                foreach ($recipients as $r) {
+                    $personalMsg = str_replace(['{{name}}', '{{opportunity}}'], [$r['first_name'], $opp['title']], $message_text);
+
+                    if ($send_sms && !empty($r['phone'])) {
+                        $sms->send($r['phone'], $personalMsg);
+                    }
+                    if ($send_email && !empty($r['email'])) {
+                        $email->send($r['email'], 'New Vocational Opportunity: ' . $opp['title'], "<p>" . nl2br(htmlspecialchars($personalMsg)) . "</p>");
+                    }
+                    $sentCount++;
+                }
+
+                if ($target_group === 'Specific') {
+                    foreach ($recipients as $r) {
+                        if (empty($r['created_by'])) {
+                            continue;
+                        }
+                        $notification->create([
+                            'title' => 'Training Broadcast: ' . $opp['title'],
+                            'message' => str_replace(['{{name}}', '{{opportunity}}'], [$r['first_name'], $opp['title']], $message_text),
+                            'type' => 'Opportunity',
+                            'recipient_type' => 'Specific',
+                            'recipient_id' => $r['created_by']
+                        ]);
+                    }
+                } else {
                     $notification->create([
                         'title' => 'Training Broadcast: ' . $opp['title'],
-                        'message' => str_replace(['{{name}}', '{{opportunity}}'], [$r['first_name'], $opp['title']], $message_text),
+                        'message' => $message_text,
                         'type' => 'Opportunity',
-                        'recipient_type' => 'Specific',
-                        'recipient_id' => $r['created_by']
+                        'recipient_type' => $target_group === 'All' ? 'All' : 'OSY'
                     ]);
                 }
-            } else {
-                $notification->create([
-                    'title' => 'Training Broadcast: ' . $opp['title'],
-                    'message' => $message_text,
-                    'type' => 'Opportunity',
-                    'recipient_type' => $target_group === 'All' ? 'All' : 'OSY'
-                ]);
-            }
 
-            $message = "Broadcast deployed to $sentCount recipients successfully!";
+                $message = "Broadcast deployed to $sentCount recipients successfully!";
+            }
+        } elseif (isset($_POST['create_opportunity'])) {
+            $result = $opportunity->create([
+                'title' => $_POST['title'],
+                'type' => $_POST['type'],
+                'location' => $_POST['location'],
+                'compensation' => $_POST['compensation'] ?? null,
+                'benefits' => $_POST['benefits'] ?? null,
+                'certification' => $_POST['certification'] ?? null,
+                'description' => $_POST['description'] ?? null,
+                'total_slots' => $_POST['total_slots'],
+                'deadline' => $_POST['deadline']
+            ]);
+            $message = $result['message'];
+            if ($result['success']) {
+                header('Location: training-programs.php?success=created');
+                exit;
+            }
+        } elseif (isset($_POST['update_opportunity'])) {
+            $result = $opportunity->update($_POST['opportunity_id'], [
+                'title' => $_POST['title'],
+                'type' => $_POST['type'],
+                'location' => $_POST['location'],
+                'compensation' => $_POST['compensation'] ?? null,
+                'benefits' => $_POST['benefits'] ?? null,
+                'certification' => $_POST['certification'] ?? null,
+                'description' => $_POST['description'] ?? null,
+                'total_slots' => $_POST['total_slots'],
+                'deadline' => $_POST['deadline'],
+                'status' => $_POST['status']
+            ]);
+            $message = $result['message'];
+            if ($result['success']) {
+                header('Location: training-programs.php?success=updated');
+                exit;
+            }
+        } elseif (isset($_POST['delete_opportunity'])) {
+            $result = $opportunity->delete($_POST['opportunity_id']);
+            $message = $result['message'];
+            if ($result['success']) {
+                header('Location: training-programs.php?success=deleted');
+                exit;
+            }
         }
-    } elseif (isset($_POST['create_opportunity'])) {
-        $result = $opportunity->create([
-            'title' => $_POST['title'],
-            'type' => $_POST['type'],
-            'location' => $_POST['location'],
-            'compensation' => $_POST['compensation'] ?? null,
-            'benefits' => $_POST['benefits'] ?? null,
-            'certification' => $_POST['certification'] ?? null,
-            'description' => $_POST['description'] ?? null,
-            'total_slots' => $_POST['total_slots'],
-            'deadline' => $_POST['deadline']
-        ]);
-        $message = $result['message'];
-        if ($result['success']) {
-            header('Location: training-programs.php?success=created');
-            exit;
-        }
-    } elseif (isset($_POST['update_opportunity'])) {
-        $result = $opportunity->update($_POST['opportunity_id'], [
-            'title' => $_POST['title'],
-            'type' => $_POST['type'],
-            'location' => $_POST['location'],
-            'compensation' => $_POST['compensation'] ?? null,
-            'benefits' => $_POST['benefits'] ?? null,
-            'certification' => $_POST['certification'] ?? null,
-            'description' => $_POST['description'] ?? null,
-            'total_slots' => $_POST['total_slots'],
-            'deadline' => $_POST['deadline'],
-            'status' => $_POST['status']
-        ]);
-        $message = $result['message'];
-        if ($result['success']) {
-            header('Location: training-programs.php?success=updated');
-            exit;
-        }
-    } elseif (isset($_POST['delete_opportunity'])) {
-        $result = $opportunity->delete($_POST['opportunity_id']);
-        $message = $result['message'];
-        if ($result['success']) {
-            header('Location: training-programs.php?success=deleted');
-            exit;
-        }
-    }
     }
 }
 
@@ -199,14 +199,14 @@ $templates = $notification->getAllTemplates();
 </div>
 
 <?php if ($message): ?>
-<div
-    class="mb-6 p-4 <?php echo strpos($message, 'successfully') !== false || strpos($message, 'success') !== false ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'; ?> rounded-xl">
-    <p
-        class="<?php echo strpos($message, 'successfully') !== false || strpos($message, 'success') !== false ? 'text-green-800' : 'text-red-800'; ?> flex items-center gap-2">
-        <span class="material-symbols-outlined text-base">check_circle</span>
-        <?php echo htmlspecialchars($message); ?>
-    </p>
-</div>
+    <div
+        class="mb-6 p-4 <?php echo strpos($message, 'successfully') !== false || strpos($message, 'success') !== false ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'; ?> rounded-xl">
+        <p
+            class="<?php echo strpos($message, 'successfully') !== false || strpos($message, 'success') !== false ? 'text-green-800' : 'text-red-800'; ?> flex items-center gap-2">
+            <span class="material-symbols-outlined text-base">check_circle</span>
+            <?php echo htmlspecialchars($message); ?>
+        </p>
+    </div>
 <?php endif; ?>
 
 <!-- Filter Bar -->
@@ -246,95 +246,95 @@ $templates = $notification->getAllTemplates();
 <!-- Opportunities Cards Grid -->
 <div id="trainCardsGrid" class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <?php if (!empty($opportunities)): ?>
-    <?php foreach ($opportunities as $opp): ?>
-    <div class="train-card bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all"
-        data-type="<?php echo htmlspecialchars($opp['type']); ?>"
-        data-status="<?php echo htmlspecialchars($opp['status']); ?>"
-        data-search="<?php echo strtolower(htmlspecialchars($opp['title'] . ' ' . $opp['location'] . ' ' . $opp['type'])); ?>">
-        <div class="p-6 border-b border-slate-200 dark:border-slate-700">
-            <div class="flex items-start justify-between mb-3">
-                <div>
-                    <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
-                        <?php echo htmlspecialchars($opp['type']); ?></p>
-                    <h3 class="text-xl font-bold text-slate-900 dark:text-white">
-                        <?php echo htmlspecialchars($opp['title']); ?></h3>
-                </div>
-                <span
-                    class="px-3 py-1 <?php echo $opp['status'] === 'Open' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'; ?> rounded-full text-xs font-bold">
-                    <?php echo htmlspecialchars($opp['status']); ?>
-                </span>
-            </div>
-            <p class="text-sm text-slate-600 dark:text-slate-300 flex items-center gap-2">
-                <span class="material-symbols-outlined text-base">location_on</span>
-                <?php echo htmlspecialchars($opp['location']); ?>
-            </p>
-        </div>
-
-        <div class="p-6 space-y-4">
-            <?php if ($opp['description']): ?>
-            <p class="text-sm text-slate-600 dark:text-slate-300 line-clamp-2">
-                <?php echo htmlspecialchars($opp['description']); ?></p>
-            <?php endif; ?>
-
-            <?php if ($opp['compensation']): ?>
-            <div>
-                <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Compensation</p>
-                <p class="text-lg font-bold text-slate-900 dark:text-white">
-                    <?php echo htmlspecialchars($opp['compensation']); ?></p>
-            </div>
-            <?php endif; ?>
-
-            <?php if ($opp['certification']): ?>
-            <div>
-                <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Certification</p>
-                <p class="text-sm text-slate-700 dark:text-slate-300">
-                    <?php echo htmlspecialchars($opp['certification']); ?></p>
-            </div>
-            <?php endif; ?>
-
-            <div class="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
-                <div>
-                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Deadline</p>
-                    <p class="text-sm font-bold text-slate-900 dark:text-white">
-                        <?php echo !empty($opp['deadline']) ? date('M d, Y', strtotime($opp['deadline'])) : 'No deadline'; ?>
+        <?php foreach ($opportunities as $opp): ?>
+            <div class="train-card bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all"
+                data-type="<?php echo htmlspecialchars($opp['type']); ?>"
+                data-status="<?php echo htmlspecialchars($opp['status']); ?>"
+                data-search="<?php echo strtolower(htmlspecialchars($opp['title'] . ' ' . $opp['location'] . ' ' . $opp['type'])); ?>">
+                <div class="p-6 border-b border-slate-200 dark:border-slate-700">
+                    <div class="flex items-start justify-between mb-3">
+                        <div>
+                            <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">
+                                <?php echo htmlspecialchars($opp['type']); ?></p>
+                            <h3 class="text-xl font-bold text-slate-900 dark:text-white">
+                                <?php echo htmlspecialchars($opp['title']); ?></h3>
+                        </div>
+                        <span
+                            class="px-3 py-1 <?php echo $opp['status'] === 'Open' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'; ?> rounded-full text-xs font-bold">
+                            <?php echo htmlspecialchars($opp['status']); ?>
+                        </span>
+                    </div>
+                    <p class="text-sm text-slate-600 dark:text-slate-300 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-base">location_on</span>
+                        <?php echo htmlspecialchars($opp['location']); ?>
                     </p>
                 </div>
-                <div>
-                    <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Slots</p>
-                    <p class="text-sm font-bold text-slate-900 dark:text-white"><?php echo $opp['total_slots']; ?>
-                        available</p>
+
+                <div class="p-6 space-y-4">
+                    <?php if ($opp['description']): ?>
+                        <p class="text-sm text-slate-600 dark:text-slate-300 line-clamp-2">
+                            <?php echo htmlspecialchars($opp['description']); ?></p>
+                    <?php endif; ?>
+
+                    <?php if ($opp['compensation']): ?>
+                        <div>
+                            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Compensation</p>
+                            <p class="text-lg font-bold text-slate-900 dark:text-white">
+                                <?php echo htmlspecialchars($opp['compensation']); ?></p>
+                        </div>
+                    <?php endif; ?>
+
+                    <?php if ($opp['certification']): ?>
+                        <div>
+                            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Certification</p>
+                            <p class="text-sm text-slate-700 dark:text-slate-300">
+                                <?php echo htmlspecialchars($opp['certification']); ?></p>
+                        </div>
+                    <?php endif; ?>
+
+                    <div class="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
+                        <div>
+                            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Deadline</p>
+                            <p class="text-sm font-bold text-slate-900 dark:text-white">
+                                <?php echo !empty($opp['deadline']) ? date('M d, Y', strtotime($opp['deadline'])) : 'No deadline'; ?>
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Slots</p>
+                            <p class="text-sm font-bold text-slate-900 dark:text-white"><?php echo $opp['total_slots']; ?>
+                                available</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="px-6 py-4 bg-slate-100 dark:bg-slate-700 flex flex-wrap gap-2">
+                    <button type="button" onclick="viewOpportunityDetail(<?php echo $opp['id']; ?>)"
+                        class="flex-1 min-w-[120px] py-2 px-3 bg-blue-900 text-white rounded-lg text-sm font-semibold hover:bg-blue-800 transition-colors flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-base">visibility</span>
+                        View Details
+                    </button>
+                    <button type="button" data-opp-id="<?php echo $opp['id']; ?>" class="broadcast-btn py-2 px-3 bg-purple-700 text-white rounded-lg text-sm font-semibold hover:bg-purple-800 transition-colors flex items-center gap-2">
+                        <span class="material-symbols-outlined">campaign</span>
+                        Broadcast
+                    </button>
+                    <button type="button" onclick="openEditModal(<?php echo $opp['id']; ?>)"
+                        class="py-2 px-3 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg text-slate-600 dark:text-slate-300 transition-colors">
+                        <span class="material-symbols-outlined">edit</span>
+                    </button>
+                    <button type="button" onclick="deleteOpportunity(<?php echo $opp['id']; ?>)"
+                        class="py-2 px-3 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400 transition-colors">
+                        <span class="material-symbols-outlined">delete</span>
+                    </button>
                 </div>
             </div>
-        </div>
-
-        <div class="px-6 py-4 bg-slate-100 dark:bg-slate-700 flex flex-wrap gap-2">
-            <button type="button" onclick="viewOpportunityDetail(<?php echo $opp['id']; ?>)"
-                class="flex-1 min-w-[120px] py-2 px-3 bg-blue-900 text-white rounded-lg text-sm font-semibold hover:bg-blue-800 transition-colors flex items-center justify-center gap-2">
-                <span class="material-symbols-outlined text-base">visibility</span>
-                View Details
-            </button>
-            <button type="button" data-opp-id="<?php echo $opp['id']; ?>" class="broadcast-btn py-2 px-3 bg-purple-700 text-white rounded-lg text-sm font-semibold hover:bg-purple-800 transition-colors flex items-center gap-2">
-                <span class="material-symbols-outlined">campaign</span>
-                Broadcast
-            </button>
-            <button type="button" onclick="openEditModal(<?php echo $opp['id']; ?>)"
-                class="py-2 px-3 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg text-slate-600 dark:text-slate-300 transition-colors">
-                <span class="material-symbols-outlined">edit</span>
-            </button>
-            <button type="button" onclick="deleteOpportunity(<?php echo $opp['id']; ?>)"
-                class="py-2 px-3 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400 transition-colors">
-                <span class="material-symbols-outlined">delete</span>
-            </button>
-        </div>
-    </div>
-    <?php endforeach; ?>
+        <?php endforeach; ?>
     <?php else: ?>
-    <div
-        class="lg:col-span-2 text-center py-16 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-        <span class="material-symbols-outlined text-5xl text-slate-300 mb-3">work_off</span>
-        <p class="text-slate-500 font-semibold text-lg">No opportunities found</p>
-        <p class="text-sm text-slate-400 mt-1">Create a new job opening or training program to get started.</p>
-    </div>
+        <div
+            class="lg:col-span-2 text-center py-16 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
+            <span class="material-symbols-outlined text-5xl text-slate-300 mb-3">work_off</span>
+            <p class="text-slate-500 font-semibold text-lg">No opportunities found</p>
+            <p class="text-sm text-slate-400 mt-1">Create a new job opening or training program to get started.</p>
+        </div>
     <?php endif; ?>
 </div>
 
@@ -354,7 +354,7 @@ $templates = $notification->getAllTemplates();
                     <input type="text" name="title" id="opp_title" required
                         class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white">
                 </div>
-                    <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
+                <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
 
                 <div>
                     <label class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block">Type</label>
@@ -513,18 +513,18 @@ $templates = $notification->getAllTemplates();
                             <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-xl p-4 h-48 overflow-y-auto border border-slate-200 dark:border-slate-600 grid grid-cols-1 sm:grid-cols-2 gap-2"
                                 id="bc_recip_list">
                                 <?php foreach ($allProfiles as $p): ?>
-                                <label
-                                    class="bc-recip-item flex items-center gap-2 cursor-pointer p-2 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-colors"
-                                    data-name="<?php echo strtolower($p['first_name'] . ' ' . $p['last_name']); ?>">
-                                    <input type="checkbox" name="specific_ids[]" value="<?php echo $p['id']; ?>"
-                                        class="w-4 h-4 text-purple-600 border-slate-300 rounded focus:ring-purple-600">
-                                    <div class="flex flex-col">
-                                        <span
-                                            class="text-xs text-slate-800 dark:text-slate-200 font-bold"><?php echo htmlspecialchars($p['first_name'] . ' ' . $p['last_name']); ?></span>
-                                        <span
-                                            class="text-[10px] text-slate-500 uppercase"><?php echo htmlspecialchars($p['profile_type']); ?></span>
-                                    </div>
-                                </label>
+                                    <label
+                                        class="bc-recip-item flex items-center gap-2 cursor-pointer p-2 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-colors"
+                                        data-name="<?php echo strtolower($p['first_name'] . ' ' . $p['last_name']); ?>">
+                                        <input type="checkbox" name="specific_ids[]" value="<?php echo $p['id']; ?>"
+                                            class="w-4 h-4 text-purple-600 border-slate-300 rounded focus:ring-purple-600">
+                                        <div class="flex flex-col">
+                                            <span
+                                                class="text-xs text-slate-800 dark:text-slate-200 font-bold"><?php echo htmlspecialchars($p['first_name'] . ' ' . $p['last_name']); ?></span>
+                                            <span
+                                                class="text-[10px] text-slate-500 uppercase"><?php echo htmlspecialchars($p['profile_type']); ?></span>
+                                        </div>
+                                    </label>
                                 <?php endforeach; ?>
                             </div>
                         </div>
@@ -614,55 +614,55 @@ $templates = $notification->getAllTemplates();
     </div>
 
     <script>
-    // Store opportunities data for JS access
-    var opportunitiesData = {};
-    <?php foreach ($opportunities as $opp): ?>
-    opportunitiesData[<?php echo $opp['id']; ?>] = <?php echo json_encode($opp); ?>;
-    <?php endforeach; ?>
+        // Store opportunities data for JS access
+        var opportunitiesData = {};
+        <?php foreach ($opportunities as $opp): ?>
+            opportunitiesData[<?php echo $opp['id']; ?>] = <?php echo json_encode($opp); ?>;
+        <?php endforeach; ?>
 
-    function openCreateModal(type) {
-        document.getElementById('modalTitle').textContent = 'Create New ' + (type === 'Job Opening' ? 'Job' : (type ===
-            'Scholarship' ? 'Scholarship' : 'Training'));
-        document.getElementById('opp_type').value = type;
-        document.getElementById('isUpdate').value = '0';
-        document.getElementById('isUpdate').name = 'create_opportunity';
-        document.getElementById('submitBtn').textContent = 'Create Opportunity';
-        document.getElementById('statusContainer').classList.add('hidden');
-        document.getElementById('opportunityForm').reset();
-        document.getElementById('opp_type').value = type;
-        document.getElementById('opportunityModal').classList.remove('hidden');
-    }
-
-    function openEditModal(id) {
-        const opp = opportunitiesData[id];
-        if (opp) {
-            document.getElementById('modalTitle').textContent = 'Edit Opportunity';
-            document.getElementById('opportunityId').value = id;
-            document.getElementById('isUpdate').value = '1';
-            document.getElementById('isUpdate').name = 'update_opportunity';
-            document.getElementById('submitBtn').textContent = 'Update Opportunity';
-            document.getElementById('statusContainer').classList.remove('hidden');
-
-            document.getElementById('opp_title').value = opp.title;
-            document.getElementById('opp_type').value = opp.type;
-            document.getElementById('opp_location').value = opp.location;
-            document.getElementById('opp_total_slots').value = opp.total_slots;
-            document.getElementById('opp_deadline').value = opp.deadline;
-            document.getElementById('opp_training_provider').value = opp.training_provider || '';
-            document.getElementById('opp_duration').value = opp.duration || '';
-            document.getElementById('opp_modality').value = opp.modality || '';
-            document.getElementById('opp_certification').value = opp.certification || '';
-            document.getElementById('opp_description').value = opp.description || '';
-            document.getElementById('opp_status').value = opp.status;
-
+        function openCreateModal(type) {
+            document.getElementById('modalTitle').textContent = 'Create New ' + (type === 'Job Opening' ? 'Job' : (type ===
+                'Scholarship' ? 'Scholarship' : 'Training'));
+            document.getElementById('opp_type').value = type;
+            document.getElementById('isUpdate').value = '0';
+            document.getElementById('isUpdate').name = 'create_opportunity';
+            document.getElementById('submitBtn').textContent = 'Create Opportunity';
+            document.getElementById('statusContainer').classList.add('hidden');
+            document.getElementById('opportunityForm').reset();
+            document.getElementById('opp_type').value = type;
             document.getElementById('opportunityModal').classList.remove('hidden');
         }
-    }
 
-    function viewOpportunityDetail(id) {
-        const opp = opportunitiesData[id];
-        if (opp) {
-            let html = `
+        function openEditModal(id) {
+            const opp = opportunitiesData[id];
+            if (opp) {
+                document.getElementById('modalTitle').textContent = 'Edit Opportunity';
+                document.getElementById('opportunityId').value = id;
+                document.getElementById('isUpdate').value = '1';
+                document.getElementById('isUpdate').name = 'update_opportunity';
+                document.getElementById('submitBtn').textContent = 'Update Opportunity';
+                document.getElementById('statusContainer').classList.remove('hidden');
+
+                document.getElementById('opp_title').value = opp.title;
+                document.getElementById('opp_type').value = opp.type;
+                document.getElementById('opp_location').value = opp.location;
+                document.getElementById('opp_total_slots').value = opp.total_slots;
+                document.getElementById('opp_deadline').value = opp.deadline;
+                document.getElementById('opp_training_provider').value = opp.training_provider || '';
+                document.getElementById('opp_duration').value = opp.duration || '';
+                document.getElementById('opp_modality').value = opp.modality || '';
+                document.getElementById('opp_certification').value = opp.certification || '';
+                document.getElementById('opp_description').value = opp.description || '';
+                document.getElementById('opp_status').value = opp.status;
+
+                document.getElementById('opportunityModal').classList.remove('hidden');
+            }
+        }
+
+        function viewOpportunityDetail(id) {
+            const opp = opportunitiesData[id];
+            if (opp) {
+                let html = `
                 <div><p class="text-xs font-bold text-slate-500 uppercase">Title</p><p class="font-bold text-slate-900 dark:text-white text-lg">${opp.title}</p></div>
                 <div class="grid grid-cols-2 gap-4">
                     <div><p class="text-xs font-bold text-slate-500 uppercase">Type</p><p class="text-sm text-slate-700 dark:text-slate-300">${opp.type}</p></div>
@@ -670,141 +670,141 @@ $templates = $notification->getAllTemplates();
                 </div>
                 <div><p class="text-xs font-bold text-slate-500 uppercase">Location</p><p class="text-sm text-slate-700 dark:text-slate-300">${opp.location}</p></div>
             `;
-            if (opp.training_provider) html +=
-                `<div><p class="text-xs font-bold text-slate-500 uppercase">Training Provider</p><p class="text-sm text-slate-700 dark:text-slate-300">${opp.training_provider}</p></div>`;
-            if (opp.duration || opp.modality) {
-                html += `<div class="grid grid-cols-2 gap-4 pt-2">
+                if (opp.training_provider) html +=
+                    `<div><p class="text-xs font-bold text-slate-500 uppercase">Training Provider</p><p class="text-sm text-slate-700 dark:text-slate-300">${opp.training_provider}</p></div>`;
+                if (opp.duration || opp.modality) {
+                    html += `<div class="grid grid-cols-2 gap-4 pt-2">
                     <div><p class="text-xs font-bold text-slate-500 uppercase">Duration</p><p class="text-sm text-slate-700 dark:text-slate-300">${opp.duration || 'N/A'}</p></div>
                     <div><p class="text-xs font-bold text-slate-500 uppercase">Modality</p><p class="text-sm text-slate-700 dark:text-slate-300">${opp.modality || 'N/A'}</p></div>
                 </div>`;
-            }
-            if (opp.certification) html +=
-                `<div><p class="text-xs font-bold text-slate-500 uppercase">Certification Granted</p><p class="text-sm font-bold text-blue-900 dark:text-blue-400">${opp.certification}</p></div>`;
-            if (opp.description) html +=
-                `<div><p class="text-xs font-bold text-slate-500 uppercase">Program Description</p><p class="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">${opp.description}</p></div>`;
-            html += `
+                }
+                if (opp.certification) html +=
+                    `<div><p class="text-xs font-bold text-slate-500 uppercase">Certification Granted</p><p class="text-sm font-bold text-blue-900 dark:text-blue-400">${opp.certification}</p></div>`;
+                if (opp.description) html +=
+                    `<div><p class="text-xs font-bold text-slate-500 uppercase">Program Description</p><p class="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">${opp.description}</p></div>`;
+                html += `
                 <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
                     <div><p class="text-xs font-bold text-slate-500 uppercase">Slots</p><p class="text-sm font-bold text-slate-900 dark:text-white">${opp.total_slots}</p></div>
                     <div><p class="text-xs font-bold text-slate-500 uppercase">Deadline</p><p class="text-sm font-bold text-slate-900 dark:text-white">${opp.deadline}</p></div>
                 </div>
             `;
-            document.getElementById('detailContent').innerHTML = html;
-            document.getElementById('detailModal').classList.remove('hidden');
-        }
-    }
-
-    function closeModal() {
-        document.getElementById('opportunityModal').classList.add('hidden');
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('create')) {
-            openCreateModal('Vocational Training');
-        }
-        if (urlParams.get('edit_id')) {
-            const id = parseInt(urlParams.get('edit_id'), 10);
-            if (!isNaN(id)) {
-                openEditModal(id);
-            }
-        }
-        if (urlParams.get('view_id')) {
-            const id = parseInt(urlParams.get('view_id'), 10);
-            if (!isNaN(id)) {
-                viewOpportunityDetail(id);
+                document.getElementById('detailContent').innerHTML = html;
+                document.getElementById('detailModal').classList.remove('hidden');
             }
         }
 
-        document.querySelectorAll('.broadcast-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const id = parseInt(this.dataset.oppId, 10);
+        function closeModal() {
+            document.getElementById('opportunityModal').classList.add('hidden');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('create')) {
+                openCreateModal('Vocational Training');
+            }
+            if (urlParams.get('edit_id')) {
+                const id = parseInt(urlParams.get('edit_id'), 10);
                 if (!isNaN(id)) {
-                    openBroadcastModal(id);
+                    openEditModal(id);
                 }
+            }
+            if (urlParams.get('view_id')) {
+                const id = parseInt(urlParams.get('view_id'), 10);
+                if (!isNaN(id)) {
+                    viewOpportunityDetail(id);
+                }
+            }
+
+            document.querySelectorAll('.broadcast-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = parseInt(this.dataset.oppId, 10);
+                    if (!isNaN(id)) {
+                        openBroadcastModal(id);
+                    }
+                });
             });
         });
-    });
 
-    function deleteOpportunity(id) {
-        document.getElementById('deleteOpportunityId').value = id;
-        document.getElementById('deleteModal').classList.remove('hidden');
-    }
-
-    function closeDeleteModal() {
-        document.getElementById('deleteModal').classList.add('hidden');
-    }
-
-    function filterTraining() {
-        const searchVal = document.getElementById('train_search').value.toLowerCase();
-        const typeVal = document.getElementById('train_type').value;
-        const statusVal = document.getElementById('train_status').value;
-        const cards = document.querySelectorAll('.train-card');
-
-        cards.forEach(card => {
-            const dataSearch = card.getAttribute('data-search') || '';
-            const dataType = card.getAttribute('data-type') || '';
-            const dataStatus = card.getAttribute('data-status') || '';
-
-            let match = true;
-            if (searchVal && !dataSearch.toLowerCase().includes(searchVal)) match = false;
-            if (typeVal !== 'All' && dataType !== typeVal) match = false;
-            if (statusVal !== 'All' && dataStatus !== statusVal) match = false;
-
-            card.style.display = match ? '' : 'none';
-        });
-    }
-
-    function openBroadcastModal(id) {
-        const opp = opportunitiesData[id];
-        if (!opp) {
-            console.error('Broadcast failed: opportunity not found for id', id);
-            return;
+        function deleteOpportunity(id) {
+            document.getElementById('deleteOpportunityId').value = id;
+            document.getElementById('deleteModal').classList.remove('hidden');
         }
 
-        document.getElementById('broadcast_opp_id').value = opp.id;
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').classList.add('hidden');
+        }
 
-        // Dynamic Template
-        const template = `Hello {{name}}, we have a new Vocational Training opportunity: ${opp.title}.
+        function filterTraining() {
+            const searchVal = document.getElementById('train_search').value.toLowerCase();
+            const typeVal = document.getElementById('train_type').value;
+            const statusVal = document.getElementById('train_status').value;
+            const cards = document.querySelectorAll('.train-card');
+
+            cards.forEach(card => {
+                const dataSearch = card.getAttribute('data-search') || '';
+                const dataType = card.getAttribute('data-type') || '';
+                const dataStatus = card.getAttribute('data-status') || '';
+
+                let match = true;
+                if (searchVal && !dataSearch.toLowerCase().includes(searchVal)) match = false;
+                if (typeVal !== 'All' && dataType !== typeVal) match = false;
+                if (statusVal !== 'All' && dataStatus !== statusVal) match = false;
+
+                card.style.display = match ? '' : 'none';
+            });
+        }
+
+        function openBroadcastModal(id) {
+            const opp = opportunitiesData[id];
+            if (!opp) {
+                console.error('Broadcast failed: opportunity not found for id', id);
+                return;
+            }
+
+            document.getElementById('broadcast_opp_id').value = opp.id;
+
+            // Dynamic Template
+            const template = `Hello {{name}}, we have a new Vocational Training opportunity: ${opp.title}.
 Provider: ${opp.training_provider || 'Local Partner'}
 Deadline: ${opp.deadline}
 Slots: ${opp.total_slots}
 
 Please visit the Municipal KK office to apply!`;
 
-        document.getElementById('broadcastMessageArea').value = template;
-        updateBroadcastPreview();
-        const modal = document.getElementById('broadcastModal');
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-    }
+            document.getElementById('broadcastMessageArea').value = template;
+            updateBroadcastPreview();
+            const modal = document.getElementById('broadcastModal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
 
-    function toggleSpecificBroadcastRecipients() {
-        const group = document.getElementById('broadcast_target_group').value;
-        document.getElementById('broadcast_specific_container').style.display = (group === 'Specific') ? 'block' :
-            'none';
-    }
+        function toggleSpecificBroadcastRecipients() {
+            const group = document.getElementById('broadcast_target_group').value;
+            document.getElementById('broadcast_specific_container').style.display = (group === 'Specific') ? 'block' :
+                'none';
+        }
 
-    function filterBCRecipients() {
-        const val = document.getElementById('bc_recip_search').value.toLowerCase();
-        const items = document.querySelectorAll('.bc-recip-item');
-        items.forEach(item => {
-            const name = item.getAttribute('data-name');
-            item.style.display = name.includes(val) ? '' : 'none';
-        });
-    }
+        function filterBCRecipients() {
+            const val = document.getElementById('bc_recip_search').value.toLowerCase();
+            const items = document.querySelectorAll('.bc-recip-item');
+            items.forEach(item => {
+                const name = item.getAttribute('data-name');
+                item.style.display = name.includes(val) ? '' : 'none';
+            });
+        }
 
-    var firstRecipientName = "<?php echo !empty($allProfiles) ? addslashes($allProfiles[0]['first_name']) : 'User'; ?>";
+        var firstRecipientName = "<?php echo !empty($allProfiles) ? addslashes($allProfiles[0]['first_name']) : 'User'; ?>";
 
-    function updateBroadcastPreview() {
-        let text = document.getElementById('broadcastMessageArea').value;
-        const oppTitle = opportunitiesData[document.getElementById('broadcast_opp_id').value]?.title ||
-            'Training Program';
+        function updateBroadcastPreview() {
+            let text = document.getElementById('broadcastMessageArea').value;
+            const oppTitle = opportunitiesData[document.getElementById('broadcast_opp_id').value]?.title ||
+                'Training Program';
 
-        text = text.replace(/{{name}}/g, firstRecipientName);
-        text = text.replace(/{{opportunity}}/g, oppTitle);
-        document.getElementById('broadcastPreviewBox').textContent = text;
-        document.getElementById('previewRecipient').textContent = firstRecipientName;
-    }
+            text = text.replace(/{{name}}/g, firstRecipientName);
+            text = text.replace(/{{opportunity}}/g, oppTitle);
+            document.getElementById('broadcastPreviewBox').textContent = text;
+            document.getElementById('previewRecipient').textContent = firstRecipientName;
+        }
     </script>
 
     <?php require_once __DIR__ . '/../includes/footer.php'; ?>

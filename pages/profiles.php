@@ -20,67 +20,67 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
 
         if (isset($_POST['create_profile'])) {
-        $result = $osyProfile->create([
-            'profile_type' => $_POST['profile_type'] ?? 'OSY',
-            'first_name' => $_POST['first_name'],
-            'middle_name' => $_POST['middle_name'] ?? null,
-            'last_name' => $_POST['last_name'],
-            'email' => $_POST['email'] ?? null,
-            'phone' => $_POST['phone'] ?? null,
-            'age' => $_POST['age'],
-            'gender' => $_POST['gender'],
-            'civil_status' => $_POST['civil_status'] ?? 'Single',
-            'education_level' => $_POST['education_level'],
-            'barangay' => $_POST['barangay'],
-            'primary_skill' => $_POST['primary_skill'],
-            'skills' => $_POST['primary_skill'],
-            'interests' => null,
-            'govt_id_type' => null,
-            'govt_id_number' => null,
-            'reason_for_not_in_school' => null,
-            'engagement_status' => null,
-            'status' => $_POST['status'] ?? 'Active',
-            'registration_status' => 'Submitted',
-            'date_of_birth' => $_POST['date_of_birth'] ?? null
-        ]);
-        $message = $result['message'];
-        if ($result['success']) {
-            header('Location: profiles.php');
-            exit;
-        }
+            $result = $osyProfile->create([
+                'profile_type' => $_POST['profile_type'] ?? 'OSY',
+                'first_name' => $_POST['first_name'],
+                'middle_name' => $_POST['middle_name'] ?? null,
+                'last_name' => $_POST['last_name'],
+                'email' => $_POST['email'] ?? null,
+                'phone' => $_POST['phone'] ?? null,
+                'age' => $_POST['age'],
+                'gender' => $_POST['gender'],
+                'civil_status' => $_POST['civil_status'] ?? 'Single',
+                'education_level' => $_POST['education_level'],
+                'barangay' => $_POST['barangay'],
+                'primary_skill' => $_POST['primary_skill'],
+                'skills' => $_POST['primary_skill'],
+                'interests' => null,
+                'govt_id_type' => null,
+                'govt_id_number' => null,
+                'reason_for_not_in_school' => null,
+                'engagement_status' => null,
+                'status' => $_POST['status'] ?? 'Active',
+                'registration_status' => 'Submitted',
+                'date_of_birth' => $_POST['date_of_birth'] ?? null
+            ]);
+            $message = $result['message'];
+            if ($result['success']) {
+                header('Location: profiles.php');
+                exit;
+            }
         } elseif (isset($_POST['update_profile'])) {
-        $result = $osyProfile->update($_POST['profile_id'], [
-            'first_name' => $_POST['first_name'],
-            'middle_name' => $_POST['middle_name'] ?? null,
-            'last_name' => $_POST['last_name'],
-            'email' => $_POST['email'] ?? null,
-            'phone' => $_POST['phone'] ?? null,
-            'age' => $_POST['age'],
-            'gender' => $_POST['gender'],
-            'civil_status' => $_POST['civil_status'] ?? 'Single',
-            'education_level' => $_POST['education_level'],
-            'barangay' => $_POST['barangay'],
-            'primary_skill' => $_POST['primary_skill'],
-            'skills' => $_POST['skills'] ?? '',
-            'interests' => $_POST['interests'] ?? '',
-            'govt_id_type' => $_POST['govt_id_type'] ?? null,
-            'govt_id_number' => $_POST['govt_id_number'] ?? null,
-            'engagement_status' => $_POST['engagement_status'] ?? null,
-            'status' => $_POST['status'],
-            'date_of_birth' => $_POST['date_of_birth'] ?? null
-        ]);
-        $message = $result['message'];
-        if ($result['success']) {
-            header('Location: profiles.php');
-            exit;
-        }
+            $result = $osyProfile->update($_POST['profile_id'], [
+                'first_name' => $_POST['first_name'],
+                'middle_name' => $_POST['middle_name'] ?? null,
+                'last_name' => $_POST['last_name'],
+                'email' => $_POST['email'] ?? null,
+                'phone' => $_POST['phone'] ?? null,
+                'age' => $_POST['age'],
+                'gender' => $_POST['gender'],
+                'civil_status' => $_POST['civil_status'] ?? 'Single',
+                'education_level' => $_POST['education_level'],
+                'barangay' => $_POST['barangay'],
+                'primary_skill' => $_POST['primary_skill'],
+                'skills' => $_POST['skills'] ?? '',
+                'interests' => $_POST['interests'] ?? '',
+                'govt_id_type' => $_POST['govt_id_type'] ?? null,
+                'govt_id_number' => $_POST['govt_id_number'] ?? null,
+                'engagement_status' => $_POST['engagement_status'] ?? null,
+                'status' => $_POST['status'],
+                'date_of_birth' => $_POST['date_of_birth'] ?? null
+            ]);
+            $message = $result['message'];
+            if ($result['success']) {
+                header('Location: profiles.php');
+                exit;
+            }
         } elseif (isset($_POST['delete_profile'])) {
-        $result = $osyProfile->delete($_POST['profile_id']);
-        $message = $result['message'];
-        if ($result['success']) {
-            header('Location: profiles.php');
-            exit;
-        }
+            $result = $osyProfile->delete($_POST['profile_id']);
+            $message = $result['message'];
+            if ($result['success']) {
+                header('Location: profiles.php');
+                exit;
+            }
         }
     }
 }
@@ -263,23 +263,23 @@ require_once __DIR__ . '/../includes/header.php';
     </div>
     <div class="px-6 py-4 bg-slate-100 dark:bg-slate-700 flex flex-col md:flex-row items-center justify-between gap-4">
         <span class="text-sm text-slate-600 dark:text-slate-400">Showing <?php echo count($profiles); ?> of <?php echo $totalFiltered; ?> entries (Page <?php echo $page; ?> of <?php echo max(1, $totalPages); ?>)</span>
-        
+
         <?php if ($totalPages > 1): ?>
-        <div class="flex gap-2">
-            <?php 
-                $queryParams = $_GET; 
-                if ($page > 1): 
+            <div class="flex gap-2">
+                <?php
+                $queryParams = $_GET;
+                if ($page > 1):
                     $queryParams['page'] = $page - 1;
-            ?>
-                <a href="?<?php echo http_build_query($queryParams); ?>" class="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm">Previous</a>
-            <?php endif; ?>
-            
-            <?php if ($page < $totalPages): 
-                $queryParams['page'] = $page + 1;
-            ?>
-                <a href="?<?php echo http_build_query($queryParams); ?>" class="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm">Next</a>
-            <?php endif; ?>
-        </div>
+                ?>
+                    <a href="?<?php echo http_build_query($queryParams); ?>" class="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm">Previous</a>
+                <?php endif; ?>
+
+                <?php if ($page < $totalPages):
+                    $queryParams['page'] = $page + 1;
+                ?>
+                    <a href="?<?php echo http_build_query($queryParams); ?>" class="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm">Next</a>
+                <?php endif; ?>
+            </div>
         <?php endif; ?>
     </div>
 </div>
@@ -361,7 +361,7 @@ require_once __DIR__ . '/../includes/header.php';
                         </select>
                     </div>
                 </div>
-                
+
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block">Govt ID Type</label>
@@ -398,7 +398,7 @@ require_once __DIR__ . '/../includes/header.php';
                     <label class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block">Complete Skills</label>
                     <textarea name="skills" id="skills" rows="2" class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white"></textarea>
                 </div>
-                
+
                 <div>
                     <label class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block">Interests</label>
                     <textarea name="interests" id="interests" rows="2" class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white"></textarea>
@@ -471,16 +471,16 @@ require_once __DIR__ . '/../includes/header.php';
         document.getElementById('modalTitle').textContent = 'Add New Profile (' + type + ')';
         document.getElementById('isUpdate').value = '0';
         document.getElementById('isUpdate').name = 'create_profile';
-        
+
         // Let form pass the hidden input 'profile_type'
         let input = document.createElement("input");
         input.setAttribute("type", "hidden");
         input.setAttribute("name", "profile_type");
         input.setAttribute("value", type);
         input.id = "hiddenProfileType";
-        
+
         let oldInp = document.getElementById("hiddenProfileType");
-        if(oldInp) oldInp.remove();
+        if (oldInp) oldInp.remove();
         document.getElementById("profileForm").appendChild(input);
 
         document.getElementById('submitBtn').textContent = 'Save Profile';

@@ -31,36 +31,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
         $message = 'Duplicate or invalid form submission detected.';
         $messageType = 'error';
     } else {
-    $data = [
-        'first_name' => $_POST['first_name'],
-        'middle_name' => $_POST['middle_name'] ?? null,
-        'last_name' => $_POST['last_name'],
-        'email' => $_POST['email'] ?? null,
-        'phone' => $_POST['phone'] ?? null,
-        'age' => $_POST['age'],
-        'date_of_birth' => $_POST['date_of_birth'] ?? null,
-        'gender' => $_POST['gender'],
-        'civil_status' => $_POST['civil_status'],
-        'barangay' => $_POST['barangay'],
-        'education_level' => $_POST['education_level'],
-        'primary_skill' => $_POST['primary_skill'],
-        'skills' => $_POST['skills'] ?? null,
-        'interests' => $_POST['interests'] ?? null,
-        'govt_id_type' => $_POST['govt_id_type'] ?? null,
-        'govt_id_number' => $_POST['govt_id_number'] ?? null,
-        'status' => $_POST['status'] ?? $profile['status'],
-        'engagement_status' => $_POST['engagement_status'] ?? $profile['engagement_status']
-    ];
+        $data = [
+            'first_name' => $_POST['first_name'],
+            'middle_name' => $_POST['middle_name'] ?? null,
+            'last_name' => $_POST['last_name'],
+            'email' => $_POST['email'] ?? null,
+            'phone' => $_POST['phone'] ?? null,
+            'age' => $_POST['age'],
+            'date_of_birth' => $_POST['date_of_birth'] ?? null,
+            'gender' => $_POST['gender'],
+            'civil_status' => $_POST['civil_status'],
+            'barangay' => $_POST['barangay'],
+            'education_level' => $_POST['education_level'],
+            'primary_skill' => $_POST['primary_skill'],
+            'skills' => $_POST['skills'] ?? null,
+            'interests' => $_POST['interests'] ?? null,
+            'govt_id_type' => $_POST['govt_id_type'] ?? null,
+            'govt_id_number' => $_POST['govt_id_number'] ?? null,
+            'status' => $_POST['status'] ?? $profile['status'],
+            'engagement_status' => $_POST['engagement_status'] ?? $profile['engagement_status']
+        ];
 
-    $result = $osyProfile->update($profile_id, $data);
-    if ($result['success']) {
-        $returnPage = ($_SESSION['role'] === 'sk_chairman') ? 'sk-barangay-youth.php' : 'profiles.php';
-        header("Location: profile-detail.php?id={$profile_id}&success=updated");
-        exit;
-    } else {
-        $message = $result['message'];
-        $messageType = 'error';
-    }
+        $result = $osyProfile->update($profile_id, $data);
+        if ($result['success']) {
+            $returnPage = ($_SESSION['role'] === 'sk_chairman') ? 'sk-barangay-youth.php' : 'profiles.php';
+            header("Location: profile-detail.php?id={$profile_id}&success=updated");
+            exit;
+        } else {
+            $message = $result['message'];
+            $messageType = 'error';
+        }
     }
 }
 
@@ -91,9 +91,9 @@ require_once __DIR__ . '/../includes/header.php';
     </nav>
 
     <?php if ($message): ?>
-    <div class="mb-6 p-4 <?php echo $messageType === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'; ?> rounded-xl text-sm">
-        <p class="<?php echo $messageType === 'success' ? 'text-green-800' : 'text-red-800'; ?>"><?php echo htmlspecialchars($message); ?></p>
-    </div>
+        <div class="mb-6 p-4 <?php echo $messageType === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'; ?> rounded-xl text-sm">
+            <p class="<?php echo $messageType === 'success' ? 'text-green-800' : 'text-red-800'; ?>"><?php echo htmlspecialchars($message); ?></p>
+        </div>
     <?php endif; ?>
 
     <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
@@ -105,7 +105,7 @@ require_once __DIR__ . '/../includes/header.php';
         <form method="POST" class="p-8 space-y-6">
             <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
             <input type="hidden" name="update_profile" value="1">
-            
+
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
                     <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">First Name</label>

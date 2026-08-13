@@ -15,31 +15,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
         $error = 'Duplicate or invalid form submission detected.';
     } else {
-    $current_password = $_POST['current_password'] ?? '';
-    $new_password = $_POST['new_password'] ?? '';
-    $confirm_password = $_POST['confirm_password'] ?? '';
+        $current_password = $_POST['current_password'] ?? '';
+        $new_password = $_POST['new_password'] ?? '';
+        $confirm_password = $_POST['confirm_password'] ?? '';
 
-    if (empty($current_password) || empty($new_password) || empty($confirm_password)) {
-        $error = 'All fields are required.';
-    } elseif ($new_password !== $confirm_password) {
-        $error = 'New passwords do not match.';
-    } elseif (strlen($new_password) < 6) {
-        $error = 'New password must be at least 6 characters.';
-    } else {
-        $result = $user->changePassword($_SESSION['user_id'], $current_password, $new_password);
-        if ($result['success']) {
-            $_SESSION['temp_password_required'] = 0;
-            $success = 'Password successfully reset! Redirecting to dashboard...';
-            header("refresh:2;url=dashboard.php");
+        if (empty($current_password) || empty($new_password) || empty($confirm_password)) {
+            $error = 'All fields are required.';
+        } elseif ($new_password !== $confirm_password) {
+            $error = 'New passwords do not match.';
+        } elseif (strlen($new_password) < 6) {
+            $error = 'New password must be at least 6 characters.';
         } else {
-            $error = $result['message'];
+            $result = $user->changePassword($_SESSION['user_id'], $current_password, $new_password);
+            if ($result['success']) {
+                $_SESSION['temp_password_required'] = 0;
+                $success = 'Password successfully reset! Redirecting to dashboard...';
+                header("refresh:2;url=dashboard.php");
+            } else {
+                $error = $result['message'];
+            }
         }
-    }
     }
 }
 ?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -48,9 +49,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
     </style>
 </head>
+
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col justify-center items-center px-4 relative overflow-hidden">
     <!-- Decorative Background -->
     <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-100 rounded-full blur-3xl opacity-50"></div>
@@ -125,4 +129,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 </body>
+
 </html>

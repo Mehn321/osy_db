@@ -38,13 +38,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_profile'])) {
     } else {
         requireRole('lydo'); // Double check role for destructive action
         $result = $osyProfile->delete(intval($_POST['profile_id']));
-    if ($result['success']) {
-        header('Location: profiles.php?success=deleted');
-        exit;
-    } else {
-        $message = $result['message'];
-        $messageType = 'error';
-    }
+        if ($result['success']) {
+            header('Location: profiles.php?success=deleted');
+            exit;
+        } else {
+            $message = $result['message'];
+            $messageType = 'error';
+        }
     }
 }
 
@@ -66,9 +66,9 @@ $matches = $matching->getMatchesForOSY($profile_id);
 </nav>
 
 <?php if ($message): ?>
-<div class="mb-6 p-4 <?php echo $messageType === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'; ?> rounded-xl">
-    <p class="<?php echo $messageType === 'success' ? 'text-green-800' : 'text-red-800'; ?>"><?php echo htmlspecialchars($message); ?></p>
-</div>
+    <div class="mb-6 p-4 <?php echo $messageType === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'; ?> rounded-xl">
+        <p class="<?php echo $messageType === 'success' ? 'text-green-800' : 'text-red-800'; ?>"><?php echo htmlspecialchars($message); ?></p>
+    </div>
 <?php endif; ?>
 
 <!-- Profile Header -->
@@ -79,9 +79,9 @@ $matches = $matching->getMatchesForOSY($profile_id);
             <?php if ($profile['image_path']): ?>
                 <img src="<?php echo htmlspecialchars($profile['image_path']); ?>" alt="Profile" class="w-24 h-24 rounded-full object-cover">
             <?php else: ?>
-            <div class="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-4xl font-bold">
-                <?php echo strtoupper(substr($profile['first_name'], 0, 1) . substr($profile['last_name'], 0, 1)); ?>
-            </div>
+                <div class="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white text-4xl font-bold">
+                    <?php echo strtoupper(substr($profile['first_name'], 0, 1) . substr($profile['last_name'], 0, 1)); ?>
+                </div>
             <?php endif; ?>
         </div>
 
@@ -96,17 +96,17 @@ $matches = $matching->getMatchesForOSY($profile_id);
                 </span>
             </div>
             <div class="flex items-center gap-4 mb-6">
-                <span class="inline-flex px-4 py-2 rounded-lg font-semibold text-sm <?php 
-                    if ($profile['status'] == 'Active') echo 'bg-green-100 text-green-900';
-                    elseif ($profile['status'] == 'Employed') echo 'bg-blue-100 text-blue-900';
-                    elseif ($profile['status'] == 'In Training') echo 'bg-orange-100 text-orange-900';
-                    else echo 'bg-slate-100 text-slate-900';
-                ?>">
+                <span class="inline-flex px-4 py-2 rounded-lg font-semibold text-sm <?php
+                                                                                    if ($profile['status'] == 'Active') echo 'bg-green-100 text-green-900';
+                                                                                    elseif ($profile['status'] == 'Employed') echo 'bg-blue-100 text-blue-900';
+                                                                                    elseif ($profile['status'] == 'In Training') echo 'bg-orange-100 text-orange-900';
+                                                                                    else echo 'bg-slate-100 text-slate-900';
+                                                                                    ?>">
                     <?php echo htmlspecialchars($profile['status']); ?>
                 </span>
                 <span class="text-slate-600 dark:text-slate-400"><?php echo htmlspecialchars($profile['age']); ?> years old</span>
                 <?php if ($profile['gender']): ?>
-                <span class="text-slate-600 dark:text-slate-400">• <?php echo htmlspecialchars($profile['gender']); ?></span>
+                    <span class="text-slate-600 dark:text-slate-400">• <?php echo htmlspecialchars($profile['gender']); ?></span>
                 <?php endif; ?>
             </div>
             <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
@@ -123,16 +123,16 @@ $matches = $matching->getMatchesForOSY($profile_id);
                     <p class="text-slate-900 dark:text-white"><?php echo htmlspecialchars($profile['civil_status'] ?? 'N/A'); ?></p>
                 </div>
                 <?php if ($profile['date_of_birth']): ?>
-                <div>
-                    <span class="text-slate-600 dark:text-slate-400 font-medium">Date of Birth:</span>
-                    <p class="text-slate-900 dark:text-white"><?php echo date('M d, Y', strtotime($profile['date_of_birth'])); ?></p>
-                </div>
+                    <div>
+                        <span class="text-slate-600 dark:text-slate-400 font-medium">Date of Birth:</span>
+                        <p class="text-slate-900 dark:text-white"><?php echo date('M d, Y', strtotime($profile['date_of_birth'])); ?></p>
+                    </div>
                 <?php endif; ?>
                 <?php if ($profile['govt_id_type']): ?>
-                <div>
-                    <span class="text-slate-600 dark:text-slate-400 font-medium">ID Type:</span>
-                    <p class="text-slate-900 dark:text-white"><?php echo htmlspecialchars($profile['govt_id_type']); ?></p>
-                </div>
+                    <div>
+                        <span class="text-slate-600 dark:text-slate-400 font-medium">ID Type:</span>
+                        <p class="text-slate-900 dark:text-white"><?php echo htmlspecialchars($profile['govt_id_type']); ?></p>
+                    </div>
                 <?php endif; ?>
             </div>
         </div>
@@ -156,26 +156,26 @@ $matches = $matching->getMatchesForOSY($profile_id);
                     <p class="text-slate-900 dark:text-white font-semibold text-blue-900 dark:text-blue-400"><?php echo htmlspecialchars($profile['primary_skill'] ?? 'N/A'); ?></p>
                 </div>
                 <?php if ($profile['skills']): ?>
-                <div>
-                    <span class="text-sm font-semibold text-slate-600 dark:text-slate-400">All Skills</span>
-                    <p class="text-slate-900 dark:text-white"><?php echo htmlspecialchars($profile['skills']); ?></p>
-                </div>
+                    <div>
+                        <span class="text-sm font-semibold text-slate-600 dark:text-slate-400">All Skills</span>
+                        <p class="text-slate-900 dark:text-white"><?php echo htmlspecialchars($profile['skills']); ?></p>
+                    </div>
                 <?php endif; ?>
                 <?php if ($profile['interests']): ?>
-                <div>
-                    <span class="text-sm font-semibold text-slate-600 dark:text-slate-400">Interests</span>
-                    <p class="text-slate-900 dark:text-white"><?php echo htmlspecialchars($profile['interests']); ?></p>
-                </div>
+                    <div>
+                        <span class="text-sm font-semibold text-slate-600 dark:text-slate-400">Interests</span>
+                        <p class="text-slate-900 dark:text-white"><?php echo htmlspecialchars($profile['interests']); ?></p>
+                    </div>
                 <?php endif; ?>
                 <div>
                     <span class="text-sm font-semibold text-slate-600 dark:text-slate-400">Barangay</span>
                     <p class="text-slate-900 dark:text-white"><?php echo htmlspecialchars($profile['barangay'] ?? 'N/A'); ?></p>
                 </div>
                 <?php if ($profile['reason_for_not_in_school']): ?>
-                <div>
-                    <span class="text-sm font-semibold text-slate-600 dark:text-slate-400">Reason for Not in School</span>
-                    <p class="text-slate-900 dark:text-white"><?php echo htmlspecialchars($profile['reason_for_not_in_school']); ?></p>
-                </div>
+                    <div>
+                        <span class="text-sm font-semibold text-slate-600 dark:text-slate-400">Reason for Not in School</span>
+                        <p class="text-slate-900 dark:text-white"><?php echo htmlspecialchars($profile['reason_for_not_in_school']); ?></p>
+                    </div>
                 <?php endif; ?>
             </div>
         </div>
@@ -247,12 +247,12 @@ $matches = $matching->getMatchesForOSY($profile_id);
                     </span>
                 </a>
                 <?php if ($_SESSION['role'] === 'lydo'): ?>
-                <a href="matching.php" class="block w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold text-sm transition-colors text-center">
-                    <span class="flex items-center justify-center gap-2">
-                        <span class="material-symbols-outlined text-base">psychology</span>
-                        Find Matches
-                    </span>
-                </a>
+                    <a href="matching.php" class="block w-full px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold text-sm transition-colors text-center">
+                        <span class="flex items-center justify-center gap-2">
+                            <span class="material-symbols-outlined text-base">psychology</span>
+                            Find Matches
+                        </span>
+                    </a>
                 <?php endif; ?>
                 <form method="POST" onsubmit="return confirm('Are you sure you want to delete this profile? This cannot be undone.')">
                     <input type="hidden" name="profile_id" value="<?php echo $profile['id']; ?>">

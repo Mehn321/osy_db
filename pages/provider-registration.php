@@ -13,77 +13,77 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_provider']))
     if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
         $errors[] = 'This form has already been submitted or the session expired. Please refresh the page and try again.';
     } else {
-    try {
-        // Validate password fields
-        $password = $_POST['password'] ?? '';
-        $confirmPassword = $_POST['confirm_password'] ?? '';
+        try {
+            // Validate password fields
+            $password = $_POST['password'] ?? '';
+            $confirmPassword = $_POST['confirm_password'] ?? '';
 
-        if (empty($password)) {
-            throw new Exception('Password is required.');
-        }
-        if (strlen($password) < 6) {
-            throw new Exception('Password must be at least 6 characters.');
-        }
-        if ($password !== $confirmPassword) {
-            throw new Exception('Passwords do not match.');
-        }
-
-        $documentPath = null;
-        if (!empty($_FILES['provider_document']['name'])) {
-            $allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
-            if ($_FILES['provider_document']['error'] !== UPLOAD_ERR_OK) {
-                throw new Exception('Error uploading proof of legitimacy document.');
+            if (empty($password)) {
+                throw new Exception('Password is required.');
             }
-            if (!in_array($_FILES['provider_document']['type'], $allowedTypes, true)) {
-                throw new Exception('Document must be a PDF, PNG, or JPEG file.');
+            if (strlen($password) < 6) {
+                throw new Exception('Password must be at least 6 characters.');
             }
-            if ($_FILES['provider_document']['size'] > 5 * 1024 * 1024) {
-                throw new Exception('Document must be smaller than 5MB.');
+            if ($password !== $confirmPassword) {
+                throw new Exception('Passwords do not match.');
             }
 
-            $uploadDir = __DIR__ . '/../uploads/providers';
-            if (!is_dir($uploadDir)) {
-                mkdir($uploadDir, 0755, true);
+            $documentPath = null;
+            if (!empty($_FILES['provider_document']['name'])) {
+                $allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+                if ($_FILES['provider_document']['error'] !== UPLOAD_ERR_OK) {
+                    throw new Exception('Error uploading proof of legitimacy document.');
+                }
+                if (!in_array($_FILES['provider_document']['type'], $allowedTypes, true)) {
+                    throw new Exception('Document must be a PDF, PNG, or JPEG file.');
+                }
+                if ($_FILES['provider_document']['size'] > 5 * 1024 * 1024) {
+                    throw new Exception('Document must be smaller than 5MB.');
+                }
+
+                $uploadDir = __DIR__ . '/../uploads/providers';
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0755, true);
+                }
+
+                $extension = pathinfo($_FILES['provider_document']['name'], PATHINFO_EXTENSION);
+                $filename = 'provider_doc_' . time() . '_' . uniqid() . '.' . $extension;
+                $targetPath = $uploadDir . '/' . $filename;
+
+                if (!move_uploaded_file($_FILES['provider_document']['tmp_name'], $targetPath)) {
+                    throw new Exception('Failed to save the uploaded document.');
+                }
+
+                $documentPath = '/uploads/providers/' . $filename;
+            } else {
+                throw new Exception('Please upload a proof of legitimacy document.');
             }
 
-            $extension = pathinfo($_FILES['provider_document']['name'], PATHINFO_EXTENSION);
-            $filename = 'provider_doc_' . time() . '_' . uniqid() . '.' . $extension;
-            $targetPath = $uploadDir . '/' . $filename;
+            $data = [
+                'username' => trim($_POST['username']),
+                'email' => trim($_POST['email']),
+                'password' => trim($_POST['password']),
+                'fullname' => trim($_POST['fullname']),
+                'role' => $_POST['provider_type'],
+                'barangay' => trim($_POST['address']),
+                'provider_type' => trim($_POST['provider_type']),
+                'provider_document_path' => $documentPath
+            ];
 
-            if (!move_uploaded_file($_FILES['provider_document']['tmp_name'], $targetPath)) {
-                throw new Exception('Failed to save the uploaded document.');
+            $result = $userModel->createUser($data);
+
+            if ($result['success']) {
+                $message = 'Provider registration submitted successfully. Your account is pending approval by the LYDO. You will receive a notification once approved.';
+                $messageType = 'success';
+            } else {
+                $message = $result['message'];
+                $messageType = 'error';
             }
-
-            $documentPath = '/uploads/providers/' . $filename;
-        } else {
-            throw new Exception('Please upload a proof of legitimacy document.');
-        }
-
-        $data = [
-            'username' => trim($_POST['username']),
-            'email' => trim($_POST['email']),
-            'password' => trim($_POST['password']),
-            'fullname' => trim($_POST['fullname']),
-            'role' => $_POST['provider_type'],
-            'barangay' => trim($_POST['address']),
-            'provider_type' => trim($_POST['provider_type']),
-            'provider_document_path' => $documentPath
-        ];
-
-        $result = $userModel->createUser($data);
-
-        if ($result['success']) {
-            $message = 'Provider registration submitted successfully. Your account is pending approval by the LYDO. You will receive a notification once approved.';
-            $messageType = 'success';
-        } else {
-            $message = $result['message'];
+        } catch (Exception $e) {
+            $errors[] = $e->getMessage();
             $messageType = 'error';
+            $message = 'There was an issue submitting your registration. Please fix the highlighted errors and try again.';
         }
-    } catch (Exception $e) {
-        $errors[] = $e->getMessage();
-        $messageType = 'error';
-        $message = 'There was an issue submitting your registration. Please fix the highlighted errors and try again.';
-    }
     }
 }
 

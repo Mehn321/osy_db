@@ -404,7 +404,11 @@
                             const form = el.closest('form');
                             if (!form) return;
                             // Submit the form (GET forms will update URL and trigger SPA navigation)
-                            try { form.requestSubmit(); } catch (e) { form.submit(); }
+                            try {
+                                form.requestSubmit();
+                            } catch (e) {
+                                form.submit();
+                            }
                         }, 350);
 
                         el.addEventListener('input', handler);
@@ -427,7 +431,9 @@
                                 return;
                             }
                             // Fallback: fetch endpoint
-                            fetch(btn.getAttribute('data-href') || window.location.href, { method: 'POST' }).then(r => r.json()).then(console.log).catch(console.error);
+                            fetch(btn.getAttribute('data-href') || window.location.href, {
+                                method: 'POST'
+                            }).then(r => r.json()).then(console.log).catch(console.error);
                         });
                     });
                 }
@@ -626,10 +632,26 @@
                     if (typeof filterProfiles === 'function') filterProfiles();
 
                     // Initialize common UI helpers
-                    try { initPasswordToggles(); } catch (e) { console.warn('Password toggles init failed', e); }
-                    try { initFormSubmitGuards(); } catch (e) { console.warn('Form submit guard init failed', e); }
-                    try { initAutoFilters(); } catch (e) { console.warn('Auto-filters init failed', e); }
-                    try { initRowActions(); } catch (e) { console.warn('Row actions init failed', e); }
+                    try {
+                        initPasswordToggles();
+                    } catch (e) {
+                        console.warn('Password toggles init failed', e);
+                    }
+                    try {
+                        initFormSubmitGuards();
+                    } catch (e) {
+                        console.warn('Form submit guard init failed', e);
+                    }
+                    try {
+                        initAutoFilters();
+                    } catch (e) {
+                        console.warn('Auto-filters init failed', e);
+                    }
+                    try {
+                        initRowActions();
+                    } catch (e) {
+                        console.warn('Row actions init failed', e);
+                    }
                 }
 
                 function updateSidebarHighlight(url) {

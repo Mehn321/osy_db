@@ -42,13 +42,13 @@ if ($user->isLoggedIn()) {
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
         rel="stylesheet">
     <style>
-    body {
-        font-family: 'Inter', sans-serif;
-    }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
 
-    .material-symbols-outlined {
-        font-variation-settings: 'FILL'0, 'wght'400, 'GRAD'0, 'opsz'24;
-    }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
     </style>
 </head>
 
@@ -102,10 +102,10 @@ if ($user->isLoggedIn()) {
                 </div>
 
                 <?php if ($login_error): ?>
-                <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm font-medium">
-                    <span class="material-symbols-outlined text-base align-middle mr-2">error</span>
-                    <?php echo htmlspecialchars($login_error); ?>
-                </div>
+                    <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm font-medium">
+                        <span class="material-symbols-outlined text-base align-middle mr-2">error</span>
+                        <?php echo htmlspecialchars($login_error); ?>
+                    </div>
                 <?php endif; ?>
 
                 <form method="POST" class="space-y-6">
@@ -133,46 +133,46 @@ if ($user->isLoggedIn()) {
                             <a href="password-reset.php"
                                 class="text-xs font-bold text-blue-900 hover:underline uppercase tracking-widest">Forgot?</a>
                         </div>
-                            <div class="relative">
-                                <input type="password" name="password" placeholder="••••••••" required
-                                    class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
-                                <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 toggle-password-btn">
-                                    <span class="material-symbols-outlined">visibility</span>
-                                </button>
-                            </div>
+                        <div class="relative">
+                            <input type="password" name="password" placeholder="••••••••" required
+                                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                            <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 toggle-password-btn">
+                                <span class="material-symbols-outlined">visibility</span>
+                            </button>
                         </div>
                     </div>
+            </div>
 
-                    <!-- Submit Button -->
-                    <button type="submit"
-                        class="w-full bg-gradient-to-r from-blue-900 to-blue-800 text-white py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transition-all active:scale-[0.98] mt-8">
-                        <span class="flex items-center justify-center gap-2">
-                            <span class="material-symbols-outlined">login</span>
-                            Sign In
-                        </span>
-                    </button>
-                </form>
+            <!-- Submit Button -->
+            <button type="submit"
+                class="w-full bg-gradient-to-r from-blue-900 to-blue-800 text-white py-3 rounded-lg font-bold shadow-lg hover:shadow-xl transition-all active:scale-[0.98] mt-8">
+                <span class="flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined">login</span>
+                    Sign In
+                </span>
+            </button>
+            </form>
 
-                <!-- Youth & Provider Registration Links -->
-                <div class="mt-8 space-y-3 text-center border-t border-slate-200 pt-8">
-                    <div>
-                        <p class="text-sm text-slate-600 mb-2">Are you a youth looking for opportunities?</p>
-                        <a href="youth-signup.php"
-                            class="inline-flex items-center gap-2 text-blue-900 font-semibold hover:underline">
-                            <span class="material-symbols-outlined text-base">person_add</span>
-                            Youth Sign Up
-                        </a>
-                    </div>
-                    <div>
-                        <p class="text-sm text-slate-600 mb-2">Are you an employer or training provider?</p>
-                        <a href="provider-registration.php"
-                            class="inline-flex items-center gap-2 text-blue-900 font-semibold hover:underline">
-                            <span class="material-symbols-outlined text-base">business</span>
-                            Register as Provider
-                        </a>
-                    </div>
+            <!-- Youth & Provider Registration Links -->
+            <div class="mt-8 space-y-3 text-center border-t border-slate-200 pt-8">
+                <div>
+                    <p class="text-sm text-slate-600 mb-2">Are you a youth looking for opportunities?</p>
+                    <a href="youth-signup.php"
+                        class="inline-flex items-center gap-2 text-blue-900 font-semibold hover:underline">
+                        <span class="material-symbols-outlined text-base">person_add</span>
+                        Youth Sign Up
+                    </a>
+                </div>
+                <div>
+                    <p class="text-sm text-slate-600 mb-2">Are you an employer or training provider?</p>
+                    <a href="provider-registration.php"
+                        class="inline-flex items-center gap-2 text-blue-900 font-semibold hover:underline">
+                        <span class="material-symbols-outlined text-base">business</span>
+                        Register as Provider
+                    </a>
                 </div>
             </div>
+        </div>
         </div>
     </main>
 </body>

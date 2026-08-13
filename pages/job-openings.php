@@ -17,60 +17,60 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
         $message = 'This form has already been submitted or the session expired. Please refresh and try again.';
     } else {
-    $requiredSkills = array_filter(array_map('trim', explode(',', $_POST['required_skills'] ?? '')));
+        $requiredSkills = array_filter(array_map('trim', explode(',', $_POST['required_skills'] ?? '')));
 
         if (isset($_POST['create_opportunity'])) {
-        $result = $opportunity->create([
-            'title' => $_POST['title'],
-            'type' => $_POST['type'],
-            'location' => $_POST['location'],
-            'compensation' => $_POST['compensation'] ?? null,
-            'benefits' => $_POST['benefits'] ?? null,
-            'certification' => $_POST['certification'] ?? null,
-            'description' => $_POST['description'] ?? null,
-            'total_slots' => $_POST['total_slots'],
-            'deadline' => $_POST['deadline'],
-            'age_min' => !empty($_POST['age_min']) ? intval($_POST['age_min']) : null,
-            'age_max' => !empty($_POST['age_max']) ? intval($_POST['age_max']) : null
-        ]);
-        if ($result['success'] && !empty($requiredSkills)) {
-            $opportunity->updateRequiredSkills($result['id'], $requiredSkills);
-        }
-        $message = $result['message'];
-        if ($result['success']) {
-            header('Location: job-openings.php?success=created');
-            exit;
-        }
+            $result = $opportunity->create([
+                'title' => $_POST['title'],
+                'type' => $_POST['type'],
+                'location' => $_POST['location'],
+                'compensation' => $_POST['compensation'] ?? null,
+                'benefits' => $_POST['benefits'] ?? null,
+                'certification' => $_POST['certification'] ?? null,
+                'description' => $_POST['description'] ?? null,
+                'total_slots' => $_POST['total_slots'],
+                'deadline' => $_POST['deadline'],
+                'age_min' => !empty($_POST['age_min']) ? intval($_POST['age_min']) : null,
+                'age_max' => !empty($_POST['age_max']) ? intval($_POST['age_max']) : null
+            ]);
+            if ($result['success'] && !empty($requiredSkills)) {
+                $opportunity->updateRequiredSkills($result['id'], $requiredSkills);
+            }
+            $message = $result['message'];
+            if ($result['success']) {
+                header('Location: job-openings.php?success=created');
+                exit;
+            }
         } elseif (isset($_POST['update_opportunity'])) {
-        $result = $opportunity->update($_POST['opportunity_id'], [
-            'title' => $_POST['title'],
-            'type' => $_POST['type'],
-            'location' => $_POST['location'],
-            'compensation' => $_POST['compensation'] ?? null,
-            'benefits' => $_POST['benefits'] ?? null,
-            'certification' => $_POST['certification'] ?? null,
-            'description' => $_POST['description'] ?? null,
-            'total_slots' => $_POST['total_slots'],
-            'deadline' => $_POST['deadline'],
-            'age_min' => !empty($_POST['age_min']) ? intval($_POST['age_min']) : null,
-            'age_max' => !empty($_POST['age_max']) ? intval($_POST['age_max']) : null,
-            'status' => $_POST['status']
-        ]);
-        if ($result['success']) {
-            $opportunity->updateRequiredSkills($_POST['opportunity_id'], $requiredSkills);
-        }
-        $message = $result['message'];
-        if ($result['success']) {
-            header('Location: job-openings.php?success=updated');
-            exit;
-        }
+            $result = $opportunity->update($_POST['opportunity_id'], [
+                'title' => $_POST['title'],
+                'type' => $_POST['type'],
+                'location' => $_POST['location'],
+                'compensation' => $_POST['compensation'] ?? null,
+                'benefits' => $_POST['benefits'] ?? null,
+                'certification' => $_POST['certification'] ?? null,
+                'description' => $_POST['description'] ?? null,
+                'total_slots' => $_POST['total_slots'],
+                'deadline' => $_POST['deadline'],
+                'age_min' => !empty($_POST['age_min']) ? intval($_POST['age_min']) : null,
+                'age_max' => !empty($_POST['age_max']) ? intval($_POST['age_max']) : null,
+                'status' => $_POST['status']
+            ]);
+            if ($result['success']) {
+                $opportunity->updateRequiredSkills($_POST['opportunity_id'], $requiredSkills);
+            }
+            $message = $result['message'];
+            if ($result['success']) {
+                header('Location: job-openings.php?success=updated');
+                exit;
+            }
         } elseif (isset($_POST['delete_opportunity'])) {
-        $result = $opportunity->delete($_POST['opportunity_id']);
-        $message = $result['message'];
-        if ($result['success']) {
-            header('Location: job-openings.php?success=deleted');
-            exit;
-        }
+            $result = $opportunity->delete($_POST['opportunity_id']);
+            $message = $result['message'];
+            if ($result['success']) {
+                header('Location: job-openings.php?success=deleted');
+                exit;
+            }
         }
     }
 }

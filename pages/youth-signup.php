@@ -61,242 +61,242 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
     if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
         $errors[] = 'This form has already been submitted or the session expired. Please refresh the page and try again.';
     } else {
-    // Validate required fields
-    $username = trim($_POST['username'] ?? '');
-    $email = trim($_POST['email'] ?? '');
-    $password = $_POST['password'] ?? '';
-    $confirmPassword = $_POST['confirm_password'] ?? '';
-    $firstName = trim($_POST['first_name'] ?? '');
-    $middleName = trim($_POST['middle_name'] ?? '');
-    $lastName = trim($_POST['last_name'] ?? '');
-    $gender = $_POST['gender'] ?? '';
-    $dateOfBirth = $_POST['date_of_birth'] ?? '';
-    $address = trim($_POST['address'] ?? '');
-    $barangay = trim($_POST['barangay'] ?? '');
-    $phone = trim($_POST['phone'] ?? '');
-    $age = trim($_POST['age'] ?? '');
-    $educationLevel = trim($_POST['education_level'] ?? '');
-    $civilStatus = $_POST['civil_status'] ?? '';
-    $primarySkill = trim($_POST['primary_skill'] ?? '');
-    $certifications = trim($_POST['certifications'] ?? '');
-    $interests = trim($_POST['interests'] ?? '');
-    $reasonNotInSchool = trim($_POST['reason_not_in_school'] ?? '');
-    $engagementStatus = trim($_POST['engagement_status'] ?? '');
-    $govtIdType = $_POST['govt_id_type'] ?? '';
-    $govtIdNumber = trim($_POST['govt_id_number'] ?? '');
-    $consentAccepted = isset($_POST['consent_accepted']) ? 1 : 0;
-    $dataPrivacyAccepted = isset($_POST['data_privacy_accepted']) ? 1 : 0;
+        // Validate required fields
+        $username = trim($_POST['username'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $password = $_POST['password'] ?? '';
+        $confirmPassword = $_POST['confirm_password'] ?? '';
+        $firstName = trim($_POST['first_name'] ?? '');
+        $middleName = trim($_POST['middle_name'] ?? '');
+        $lastName = trim($_POST['last_name'] ?? '');
+        $gender = $_POST['gender'] ?? '';
+        $dateOfBirth = $_POST['date_of_birth'] ?? '';
+        $address = trim($_POST['address'] ?? '');
+        $barangay = trim($_POST['barangay'] ?? '');
+        $phone = trim($_POST['phone'] ?? '');
+        $age = trim($_POST['age'] ?? '');
+        $educationLevel = trim($_POST['education_level'] ?? '');
+        $civilStatus = $_POST['civil_status'] ?? '';
+        $primarySkill = trim($_POST['primary_skill'] ?? '');
+        $certifications = trim($_POST['certifications'] ?? '');
+        $interests = trim($_POST['interests'] ?? '');
+        $reasonNotInSchool = trim($_POST['reason_not_in_school'] ?? '');
+        $engagementStatus = trim($_POST['engagement_status'] ?? '');
+        $govtIdType = $_POST['govt_id_type'] ?? '';
+        $govtIdNumber = trim($_POST['govt_id_number'] ?? '');
+        $consentAccepted = isset($_POST['consent_accepted']) ? 1 : 0;
+        $dataPrivacyAccepted = isset($_POST['data_privacy_accepted']) ? 1 : 0;
 
-    // Step 1: Account & Identity Validation
-    if (empty($username)) {
-        $errors[] = 'Username is required.';
-    } elseif (strlen($username) < 4) {
-        $errors[] = 'Username must be at least 4 characters.';
-    }
-
-    if (empty($email)) {
-        $errors[] = 'Email is required.';
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $errors[] = 'Invalid email format.';
-    }
-
-    if (empty($password)) {
-        $errors[] = 'Password is required.';
-    } elseif (strlen($password) < 6) {
-        $errors[] = 'Password must be at least 6 characters.';
-    }
-
-    if ($password !== $confirmPassword) {
-        $errors[] = 'Passwords do not match.';
-    }
-
-    if (empty($firstName)) {
-        $errors[] = 'First name is required.';
-    }
-
-    if (empty($lastName)) {
-        $errors[] = 'Last name is required.';
-    }
-
-    if (empty($gender)) {
-        $errors[] = 'Gender is required.';
-    }
-
-    if (empty($dateOfBirth)) {
-        $errors[] = 'Date of birth is required.';
-    } else {
-        $dobObject = DateTime::createFromFormat('Y-m-d', $dateOfBirth);
-        if ($dobObject) {
-            $age = $dobObject->diff(new DateTime('now'))->y;
+        // Step 1: Account & Identity Validation
+        if (empty($username)) {
+            $errors[] = 'Username is required.';
+        } elseif (strlen($username) < 4) {
+            $errors[] = 'Username must be at least 4 characters.';
         }
-    }
 
-    if (empty($address)) {
-        $errors[] = 'Address is required.';
-    }
+        if (empty($email)) {
+            $errors[] = 'Email is required.';
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors[] = 'Invalid email format.';
+        }
 
-    if (empty($barangay)) {
-        $errors[] = 'Barangay is required. Please select your barangay.';
-    }
+        if (empty($password)) {
+            $errors[] = 'Password is required.';
+        } elseif (strlen($password) < 6) {
+            $errors[] = 'Password must be at least 6 characters.';
+        }
 
-    if (empty($phone)) {
-        $errors[] = 'Phone number is required.';
-    }
+        if ($password !== $confirmPassword) {
+            $errors[] = 'Passwords do not match.';
+        }
 
-    // Step 2: Profile Information Validation
-    if (empty($educationLevel)) {
-        $errors[] = 'Education level is required.';
-    }
+        if (empty($firstName)) {
+            $errors[] = 'First name is required.';
+        }
 
-    if (empty($civilStatus)) {
-        $errors[] = 'Civil status is required.';
-    }
+        if (empty($lastName)) {
+            $errors[] = 'Last name is required.';
+        }
 
-    // Step 3: Document Upload Validation
-    $idUploadFile = null;
-    $profileImageUploadFile = null;
-    $certificationUploadFile = null;
+        if (empty($gender)) {
+            $errors[] = 'Gender is required.';
+        }
 
-    if (!empty($_FILES['govt_id_image']['name']) || !empty($_FILES['profile_image']['name']) || !empty($_FILES['certification_file']['name'])) {
-        // At least one document must be uploaded
-        if (!empty($_FILES['govt_id_image']['name'])) {
-            if ($_FILES['govt_id_image']['error'] === UPLOAD_ERR_OK) {
-                $idUploadFile = $_FILES['govt_id_image'];
-                if (empty($govtIdType)) {
-                    $errors[] = 'Government ID type is required when uploading ID.';
+        if (empty($dateOfBirth)) {
+            $errors[] = 'Date of birth is required.';
+        } else {
+            $dobObject = DateTime::createFromFormat('Y-m-d', $dateOfBirth);
+            if ($dobObject) {
+                $age = $dobObject->diff(new DateTime('now'))->y;
+            }
+        }
+
+        if (empty($address)) {
+            $errors[] = 'Address is required.';
+        }
+
+        if (empty($barangay)) {
+            $errors[] = 'Barangay is required. Please select your barangay.';
+        }
+
+        if (empty($phone)) {
+            $errors[] = 'Phone number is required.';
+        }
+
+        // Step 2: Profile Information Validation
+        if (empty($educationLevel)) {
+            $errors[] = 'Education level is required.';
+        }
+
+        if (empty($civilStatus)) {
+            $errors[] = 'Civil status is required.';
+        }
+
+        // Step 3: Document Upload Validation
+        $idUploadFile = null;
+        $profileImageUploadFile = null;
+        $certificationUploadFile = null;
+
+        if (!empty($_FILES['govt_id_image']['name']) || !empty($_FILES['profile_image']['name']) || !empty($_FILES['certification_file']['name'])) {
+            // At least one document must be uploaded
+            if (!empty($_FILES['govt_id_image']['name'])) {
+                if ($_FILES['govt_id_image']['error'] === UPLOAD_ERR_OK) {
+                    $idUploadFile = $_FILES['govt_id_image'];
+                    if (empty($govtIdType)) {
+                        $errors[] = 'Government ID type is required when uploading ID.';
+                    }
+                    if (empty($govtIdNumber)) {
+                        $errors[] = 'Government ID number is required when uploading ID.';
+                    }
+                } elseif ($_FILES['govt_id_image']['error'] !== UPLOAD_ERR_NO_FILE) {
+                    $errors[] = 'Error uploading government ID image.';
                 }
-                if (empty($govtIdNumber)) {
-                    $errors[] = 'Government ID number is required when uploading ID.';
+            }
+
+            if (!empty($_FILES['profile_image']['name'])) {
+                if ($_FILES['profile_image']['error'] === UPLOAD_ERR_OK) {
+                    $profileImageUploadFile = $_FILES['profile_image'];
+                } elseif ($_FILES['profile_image']['error'] !== UPLOAD_ERR_NO_FILE) {
+                    $errors[] = 'Error uploading profile image.';
                 }
-            } elseif ($_FILES['govt_id_image']['error'] !== UPLOAD_ERR_NO_FILE) {
-                $errors[] = 'Error uploading government ID image.';
             }
+
+            if (!empty($_FILES['certification_file']['name'])) {
+                if ($_FILES['certification_file']['error'] === UPLOAD_ERR_OK) {
+                    $certificationUploadFile = $_FILES['certification_file'];
+                } elseif ($_FILES['certification_file']['error'] !== UPLOAD_ERR_NO_FILE) {
+                    $errors[] = 'Error uploading certification document.';
+                }
+            }
+        } else {
+            $errors[] = 'At least one document (Government ID, Certificate of Residency/Profile Image, or Certification Document) must be uploaded for verification.';
         }
 
-        if (!empty($_FILES['profile_image']['name'])) {
-            if ($_FILES['profile_image']['error'] === UPLOAD_ERR_OK) {
-                $profileImageUploadFile = $_FILES['profile_image'];
-            } elseif ($_FILES['profile_image']['error'] !== UPLOAD_ERR_NO_FILE) {
-                $errors[] = 'Error uploading profile image.';
-            }
+        // Consent Validation
+        if (!$consentAccepted) {
+            $errors[] = 'You must accept the terms and conditions.';
         }
 
-        if (!empty($_FILES['certification_file']['name'])) {
-            if ($_FILES['certification_file']['error'] === UPLOAD_ERR_OK) {
-                $certificationUploadFile = $_FILES['certification_file'];
-            } elseif ($_FILES['certification_file']['error'] !== UPLOAD_ERR_NO_FILE) {
-                $errors[] = 'Error uploading certification document.';
-            }
+        if (!$dataPrivacyAccepted) {
+            $errors[] = 'You must accept the data privacy notice.';
         }
-    } else {
-        $errors[] = 'At least one document (Government ID, Certificate of Residency/Profile Image, or Certification Document) must be uploaded for verification.';
-    }
 
-    // Consent Validation
-    if (!$consentAccepted) {
-        $errors[] = 'You must accept the terms and conditions.';
-    }
+        // If no validation errors, proceed with registration
+        if (empty($errors)) {
+            try {
+                if (!$database->beginTransaction()) {
+                    throw new Exception('Unable to start registration transaction.');
+                }
 
-    if (!$dataPrivacyAccepted) {
-        $errors[] = 'You must accept the data privacy notice.';
-    }
+                // 1. Create user account with role=youth, status=Pending
+                $userResult = $user->register($username, $email, $password, $firstName . ' ' . $lastName, 'youth');
 
-    // If no validation errors, proceed with registration
-    if (empty($errors)) {
-        try {
-            if (!$database->beginTransaction()) {
-                throw new Exception('Unable to start registration transaction.');
-            }
+                if (!$userResult['success']) {
+                    throw new Exception($userResult['message']);
+                }
 
-            // 1. Create user account with role=youth, status=Pending
-            $userResult = $user->register($username, $email, $password, $firstName . ' ' . $lastName, 'youth');
+                $userId = $userResult['user_id'];
 
-            if (!$userResult['success']) {
-                throw new Exception($userResult['message']);
-            }
-
-            $userId = $userResult['user_id'];
-
-            // 2. Create osy_profile with verification_status=Pending
-            $profileData = [
-                'first_name' => $firstName,
-                'middle_name' => $middleName,
-                'last_name' => $lastName,
-                'email' => $email,
-                'phone' => $phone,
-                'age' => !empty($age) ? (int) $age : null,
-                'gender' => $gender,
-                'date_of_birth' => $dateOfBirth,
-                'education_level' => $educationLevel,
-                'civil_status' => $civilStatus,
+                // 2. Create osy_profile with verification_status=Pending
+                $profileData = [
+                    'first_name' => $firstName,
+                    'middle_name' => $middleName,
+                    'last_name' => $lastName,
+                    'email' => $email,
+                    'phone' => $phone,
+                    'age' => !empty($age) ? (int) $age : null,
+                    'gender' => $gender,
+                    'date_of_birth' => $dateOfBirth,
+                    'education_level' => $educationLevel,
+                    'civil_status' => $civilStatus,
                     'barangay' => $barangay,
-                'primary_skill' => $primarySkill,
-                'skills' => $certifications,
-                'interests' => $interests,
-                'reason_for_not_in_school' => $reasonNotInSchool,
-                'engagement_status' => $engagementStatus,
-                'govt_id_type' => $govtIdType,
-                'govt_id_number' => $govtIdNumber,
-                'profile_type' => 'OSY',
-                'status' => 'Active', // Profile itself is active
-                'registration_status' => 'Submitted',
-                'verification_status' => 'Pending', // Awaits SK Chairman approval
-                'consent_accepted' => $consentAccepted,
-                'created_by' => $userId
-            ];
+                    'primary_skill' => $primarySkill,
+                    'skills' => $certifications,
+                    'interests' => $interests,
+                    'reason_for_not_in_school' => $reasonNotInSchool,
+                    'engagement_status' => $engagementStatus,
+                    'govt_id_type' => $govtIdType,
+                    'govt_id_number' => $govtIdNumber,
+                    'profile_type' => 'OSY',
+                    'status' => 'Active', // Profile itself is active
+                    'registration_status' => 'Submitted',
+                    'verification_status' => 'Pending', // Awaits SK Chairman approval
+                    'consent_accepted' => $consentAccepted,
+                    'created_by' => $userId
+                ];
 
-            $profileResult = $osyProfile->create($profileData, $profileImageUploadFile, $idUploadFile, $certificationUploadFile);
+                $profileResult = $osyProfile->create($profileData, $profileImageUploadFile, $idUploadFile, $certificationUploadFile);
 
-            if (!$profileResult['success']) {
-                throw new Exception($profileResult['message']);
-            }
+                if (!$profileResult['success']) {
+                    throw new Exception($profileResult['message']);
+                }
 
-            $profileId = $profileResult['id'];
+                $profileId = $profileResult['id'];
 
-            // 3. Log the signup action
-            $auditLog->logAction(
-                $userId,
-                'youth',
-                'Youth self-registered with full profile for approval',
-                'OSYProfile',
-                $profileId,
-                json_encode(['barangay' => $barangay, 'id_type' => $govtIdType])
-            );
-
-            $database->commit();
-
-            // 4. Send notification to the active SK Chairman of this barangay
-            $skChairman = $database->fetchOne(
-                "SELECT id FROM users WHERE role = 'sk_chairman' AND barangay = ? AND status = 'Active' LIMIT 1",
-                [$barangay],
-                "s"
-            );
-            if ($skChairman) {
-                $notifObj = new Notification($database);
-                $notifObj->sendToUser(
-                    $skChairman['id'],
-                    'New Youth Registration awaiting review',
-                    "A new youth member ($firstName $lastName) has self-registered in barangay $address and is awaiting verification.",
-                    'System',
-                    $userId
+                // 3. Log the signup action
+                $auditLog->logAction(
+                    $userId,
+                    'youth',
+                    'Youth self-registered with full profile for approval',
+                    'OSYProfile',
+                    $profileId,
+                    json_encode(['barangay' => $barangay, 'id_type' => $govtIdType])
                 );
+
+                $database->commit();
+
+                // 4. Send notification to the active SK Chairman of this barangay
+                $skChairman = $database->fetchOne(
+                    "SELECT id FROM users WHERE role = 'sk_chairman' AND barangay = ? AND status = 'Active' LIMIT 1",
+                    [$barangay],
+                    "s"
+                );
+                if ($skChairman) {
+                    $notifObj = new Notification($database);
+                    $notifObj->sendToUser(
+                        $skChairman['id'],
+                        'New Youth Registration awaiting review',
+                        "A new youth member ($firstName $lastName) has self-registered in barangay $address and is awaiting verification.",
+                        'System',
+                        $userId
+                    );
+                }
+
+                // Success message with next steps
+                $message = 'Sign up successful! Your registration has been submitted for approval. Your SK Chairman will review your information and documents. Please check back for updates.';
+                $messageType = 'success';
+
+                // Clear form
+                $username = $email = $password = $confirmPassword = $firstName = $middleName = $lastName = '';
+                $gender = $dateOfBirth = $address = $phone = $educationLevel = $civilStatus = '';
+                $primarySkill = $certifications = $interests = $reasonNotInSchool = $engagementStatus = $age = '';
+                $govtIdType = $govtIdNumber = '';
+                $consentAccepted = $dataPrivacyAccepted = 0;
+            } catch (Exception $e) {
+                $database->rollback();
+                $errors[] = $e->getMessage();
             }
-
-            // Success message with next steps
-            $message = 'Sign up successful! Your registration has been submitted for approval. Your SK Chairman will review your information and documents. Please check back for updates.';
-            $messageType = 'success';
-
-            // Clear form
-            $username = $email = $password = $confirmPassword = $firstName = $middleName = $lastName = '';
-            $gender = $dateOfBirth = $address = $phone = $educationLevel = $civilStatus = '';
-            $primarySkill = $certifications = $interests = $reasonNotInSchool = $engagementStatus = $age = '';
-            $govtIdType = $govtIdNumber = '';
-            $consentAccepted = $dataPrivacyAccepted = 0;
-        } catch (Exception $e) {
-            $database->rollback();
-            $errors[] = $e->getMessage();
         }
-    }
     }
 }
 ?>
@@ -543,36 +543,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
                                         </div>
                                         <div>
                                             <label class="block text-sm font-semibold text-slate-700 mb-2">Address
-                                                        *</label>
-                                                    <input type="text" name="address" required
-                                                        class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                        placeholder="Enter your street/purok (detailed address)" value="<?php echo htmlspecialchars($address); ?>">
+                                                *</label>
+                                            <input type="text" name="address" required
+                                                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                placeholder="Enter your street/purok (detailed address)" value="<?php echo htmlspecialchars($address); ?>">
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
-                                    <!-- Barangay Selection -->
-                                    <div class="border-t border-slate-200 pt-6">
-                                        <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                                            <span class="material-symbols-outlined text-blue-700">location_on</span>
-                                            Barangay Selection
-                                        </h3>
-                                        <div>
-                                            <?php
-                                            $ref = new Reference($database);
-                                            $barangays = $ref->getByCategory('barangay');
-                                            ?>
-                                            <label class="block text-sm font-semibold text-slate-700 mb-2">Barangay *</label>
-                                            <select name="barangay" required
-                                                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                                <option value="">Select Barangay</option>
-                                                <?php foreach ($barangays as $b): ?>
-                                                    <option value="<?php echo htmlspecialchars($b); ?>" <?php echo ($barangay === $b) ? 'selected' : ''; ?>><?php echo htmlspecialchars($b); ?></option>
-                                                <?php endforeach; ?>
-                                            </select>
-                                        </div>
-                                    </div>
+                            <!-- Barangay Selection -->
+                            <div class="border-t border-slate-200 pt-6">
+                                <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-blue-700">location_on</span>
+                                    Barangay Selection
+                                </h3>
+                                <div>
+                                    <?php
+                                    $ref = new Reference($database);
+                                    $barangays = $ref->getByCategory('barangay');
+                                    ?>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Barangay *</label>
+                                    <select name="barangay" required
+                                        class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        <option value="">Select Barangay</option>
+                                        <?php foreach ($barangays as $b): ?>
+                                            <option value="<?php echo htmlspecialchars($b); ?>" <?php echo ($barangay === $b) ? 'selected' : ''; ?>><?php echo htmlspecialchars($b); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                            </div>
 
                             <!-- STEP 3: Skills & Interests -->
                             <div class="border-t border-slate-200 pt-6">

@@ -18,12 +18,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
         $message = 'Duplicate or invalid form submission detected.';
     } else {
-    if (isset($_POST['create_opportunity'])) {
-        // Only providers can create opportunities
-        if (!in_array($_SESSION['role'], ['employer', 'training_provider']) || $_SESSION['status'] !== 'Active') {
-            $message = 'You do not have permission to create opportunities.';
-        } else {
-            $result = $opportunity->create([
+        if (isset($_POST['create_opportunity'])) {
+            // Only providers can create opportunities
+            if (!in_array($_SESSION['role'], ['employer', 'training_provider']) || $_SESSION['status'] !== 'Active') {
+                $message = 'You do not have permission to create opportunities.';
+            } else {
+                $result = $opportunity->create([
+                    'title' => $_POST['title'],
+                    'type' => $_POST['type'],
+                    'employment_type' => $_POST['employment_type'] ?? null,
+                    'work_schedule' => $_POST['work_schedule'] ?? null,
+                    'experience_req' => $_POST['experience_req'] ?? null,
+                    'training_provider' => $_POST['training_provider'] ?? null,
+                    'duration' => $_POST['duration'] ?? null,
+                    'modality' => $_POST['modality'] ?? null,
+                    'location' => $_POST['location'],
+                    'compensation' => $_POST['compensation'] ?? null,
+                    'benefits' => $_POST['benefits'] ?? null,
+                    'certification' => $_POST['certification'] ?? null,
+                    'description' => $_POST['description'] ?? null,
+                    'total_slots' => $_POST['total_slots'],
+                    'deadline' => $_POST['deadline'],
+                    'age_min' => !empty($_POST['age_min']) ? intval($_POST['age_min']) : null,
+                    'age_max' => !empty($_POST['age_max']) ? intval($_POST['age_max']) : null
+                ]);
+                $message = $result['message'];
+                if ($result['success']) {
+                    header('Location: opportunities.php?success=created');
+                    exit;
+                }
+            }
+        } elseif (isset($_POST['update_opportunity'])) {
+            $result = $opportunity->update($_POST['opportunity_id'], [
                 'title' => $_POST['title'],
                 'type' => $_POST['type'],
                 'employment_type' => $_POST['employment_type'] ?? null,
@@ -40,48 +66,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'total_slots' => $_POST['total_slots'],
                 'deadline' => $_POST['deadline'],
                 'age_min' => !empty($_POST['age_min']) ? intval($_POST['age_min']) : null,
-                'age_max' => !empty($_POST['age_max']) ? intval($_POST['age_max']) : null
+                'age_max' => !empty($_POST['age_max']) ? intval($_POST['age_max']) : null,
+                'status' => $_POST['status']
             ]);
             $message = $result['message'];
             if ($result['success']) {
-                header('Location: opportunities.php?success=created');
+                header('Location: opportunities.php?success=updated');
+                exit;
+            }
+        } elseif (isset($_POST['delete_opportunity'])) {
+            $result = $opportunity->delete($_POST['opportunity_id']);
+            $message = $result['message'];
+            if ($result['success']) {
+                header('Location: opportunities.php?success=deleted');
                 exit;
             }
         }
-    } elseif (isset($_POST['update_opportunity'])) {
-        $result = $opportunity->update($_POST['opportunity_id'], [
-            'title' => $_POST['title'],
-            'type' => $_POST['type'],
-            'employment_type' => $_POST['employment_type'] ?? null,
-            'work_schedule' => $_POST['work_schedule'] ?? null,
-            'experience_req' => $_POST['experience_req'] ?? null,
-            'training_provider' => $_POST['training_provider'] ?? null,
-            'duration' => $_POST['duration'] ?? null,
-            'modality' => $_POST['modality'] ?? null,
-            'location' => $_POST['location'],
-            'compensation' => $_POST['compensation'] ?? null,
-            'benefits' => $_POST['benefits'] ?? null,
-            'certification' => $_POST['certification'] ?? null,
-            'description' => $_POST['description'] ?? null,
-            'total_slots' => $_POST['total_slots'],
-            'deadline' => $_POST['deadline'],
-            'age_min' => !empty($_POST['age_min']) ? intval($_POST['age_min']) : null,
-            'age_max' => !empty($_POST['age_max']) ? intval($_POST['age_max']) : null,
-            'status' => $_POST['status']
-        ]);
-        $message = $result['message'];
-        if ($result['success']) {
-            header('Location: opportunities.php?success=updated');
-            exit;
-        }
-    } elseif (isset($_POST['delete_opportunity'])) {
-        $result = $opportunity->delete($_POST['opportunity_id']);
-        $message = $result['message'];
-        if ($result['success']) {
-            header('Location: opportunities.php?success=deleted');
-            exit;
-        }
-    }
     }
 }
 
