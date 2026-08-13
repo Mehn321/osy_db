@@ -29,67 +29,97 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = 'This request has already been submitted or the session expired. Please refresh and try again.';
         $messageType = 'error';
     } else {
-    if (isset($_POST['update_profile'])) {
-        $result = $user->updateProfile(
-            $_SESSION['user_id'],
-            $_POST['fullname'],
-            $_POST['email']
-        );
-        $message = $result['message'];
-        $messageType = $result['success'] ? 'success' : 'error';
-        if ($result['success']) {
-            // Update session variables
-            $_SESSION['fullname'] = $_POST['fullname'];
-            $_SESSION['email'] = $_POST['email'];
-        }
-        $activeTab = 'profile';
-    } elseif (isset($_POST['change_password'])) {
-        if ($_POST['new_password'] !== $_POST['confirm_password']) {
-            $message = 'New password and confirmation do not match';
-            $messageType = 'error';
-        } else {
-            $result = $user->changePassword(
+        if (isset($_POST['update_profile'])) {
+            $result = $user->updateProfile(
                 $_SESSION['user_id'],
-                $_POST['current_password'],
-                $_POST['new_password']
+                $_POST['fullname'],
+                $_POST['email']
             );
             $message = $result['message'];
             $messageType = $result['success'] ? 'success' : 'error';
-        }
-        $activeTab = 'security';
-    } elseif (isset($_POST['update_notifications'])) {
-        $fields = ['traccar_token', 'gmail_user', 'gmail_app_password'];
-        foreach ($fields as $f) {
-            // Use INSERT ... ON DUPLICATE KEY UPDATE so new keys are created automatically
+            if ($result['success']) {
+                // Update session variables
+                $_SESSION['fullname'] = $_POST['fullname'];
+                $_SESSION['email'] = $_POST['email'];
+            }
+            $activeTab = 'profile';
+        } elseif (isset($_POST['change_password'])) {
+            if ($_POST['new_password'] !== $_POST['confirm_password']) {
+                $message = 'New password and confirmation do not match';
+                $messageType = 'error';
+            } else {
+                $result = $user->changePassword(
+                    $_SESSION['user_id'],
+                    $_POST['current_password'],
+                    $_POST['new_password']
+                );
+                $message = $result['message'];
+                $messageType = $result['success'] ? 'success' : 'error';
+            }
+            $activeTab = 'security';
+        } elseif (isset($_POST['update_notifications'])) {
+            $fields = ['traccar_token', 'gmail_user', 'gmail_app_password'];
+            foreach ($fields as $f) {
+                // Use INSERT ... ON DUPLICATE KEY UPDATE so new keys are created automatically
+                $database->execute(
+                    "INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)",
+                    [$f, $_POST[$f] ?? ''],
+                    "ss"
+                );
+            }
+            $message = "Notification settings updated successfully.";
+            $messageType = "success";
+            $activeTab = 'notifications';
+
+            // Refresh sys_settings array
+            foreach ($fields as $f) {
+                $sys_settings[$f] = $_POST[$f] ?? '';
+            }
+        } elseif (isset($_POST['test_sms'])) {
+            require_once __DIR__ . '/../Classes/SmsService.php';
+            $sms = new SmsService($database);
+            // We'll test with the admin's own phone if available, or just a dummy
+            $testResult = $sms->send($_POST['test_phone'] ?? '', "Profiling System: This is a test SMS message via Traccar.");
+            $message = $testResult['message'];
+            $messageType = $testResult['success'] ? 'success' : 'error';
+            $activeTab = 'notifications';
+        } elseif (isset($_POST['test_email'])) {
+            require_once __DIR__ . '/../Classes/EmailService.php';
+            $email = new EmailService($database);
+            $testResult = $email->send($_POST['test_email_addr'] ?? '', "System Test", "<h1>Test Successful</h1><p>Your Gmail SMTP setup is working perfectly!</p>");
+            $message = $testResult['message'];
+            $messageType = $testResult['success'] ? 'success' : 'error';
+            $activeTab = 'notifications';
+        } elseif (isset($_POST['update_ai_settings'])) {
+            $fields = ['gemini_api_key', 'ai_enabled'];
+
+            // Handle AI enabled toggle
+            $aiEnabled = isset($_POST['ai_enabled']) ? '1' : '0';
             $database->execute(
                 "INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)",
-                [$f, $_POST[$f] ?? ''],
+                ['ai_enabled', $aiEnabled],
                 "ss"
             );
-        }
-        $message = "Notification settings updated successfully.";
-        $messageType = "success";
-        $activeTab = 'notifications';
 
-        // Refresh sys_settings array
-        foreach ($fields as $f) {
-            $sys_settings[$f] = $_POST[$f] ?? '';
+            // Handle API key (only update if not empty)
+            if (!empty($_POST['gemini_api_key'])) {
+                $database->execute(
+                    "INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)",
+                    ['gemini_api_key', $_POST['gemini_api_key']],
+                    "ss"
+                );
+            }
+
+            $message = "AI settings updated successfully.";
+            $messageType = "success";
+            $activeTab = 'ai';
+
+            // Refresh sys_settings array
+            $sys_settings['ai_enabled'] = $aiEnabled;
+            if (!empty($_POST['gemini_api_key'])) {
+                $sys_settings['gemini_api_key'] = $_POST['gemini_api_key'];
+            }
         }
-    } elseif (isset($_POST['test_sms'])) {
-        require_once __DIR__ . '/../Classes/SmsService.php';
-        $sms = new SmsService($database);
-        // We'll test with the admin's own phone if available, or just a dummy
-        $testResult = $sms->send($_POST['test_phone'] ?? '', "Profiling System: This is a test SMS message via Traccar.");
-        $message = $testResult['message'];
-        $messageType = $testResult['success'] ? 'success' : 'error';
-        $activeTab = 'notifications';
-    } elseif (isset($_POST['test_email'])) {
-        require_once __DIR__ . '/../Classes/EmailService.php';
-        $email = new EmailService($database);
-        $testResult = $email->send($_POST['test_email_addr'] ?? '', "System Test", "<h1>Test Successful</h1><p>Your Gmail SMTP setup is working perfectly!</p>");
-        $message = $testResult['message'];
-        $messageType = $testResult['success'] ? 'success' : 'error';
-        $activeTab = 'notifications';
     }
 }
 
@@ -295,6 +325,7 @@ $scoringPct = $syncStats['total_possible'] > 0
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <!-- Test SMS form -->
                         <form method="POST" class="space-y-4">
+                            <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
                             <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest">Test SMS Gateway</label>
                             <div class="flex gap-2">
                                 <input type="text" name="test_phone" placeholder="Enter phone (e.g. 0912...)" class="flex-1 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-sm rounded-lg" />
@@ -303,6 +334,7 @@ $scoringPct = $syncStats['total_possible'] > 0
                         </form>
                         <!-- Test Email form -->
                         <form method="POST" class="space-y-4">
+                            <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
                             <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest">Test Gmail SMTP</label>
                             <div class="flex gap-2">
                                 <input type="email" name="test_email_addr" placeholder="Enter recipient email" class="flex-1 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-sm rounded-lg" />
@@ -558,12 +590,66 @@ $scoringPct = $syncStats['total_possible'] > 0
                                 <span class="material-symbols-outlined text-[14px] text-amber-500 mt-0.5">warning</span>
                                 HTTP 429 errors mean quota is temporarily exhausted
                             </li>
-                            <li class="flex items-start gap-2">
-                                <span class="material-symbols-outlined text-[14px] text-blue-500 mt-0.5">check_circle</span>
-                                AI insights are cached to conserve API credits
-                            </li>
                         </ul>
                     </div>
+                </div>
+
+                <!-- API Configuration -->
+                <div class="border-t border-slate-200 dark:border-slate-700 pt-8 mt-8">
+                    <h4 class="text-lg font-bold text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-blue-600">key</span>
+                        API Configuration & Service Control
+                    </h4>
+
+                    <form method="POST" class="space-y-6">
+                        <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
+
+                        <!-- AI Service Toggle -->
+                        <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h5 class="font-bold text-slate-900 dark:text-white mb-1">AI Service Status</h5>
+                                    <p class="text-sm text-slate-600 dark:text-slate-400">
+                                        <?php if ($sys_settings['ai_enabled'] ?? '1' === '1'): ?>
+                                            ✅ AI services are <strong>enabled</strong>. System will use Gemini for skill matching and analysis.
+                                        <?php else: ?>
+                                            ⚠️ AI services are <strong>disabled</strong>. Skill matching will use rule-based scoring only.
+                                        <?php endif; ?>
+                                    </p>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" name="ai_enabled" value="1" class="sr-only peer" <?php echo ($sys_settings['ai_enabled'] ?? '1') === '1' ? 'checked' : ''; ?> />
+                                    <div class="w-14 h-8 bg-slate-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-7 after:w-7 after:transition-all dark:border-slate-600 peer-checked:bg-blue-600"></div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- API Key Field -->
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Google Gemini API Key</label>
+                            <div class="relative">
+                                <input
+                                    type="password"
+                                    name="gemini_api_key"
+                                    placeholder="Leave blank to keep current key"
+                                    value="<?php echo !empty($sys_settings['gemini_api_key']) ? str_repeat('*', strlen($sys_settings['gemini_api_key']) - 4) . substr($sys_settings['gemini_api_key'], -4) : ''; ?>"
+                                    class="w-full px-4 py-3 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-900" />
+                                <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 toggle-password-btn"><span class="material-symbols-outlined">visibility</span></button>
+                            </div>
+                            <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">
+                                Get your API key from <a href="https://ai.google.dev/tutorials/python_quickstart" target="_blank" class="text-blue-600 hover:underline">Google AI Studio</a>.
+                                <?php if (!empty($sys_settings['gemini_api_key'])): ?>
+                                    <span class="text-emerald-600 ml-2">✓ API key is configured</span>
+                                <?php else: ?>
+                                    <span class="text-amber-600 ml-2">⚠ No API key configured. AI features will not work.</span>
+                                <?php endif; ?>
+                            </p>
+                        </div>
+
+                        <button type="submit" name="update_ai_settings" value="1" class="px-8 py-3 bg-blue-900 text-white rounded-lg font-semibold hover:bg-blue-800 transition-colors">
+                            Save AI Settings
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -615,7 +701,6 @@ $scoringPct = $syncStats['total_possible'] > 0
         tabBtn.classList.remove('text-slate-700', 'dark:text-slate-300', 'hover:bg-slate-50', 'dark:hover:bg-slate-700/50');
         tabBtn.classList.add('bg-blue-50', 'dark:bg-blue-900/20', 'text-blue-900', 'dark:text-blue-400');
     }
-
 </script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

@@ -18,6 +18,59 @@ $message = '';
 $messageType = 'success';
 $newChairmanPassword = null;
 
+// Handle DELETE chairman
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_chairman'])) {
+    if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
+        $message = 'Invalid or expired form submission.';
+        $messageType = 'error';
+    } else {
+        try {
+            $chairmanId = intval($_POST['chairman_id']);
+            $database->execute("DELETE FROM users WHERE id = ? AND role = 'sk_chairman'", [$chairmanId], "i");
+            $message = 'SK Chairman account deleted successfully.';
+            $messageType = 'success';
+            $auditLog->logAction(
+                $_SESSION['user_id'],
+                $_SESSION['role'],
+                'Deleted SK Chairman account',
+                'User',
+                $chairmanId,
+                ''
+            );
+        } catch (Exception $e) {
+            $message = 'Error deleting SK Chairman: ' . $e->getMessage();
+            $messageType = 'error';
+        }
+    }
+}
+
+// Handle DEACTIVATE chairman
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['deactivate_chairman'])) {
+    if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
+        $message = 'Invalid or expired form submission.';
+        $messageType = 'error';
+    } else {
+        try {
+            $chairmanId = intval($_POST['chairman_id']);
+            $newStatus = $_POST['new_status'] === 'Active' ? 'Inactive' : 'Active';
+            $database->execute("UPDATE users SET status = ? WHERE id = ? AND role = 'sk_chairman'", [$newStatus, $chairmanId], "si");
+            $message = 'SK Chairman status updated to ' . $newStatus . '.';
+            $messageType = 'success';
+            $auditLog->logAction(
+                $_SESSION['user_id'],
+                $_SESSION['role'],
+                'Updated SK Chairman status to ' . $newStatus,
+                'User',
+                $chairmanId,
+                ''
+            );
+        } catch (Exception $e) {
+            $message = 'Error updating SK Chairman status: ' . $e->getMessage();
+            $messageType = 'error';
+        }
+    }
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_chairman'])) {
     // Prevent duplicate submissions using server-side form nonce
     if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
@@ -29,6 +82,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_chairman'])) {
             $email = trim($_POST['email']);
             $fullname = trim($_POST['fullname']);
             $barangay = trim($_POST['barangay']);
+
+            // CHECK: Prevent duplicate SK Chairman per barangay
+            $existingChairman = $database->fetchOne(
+                "SELECT id FROM users WHERE role = 'sk_chairman' AND barangay = ? AND status != 'Deleted' LIMIT 1",
+                [$barangay],
+                "s"
+            );
+            if ($existingChairman) {
+                throw new Exception("A SK Chairman is already assigned to Barangay " . htmlspecialchars($barangay) . ". Please deactivate or delete the existing chairman first.");
+            }
 
             $result = $userModel->createUser([
                 'username' => $username,
@@ -176,6 +239,7 @@ $chairmen = $userModel->getUsersByRole('sk_chairman');
                                 <th class="px-4 py-3 font-semibold uppercase">Barangay</th>
                                 <th class="px-4 py-3 font-semibold uppercase">Status</th>
                                 <th class="px-4 py-3 font-semibold uppercase">Created</th>
+                                <th class="px-4 py-3 font-semibold uppercase text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -184,8 +248,29 @@ $chairmen = $userModel->getUsersByRole('sk_chairman');
                                     <td class="px-4 py-4"><?php echo htmlspecialchars($chairman['fullname']); ?></td>
                                     <td class="px-4 py-4"><?php echo htmlspecialchars($chairman['username']); ?></td>
                                     <td class="px-4 py-4"><?php echo htmlspecialchars($chairman['barangay'] ?? 'N/A'); ?></td>
-                                    <td class="px-4 py-4"><?php echo htmlspecialchars($chairman['status']); ?></td>
+                                    <td class="px-4 py-4">
+                                        <span class="px-3 py-1 rounded-full text-xs font-semibold <?php echo $chairman['status'] === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'; ?>">
+                                            <?php echo htmlspecialchars($chairman['status']); ?>
+                                        </span>
+                                    </td>
                                     <td class="px-4 py-4"><?php echo htmlspecialchars($chairman['created_at']); ?></td>
+                                    <td class="px-4 py-4 text-right">
+                                        <form method="POST" style="display: inline-block;" onsubmit="return confirm('<?php echo $chairman['status'] === 'Active' ? 'Deactivate this SK Chairman?' : 'Reactivate this SK Chairman?'; ?>');">
+                                            <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
+                                            <input type="hidden" name="deactivate_chairman" value="1">
+                                            <input type="hidden" name="chairman_id" value="<?php echo intval($chairman['id']); ?>">
+                                            <input type="hidden" name="new_status" value="<?php echo htmlspecialchars($chairman['status']); ?>">
+                                            <button type="submit" class="text-xs px-2 py-1 rounded-lg <?php echo $chairman['status'] === 'Active' ? 'bg-yellow-100 hover:bg-yellow-200 text-yellow-800' : 'bg-green-100 hover:bg-green-200 text-green-800'; ?> font-semibold transition">
+                                                <?php echo $chairman['status'] === 'Active' ? '🔒 Deactivate' : '🔓 Reactivate'; ?>
+                                            </button>
+                                        </form>
+                                        <form method="POST" style="display: inline-block; margin-left: 4px;" onsubmit="return confirm('Permanently delete this SK Chairman account? This cannot be undone.');">
+                                            <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
+                                            <input type="hidden" name="delete_chairman" value="1">
+                                            <input type="hidden" name="chairman_id" value="<?php echo intval($chairman['id']); ?>">
+                                            <button type="submit" class="text-xs px-2 py-1 rounded-lg bg-red-100 hover:bg-red-200 text-red-800 font-semibold transition">🗑️ Delete</button>
+                                        </form>
+                                    </td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>

@@ -597,6 +597,7 @@ $templates = $notification->getAllTemplates();
                     <p class="text-slate-600 dark:text-slate-300 text-center text-sm mb-6">Are you sure? This action
                         cannot be undone.</p>
                     <form method="POST" class="flex gap-3">
+                        <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
                         <input type="hidden" id="deleteOpportunityId" name="opportunity_id">
                         <input type="hidden" name="delete_opportunity" value="1">
                         <button type="button" onclick="closeDeleteModal()"

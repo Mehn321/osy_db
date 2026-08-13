@@ -175,6 +175,32 @@ if ($user->isLoggedIn()) {
         </div>
         </div>
     </main>
+
+    <script>
+        // Initialize password visibility toggles for login page
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('button.toggle-password-btn').forEach(btn => {
+                if (btn.dataset.bound) return;
+                btn.dataset.bound = '1';
+                const container = btn.closest('div') || btn.parentNode;
+                const input = container.querySelector('input[type="password"]');
+                if (!input) return;
+                if (input.dataset.hasToggle) return;
+                input.dataset.hasToggle = '1';
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (input.type === 'password') {
+                        input.type = 'text';
+                        btn.innerHTML = '<span class="material-symbols-outlined">visibility_off</span>';
+                    } else {
+                        input.type = 'password';
+                        btn.innerHTML = '<span class="material-symbols-outlined">visibility</span>';
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 
 </html>

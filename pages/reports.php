@@ -22,43 +22,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $messageType = 'error';
     } else {
         if (isset($_POST['generate_report'])) {
-        $reportType = $_POST['report_type'];
-        $data = [];
+            $reportType = $_POST['report_type'];
+            $data = [];
 
-        switch ($reportType) {
-            case 'profiles':
-                $data = $report->generateOSYReport();
-                $filename = 'KK_Profile_Report';
-                break;
-            case 'opportunities':
-                $data = $report->generateOpportunityReport();
-                $filename = 'Opportunity_Report';
-                break;
-            case 'matching':
-                $data = $database->fetchAll("SELECT m.id, p.first_name, p.last_name, p.primary_skill, o.title as opportunity, m.match_score, m.status, m.created_at FROM osy_matches m JOIN osy_profiles p ON m.osy_id = p.id JOIN opportunities o ON m.opportunity_id = o.id ORDER BY m.match_score DESC");
-                $filename = 'Matching_Report';
-                break;
-            case 'monthly':
-                $data = $database->fetchAll("SELECT DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as registrations FROM osy_profiles GROUP BY DATE_FORMAT(created_at, '%Y-%m') ORDER BY month DESC LIMIT 12");
-                $filename = 'Monthly_Activity_Report';
-                break;
-        }
-
-        if (!empty($data)) {
-            $result = $report->exportToCSV($filename, $data);
-            if ($result['success']) {
-                // Send CSV for download
-                $filepath = $result['filepath'];
-                header('Content-Type: text/csv');
-                header('Content-Disposition: attachment; filename="' . $result['filename'] . '"');
-                header('Content-Length: ' . filesize($filepath));
-                readfile($filepath);
-                unlink($filepath); // Clean up
-                exit;
+            switch ($reportType) {
+                case 'profiles':
+                    $data = $report->generateOSYReport();
+                    $filename = 'KK_Profile_Report';
+                    break;
+                case 'opportunities':
+                    $data = $report->generateOpportunityReport();
+                    $filename = 'Opportunity_Report';
+                    break;
+                case 'matching':
+                    $data = $database->fetchAll("SELECT m.id, p.first_name, p.last_name, p.primary_skill, o.title as opportunity, m.match_score, m.status, m.created_at FROM osy_matches m JOIN osy_profiles p ON m.osy_id = p.id JOIN opportunities o ON m.opportunity_id = o.id ORDER BY m.match_score DESC");
+                    $filename = 'Matching_Report';
+                    break;
+                case 'monthly':
+                    $data = $database->fetchAll("SELECT DATE_FORMAT(created_at, '%Y-%m') as month, COUNT(*) as registrations FROM osy_profiles GROUP BY DATE_FORMAT(created_at, '%Y-%m') ORDER BY month DESC LIMIT 12");
+                    $filename = 'Monthly_Activity_Report';
+                    break;
             }
-        } else {
-            $message = 'No data available for this report type.';
-            $messageType = 'error';
+
+            if (!empty($data)) {
+                $result = $report->exportToCSV($filename, $data);
+                if ($result['success']) {
+                    // Send CSV for download
+                    $filepath = $result['filepath'];
+
+                    // Clear output buffer before sending headers
+                    ob_end_clean();
+
+                    // Set proper headers for CSV download
+                    header('Content-Type: text/csv; charset=utf-8');
+                    header('Content-Disposition: attachment; filename="' . $result['filename'] . '"');
+                    header('Content-Length: ' . filesize($filepath));
+                    header('Cache-Control: no-cache, no-store, must-revalidate');
+                    header('Pragma: no-cache');
+                    header('Expires: 0');
+                    header('X-Content-Type-Options: nosniff');
+
+                    // Output file content
+                    readfile($filepath);
+
+                    // Clean up
+                    unlink($filepath);
+                    exit;
+                }
+            } else {
+                $message = 'No data available for this report type.';
+                $messageType = 'error';
+            }
         }
     }
 }
@@ -71,12 +85,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </div>
 
 <?php if ($message): ?>
-<div class="mb-6 p-4 <?php echo $messageType === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'; ?> rounded-xl">
-    <p class="<?php echo $messageType === 'success' ? 'text-green-800' : 'text-red-800'; ?> flex items-center gap-2">
-        <span class="material-symbols-outlined text-base"><?php echo $messageType === 'success' ? 'check_circle' : 'error'; ?></span>
-        <?php echo htmlspecialchars($message); ?>
-    </p>
-</div>
+    <div class="mb-6 p-4 <?php echo $messageType === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'; ?> rounded-xl">
+        <p class="<?php echo $messageType === 'success' ? 'text-green-800' : 'text-red-800'; ?> flex items-center gap-2">
+            <span class="material-symbols-outlined text-base"><?php echo $messageType === 'success' ? 'check_circle' : 'error'; ?></span>
+            <?php echo htmlspecialchars($message); ?>
+        </p>
+    </div>
 <?php endif; ?>
 
 <!-- Statistics Cards -->

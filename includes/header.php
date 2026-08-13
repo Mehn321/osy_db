@@ -329,7 +329,9 @@
                         if (!input) return;
                         if (input.dataset.hasToggle) return;
                         input.dataset.hasToggle = '1';
-                        btn.addEventListener('click', () => {
+                        btn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
                             if (input.type === 'password') {
                                 input.type = 'text';
                                 btn.innerHTML = '<span class="material-symbols-outlined">visibility_off</span>';
@@ -360,7 +362,9 @@
                         btn.setAttribute('aria-label', 'Toggle password visibility');
                         wrapper.appendChild(btn);
 
-                        btn.addEventListener('click', () => {
+                        btn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
                             if (input.type === 'password') {
                                 input.type = 'text';
                                 btn.innerHTML = '<span class="material-symbols-outlined">visibility_off</span>';
@@ -473,6 +477,13 @@
                 // Run on initial load
                 document.addEventListener('DOMContentLoaded', () => {
                     injectCsrfTokens();
+
+                    // Initialize password toggles on initial page load
+                    try {
+                        initPasswordToggles();
+                    } catch (e) {
+                        console.warn('Password toggles init failed', e);
+                    }
                 });
 
                 function toggleSidebar() {

@@ -81,6 +81,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_youth'])) {
         $message = $result['message'];
         $messageType = 'error';
     }
+    }
 }
 
 $pendingProfiles = $osyProfile->getPendingByBarangay($_SESSION['barangay']);

@@ -90,6 +90,7 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
 
         <form method="POST" class="p-8 space-y-6">
+            <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
             <input type="hidden" name="create_profile" value="1">
             <input type="hidden" name="profile_type" value="<?php echo htmlspecialchars($profileType); ?>">
 

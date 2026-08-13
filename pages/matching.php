@@ -74,6 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $messageType = 'success';
         }
     }
+    }
 }
 
 // Fetch Templates
@@ -735,14 +736,14 @@ function renderMatchCard($match, $status) {
     async function triggerGlobalSync() {
         if (!confirm("This will start a background process to calculate AI scores for all profiles against all jobs. This may take several minutes. Proceed?")) return;
         
-        const alert = document.getElementById('syncAlert');
+        const alertBox = document.getElementById('syncAlert');
         try {
             const res = await fetch('../api/trigger_global_sync.php');
             const data = await res.json();
             if (data.success) {
-                alert.innerHTML = `<span class="material-symbols-outlined text-blue-600 animate-spin">sync</span> 
+                alertBox.innerHTML = `<span class="material-symbols-outlined text-blue-600 animate-spin">sync</span> 
                                   <span class="text-blue-800">Background Sync Started. Scores will populate automatically over the next few minutes.</span>`;
-                alert.className = "flex items-center gap-3 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg text-sm";
+                alertBox.className = "flex items-center gap-3 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg text-sm";
             } else {
                 alert(data.message);
             }

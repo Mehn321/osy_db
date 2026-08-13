@@ -248,7 +248,7 @@ if (in_array($_SESSION['role'], ['employer', 'training_provider'])) {
         <?php elseif (!$isProvider): ?>
             <div>
                 <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase pl-1">Status</label>
-                <select name="status" class="w-full bg-slate-100 dark:bg-slate-700 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all">
+                <select name="status" class="w-full auto-filter bg-slate-100 dark:bg-slate-700 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all">
                     <option value="All" <?php echo $filters['status'] === 'All' ? ' selected' : ''; ?>>All Status</option>
                     <option value="Open" <?php echo $filters['status'] === 'Open' ? ' selected' : ''; ?>>Open</option>
                     <option value="Closed" <?php echo $filters['status'] === 'Closed' ? ' selected' : ''; ?>>Closed</option>

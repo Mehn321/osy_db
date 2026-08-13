@@ -245,6 +245,7 @@ require_once __DIR__ . '/../includes/header.php';
                 <h3 id="modalTitle" class="text-xl font-bold text-slate-900 dark:text-white">Create New Opportunity</h3>
             </div>
             <form id="opportunityForm" method="POST" class="p-6 space-y-4">
+                <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
                 <input type="hidden" id="opportunityId" name="opportunity_id">
                 <input type="hidden" id="isUpdate" name="update_opportunity" value="0">
 
@@ -389,6 +390,7 @@ require_once __DIR__ . '/../includes/header.php';
                 <h3 class="text-lg font-bold text-slate-900 dark:text-white text-center mb-2">Delete Opportunity</h3>
                 <p class="text-slate-600 dark:text-slate-300 text-center text-sm mb-6">Are you sure? This action cannot be undone.</p>
                 <form method="POST" class="flex gap-3">
+                    <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
                     <input type="hidden" id="deleteOpportunityId" name="opportunity_id">
                     <input type="hidden" name="delete_opportunity" value="1">
                     <button type="button" onclick="closeDeleteModal()" class="flex-1 px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-bold text-sm hover:bg-slate-200">

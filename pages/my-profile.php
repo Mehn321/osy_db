@@ -103,6 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
         $message = $result['message'] ?? 'Error updating profile';
         $messageType = 'error';
     }
+    }
 }
 
 // Get references for dropdowns
