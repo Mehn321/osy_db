@@ -34,12 +34,14 @@ $unreadCount = $notification->getUnreadCount($_SESSION['user_id']);
     </nav>
     <div class="flex flex-wrap items-center gap-3">
         <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Your Notifications</h1>
-        <?php if ($unreadCount > 0): ?>
-            <span class="inline-flex items-center gap-2 rounded-full bg-blue-100 text-blue-800 px-3 py-1 text-sm font-semibold">
-                <span class="material-symbols-outlined text-base">notifications_active</span>
-                <?php echo $unreadCount; ?> unread
-            </span>
-        <?php endif; ?>
+        <div id="unread-badge-container">
+            <?php if ($unreadCount > 0): ?>
+                <span class="inline-flex items-center gap-2 rounded-full bg-blue-100 text-blue-800 px-3 py-1 text-sm font-semibold">
+                    <span class="material-symbols-outlined text-base">notifications_active</span>
+                    <?php echo $unreadCount; ?> unread
+                </span>
+            <?php endif; ?>
+        </div>
     </div>
     <p class="text-slate-600 mt-2 max-w-2xl">Stay updated with the latest announcements, approvals, and opportunities.</p>
 </div>
@@ -62,13 +64,13 @@ $unreadCount = $notification->getUnreadCount($_SESSION['user_id']);
 <?php else: ?>
     <div class="space-y-4">
         <?php foreach ($notifications as $notif): ?>
-            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 <?php echo $notif['status'] === 'Sent' ? 'border-l-4 border-l-blue-500' : ''; ?>">
+            <div class="notification-card bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 <?php echo $notif['status'] === 'Sent' ? 'border-l-4 border-l-blue-500' : ''; ?>">
                 <div class="flex items-start justify-between gap-4">
                     <div class="flex-1">
                         <div class="flex items-center gap-2 mb-2">
                             <h3 class="text-lg font-bold text-slate-900 dark:text-white"><?php echo htmlspecialchars($notif['title']); ?></h3>
                             <?php if ($notif['status'] === 'Sent'): ?>
-                                <span class="inline-flex items-center rounded-full bg-blue-100 text-blue-800 px-2 py-1 text-xs font-semibold">New</span>
+                                <span class="new-badge inline-flex items-center rounded-full bg-blue-100 text-blue-800 px-2 py-1 text-xs font-semibold">New</span>
                             <?php endif; ?>
                         </div>
                         <p class="text-slate-600 dark:text-slate-300 mb-3"><?php echo htmlspecialchars($notif['message']); ?></p>
@@ -89,7 +91,7 @@ $unreadCount = $notification->getUnreadCount($_SESSION['user_id']);
                         </div>
                     </div>
                     <?php if ($notif['status'] === 'Sent'): ?>
-                        <form method="POST" class="flex-shrink-0">
+                        <form method="POST" class="mark-read-form flex-shrink-0">
                             <input type="hidden" name="notification_id" value="<?php echo $notif['id']; ?>">
                             <button type="submit" name="mark_read" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors">
                                 Mark as Read
@@ -101,5 +103,79 @@ $unreadCount = $notification->getUnreadCount($_SESSION['user_id']);
         <?php endforeach; ?>
     </div>
 <?php endif; ?>
+
+<script>
+(function() {
+    document.addEventListener('submit', function(e) {
+        const form = e.target.closest('.mark-read-form');
+        if (!form) return;
+        
+        e.preventDefault();
+        
+        const notificationId = form.querySelector('input[name="notification_id"]')?.value;
+        if (!notificationId) return;
+        
+        const btn = form.querySelector('button[name="mark_read"]');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = 'Marking...';
+        }
+        
+        fetch('../api/mark_notification_read.php', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ notification_id: notificationId })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                const card = form.closest('.notification-card');
+                if (card) {
+                    card.classList.remove('border-l-4', 'border-l-blue-500');
+                    card.querySelector('.new-badge')?.remove();
+                }
+                form.remove();
+                
+                // Update notification badges in top bar
+                const badgeTop = document.querySelector('a[href*="my-notifications.php"] span.absolute');
+                const badgePage = document.getElementById('unread-badge-container');
+                
+                const count = data.unread_count;
+                if (count > 0) {
+                    if (badgeTop) {
+                        badgeTop.textContent = count > 99 ? '99+' : count;
+                    }
+                    if (badgePage) {
+                        badgePage.innerHTML = `
+                            <span class="inline-flex items-center gap-2 rounded-full bg-blue-100 text-blue-800 px-3 py-1 text-sm font-semibold">
+                                <span class="material-symbols-outlined text-base">notifications_active</span>
+                                ${count} unread
+                            </span>
+                        `;
+                    }
+                } else {
+                    if (badgeTop) badgeTop.remove();
+                    if (badgePage) badgePage.innerHTML = '';
+                }
+            } else {
+                alert(data.message || 'Failed to mark notification as read');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = 'Mark as Read';
+                }
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = 'Mark as Read';
+            }
+        });
+    });
+})();
+</script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

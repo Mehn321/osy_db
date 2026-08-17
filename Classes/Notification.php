@@ -142,6 +142,14 @@ class Notification
     }
 
     /**
+     * Create notification for specific recipient (required by task spec)
+     */
+    public function createForRecipient($title, $message, $recipientId)
+    {
+        return $this->sendToUser($recipientId, $title, $message);
+    }
+
+    /**
      * Broadcast notification to all users with specific role
      */
     public function broadcastToRole($role, $title, $message, $type = 'System')

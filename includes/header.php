@@ -1,6 +1,10 @@
-<?php require_once __DIR__ . '/../init.php'; ?>
+<?php 
+require_once __DIR__ . '/../init.php'; 
+$basePath = str_replace('\\', '/', dirname(dirname($_SERVER['SCRIPT_NAME'])));
+$basePath = $basePath === '/' ? '' : $basePath;
+?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="<?php echo (isset($_SESSION['theme']) && $_SESSION['theme'] === 'dark') ? 'dark' : ''; ?>">
 
 <head>
     <meta charset="UTF-8">
@@ -12,6 +16,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="<?php echo $basePath; ?>/assets/js/auto-filter.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -139,7 +144,7 @@
                         ['name' => 'Reports',            'icon' => 'assessment',         'path' => 'reports.php'],
                         ['name' => 'SK Chairmen',        'icon' => 'supervisor_account', 'path' => 'manage-sk-chairmen.php'],
                         ['name' => 'Provider Approvals', 'icon' => 'how_to_reg',         'path' => 'provider-approvals.php'],
-                        ['name' => 'Audit Logs',         'icon' => 'history_edu',        'path' => 'audit-logs.php'],
+                        
                         ['name' => 'My Notifications',   'icon' => 'notifications_active', 'path' => 'my-notifications.php'],
                     ];
                 } elseif ($userRole === 'sk_chairman') {
@@ -657,6 +662,13 @@
                         initAutoFilters();
                     } catch (e) {
                         console.warn('Auto-filters init failed', e);
+                    }
+                    try {
+                        if (typeof initClientFilters === 'function') {
+                            initClientFilters();
+                        }
+                    } catch (e) {
+                        console.warn('Client-filters init failed', e);
                     }
                     try {
                         initRowActions();

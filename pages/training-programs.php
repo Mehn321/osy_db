@@ -214,13 +214,13 @@ $templates = $notification->getAllTemplates();
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 items-end">
         <div>
             <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase pl-1">Search</label>
-            <input type="text" id="train_search" oninput="filterTraining()" placeholder="Search opportunities..."
-                class="w-full bg-slate-100 dark:bg-slate-700 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all" />
+            <input type="text" id="train_search" data-target=".train-card" data-filter-type="search" placeholder="Search opportunities..."
+                class="client-filter w-full bg-slate-100 dark:bg-slate-700 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all" />
         </div>
         <div>
             <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase pl-1">Type</label>
-            <select id="train_type" onchange="filterTraining()"
-                class="w-full bg-slate-100 dark:bg-slate-700 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all">
+            <select id="train_type" data-target=".train-card" data-filter-type="exact" data-filter-attr="type"
+                class="client-filter w-full bg-slate-100 dark:bg-slate-700 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all">
                 <option value="All">All Training</option>
                 <option value="Vocational Training">Vocational Training</option>
                 <option value="Scholarship">Scholarship</option>
@@ -228,8 +228,8 @@ $templates = $notification->getAllTemplates();
         </div>
         <div>
             <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase pl-1">Status</label>
-            <select id="train_status" onchange="filterTraining()"
-                class="w-full bg-slate-100 dark:bg-slate-700 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all">
+            <select id="train_status" data-target=".train-card" data-filter-type="exact" data-filter-attr="status"
+                class="client-filter w-full bg-slate-100 dark:bg-slate-700 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all">
                 <option value="All">All Status</option>
                 <option value="Open">Open</option>
                 <option value="Closed">Closed</option>
@@ -312,10 +312,6 @@ $templates = $notification->getAllTemplates();
                         class="flex-1 min-w-[120px] py-2 px-3 bg-blue-900 text-white rounded-lg text-sm font-semibold hover:bg-blue-800 transition-colors flex items-center justify-center gap-2">
                         <span class="material-symbols-outlined text-base">visibility</span>
                         View Details
-                    </button>
-                    <button type="button" data-opp-id="<?php echo $opp['id']; ?>" class="broadcast-btn py-2 px-3 bg-purple-700 text-white rounded-lg text-sm font-semibold hover:bg-purple-800 transition-colors flex items-center gap-2">
-                        <span class="material-symbols-outlined">campaign</span>
-                        Broadcast
                     </button>
                     <button type="button" onclick="openEditModal(<?php echo $opp['id']; ?>)"
                         class="py-2 px-3 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg text-slate-600 dark:text-slate-300 transition-colors">
@@ -450,123 +446,6 @@ $templates = $notification->getAllTemplates();
             </form>
         </div>
     </div>
-    <!-- Broadcast Modal -->
-    <div id="broadcastModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
-        <div class="flex items-center justify-center min-h-screen p-4">
-            <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                <div
-                    class="p-6 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 rounded-t-2xl">
-                    <h3 class="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                        <span class="material-symbols-outlined text-purple-600">campaign</span>
-                        Broadcast Training Program
-                    </h3>
-                </div>
-                <form method="POST" class="p-6 space-y-6">
-                    <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
-                    <input type="hidden" name="opportunity_id" id="broadcast_opp_id">
-                    <input type="hidden" name="broadcast_training" value="1">
-
-                    <div class="space-y-4">
-                        <div>
-                            <label
-                                class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block tracking-wide uppercase">Message
-                                Template (Customizable)</label>
-                            <textarea name="custom_message" id="broadcastMessageArea" rows="6" required
-                                class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-purple-600 text-slate-900 dark:text-white font-mono"
-                                onkeyup="updateBroadcastPreview()"></textarea>
-                            <p class="text-[10px] text-slate-500 mt-2">Available Variables: <span
-                                    class="font-bold">{{name}}</span>, <span class="font-bold">{{opportunity}}</span>
-                            </p>
-                        </div>
-
-                        <div
-                            class="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-xl border border-purple-100 dark:border-purple-800">
-                            <p
-                                class="text-xs font-bold text-purple-800 dark:text-purple-400 mb-2 uppercase tracking-wide">
-                                Live Preview for <span id="previewRecipient">User</span></p>
-                            <div id="broadcastPreviewBox"
-                                class="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap italic"></div>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block">Recipient
-                                    Group</label>
-                                <select name="target_group" id="broadcast_target_group" required
-                                    class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-purple-600 text-slate-900 dark:text-white"
-                                    onchange="toggleSpecificBroadcastRecipients()">
-                                    <option value="All">All Registered Youth</option>
-                                    <option value="OSY">All OSY Only</option>
-                                    <option value="Unemployed">Unemployed Youth Only</option>
-                                    <option value="In Training">Youth Currently In Training</option>
-                                    <option value="Specific">Specific Individuals...</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div id="broadcast_specific_container" class="hidden">
-                            <label class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block">Select
-                                Specific Recipients</label>
-                            <input type="text" id="bc_recip_search" placeholder="Search recipients..."
-                                class="w-full mb-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg py-2 px-3 text-xs"
-                                onkeyup="filterBCRecipients()">
-                            <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-xl p-4 h-48 overflow-y-auto border border-slate-200 dark:border-slate-600 grid grid-cols-1 sm:grid-cols-2 gap-2"
-                                id="bc_recip_list">
-                                <?php foreach ($allProfiles as $p): ?>
-                                    <label
-                                        class="bc-recip-item flex items-center gap-2 cursor-pointer p-2 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-colors"
-                                        data-name="<?php echo strtolower($p['first_name'] . ' ' . $p['last_name']); ?>">
-                                        <input type="checkbox" name="specific_ids[]" value="<?php echo $p['id']; ?>"
-                                            class="w-4 h-4 text-purple-600 border-slate-300 rounded focus:ring-purple-600">
-                                        <div class="flex flex-col">
-                                            <span
-                                                class="text-xs text-slate-800 dark:text-slate-200 font-bold"><?php echo htmlspecialchars($p['first_name'] . ' ' . $p['last_name']); ?></span>
-                                            <span
-                                                class="text-[10px] text-slate-500 uppercase"><?php echo htmlspecialchars($p['profile_type']); ?></span>
-                                        </div>
-                                    </label>
-                                <?php endforeach; ?>
-                            </div>
-                        </div>
-
-                        <div class="pt-4 border-t border-slate-200 dark:border-slate-700">
-                            <h4
-                                class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-3 uppercase tracking-tighter">
-                                Delivery Hooks</h4>
-                            <div class="flex flex-wrap gap-6">
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" name="send_sms"
-                                        class="w-4 h-4 text-purple-600 bg-slate-100 border-slate-300 rounded focus:ring-purple-600"
-                                        checked>
-                                    <span class="text-sm text-slate-600 dark:text-slate-300 font-semibold">Traccar Cloud
-                                        SMS</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" name="send_email"
-                                        class="w-4 h-4 text-purple-600 bg-slate-100 border-slate-300 rounded focus:ring-purple-600"
-                                        checked>
-                                    <span class="text-sm text-slate-600 dark:text-slate-300 font-semibold">Gmail SMTP
-                                        Email</span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-end gap-3 pt-6 border-t border-slate-200 dark:border-slate-700">
-                        <button type="button"
-                            onclick="document.getElementById('broadcastModal').classList.add('hidden')"
-                            class="px-6 py-3 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-sm hover:bg-slate-200">
-                            Discard
-                        </button>
-                        <button type="submit"
-                            class="px-6 py-3 bg-gradient-to-r from-purple-700 to-purple-600 text-white rounded-xl font-bold text-sm hover:shadow-lg transition-transform active:scale-95">
-                            Execute Broadcast
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
 
     <!-- View Detail Modal -->
     <div id="detailModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
@@ -662,8 +541,11 @@ $templates = $notification->getAllTemplates();
 
         function viewOpportunityDetail(id) {
             const opp = opportunitiesData[id];
-            if (opp) {
-                let html = `
+            if (!opp) {
+                console.error('Opportunity data not found for ID', id);
+                return;
+            }
+            let html = `
                 <div><p class="text-xs font-bold text-slate-500 uppercase">Title</p><p class="font-bold text-slate-900 dark:text-white text-lg">${opp.title}</p></div>
                 <div class="grid grid-cols-2 gap-4">
                     <div><p class="text-xs font-bold text-slate-500 uppercase">Type</p><p class="text-sm text-slate-700 dark:text-slate-300">${opp.type}</p></div>
@@ -692,7 +574,6 @@ $templates = $notification->getAllTemplates();
                 document.getElementById('detailContent').innerHTML = html;
                 document.getElementById('detailModal').classList.remove('hidden');
             }
-        }
 
         function closeModal() {
             document.getElementById('opportunityModal').classList.add('hidden');
@@ -715,15 +596,6 @@ $templates = $notification->getAllTemplates();
                     viewOpportunityDetail(id);
                 }
             }
-
-            document.querySelectorAll('.broadcast-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const id = parseInt(this.dataset.oppId, 10);
-                    if (!isNaN(id)) {
-                        openBroadcastModal(id);
-                    }
-                });
-            });
         });
 
         function deleteOpportunity(id) {
@@ -733,78 +605,6 @@ $templates = $notification->getAllTemplates();
 
         function closeDeleteModal() {
             document.getElementById('deleteModal').classList.add('hidden');
-        }
-
-        function filterTraining() {
-            const searchVal = document.getElementById('train_search').value.toLowerCase();
-            const typeVal = document.getElementById('train_type').value;
-            const statusVal = document.getElementById('train_status').value;
-            const cards = document.querySelectorAll('.train-card');
-
-            cards.forEach(card => {
-                const dataSearch = card.getAttribute('data-search') || '';
-                const dataType = card.getAttribute('data-type') || '';
-                const dataStatus = card.getAttribute('data-status') || '';
-
-                let match = true;
-                if (searchVal && !dataSearch.toLowerCase().includes(searchVal)) match = false;
-                if (typeVal !== 'All' && dataType !== typeVal) match = false;
-                if (statusVal !== 'All' && dataStatus !== statusVal) match = false;
-
-                card.style.display = match ? '' : 'none';
-            });
-        }
-
-        function openBroadcastModal(id) {
-            const opp = opportunitiesData[id];
-            if (!opp) {
-                console.error('Broadcast failed: opportunity not found for id', id);
-                return;
-            }
-
-            document.getElementById('broadcast_opp_id').value = opp.id;
-
-            // Dynamic Template
-            const template = `Hello {{name}}, we have a new Vocational Training opportunity: ${opp.title}.
-Provider: ${opp.training_provider || 'Local Partner'}
-Deadline: ${opp.deadline}
-Slots: ${opp.total_slots}
-
-Please visit the Municipal KK office to apply!`;
-
-            document.getElementById('broadcastMessageArea').value = template;
-            updateBroadcastPreview();
-            const modal = document.getElementById('broadcastModal');
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        }
-
-        function toggleSpecificBroadcastRecipients() {
-            const group = document.getElementById('broadcast_target_group').value;
-            document.getElementById('broadcast_specific_container').style.display = (group === 'Specific') ? 'block' :
-                'none';
-        }
-
-        function filterBCRecipients() {
-            const val = document.getElementById('bc_recip_search').value.toLowerCase();
-            const items = document.querySelectorAll('.bc-recip-item');
-            items.forEach(item => {
-                const name = item.getAttribute('data-name');
-                item.style.display = name.includes(val) ? '' : 'none';
-            });
-        }
-
-        var firstRecipientName = "<?php echo !empty($allProfiles) ? addslashes($allProfiles[0]['first_name']) : 'User'; ?>";
-
-        function updateBroadcastPreview() {
-            let text = document.getElementById('broadcastMessageArea').value;
-            const oppTitle = opportunitiesData[document.getElementById('broadcast_opp_id').value]?.title ||
-                'Training Program';
-
-            text = text.replace(/{{name}}/g, firstRecipientName);
-            text = text.replace(/{{opportunity}}/g, oppTitle);
-            document.getElementById('broadcastPreviewBox').textContent = text;
-            document.getElementById('previewRecipient').textContent = firstRecipientName;
         }
     </script>
 

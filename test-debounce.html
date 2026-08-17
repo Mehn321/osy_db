@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debounce Function Unit Tests</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 min-h-screen p-8 text-slate-900 dark:text-slate-100">
+    <div class="max-w-3xl mx-auto bg-white dark:bg-slate-800 rounded-2xl shadow-md p-8 border border-slate-200 dark:border-slate-700">
+        <h1 class="text-3xl font-extrabold mb-2">⏱️ Debounce Function Unit Tests</h1>
+        <p class="text-slate-600 dark:text-slate-400 mb-6">Automated JavaScript unit tests for the global `debounce` helper function.</p>
+
+        <div id="test-results" class="space-y-4">
+            <!-- Results will be injected here -->
+            <div class="p-4 bg-slate-100 dark:bg-slate-700 animate-pulse rounded-lg text-center">
+                Running unit tests...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Copy of debounce function from header.php for testing isolation
+        function debounce(fn, wait) {
+            let t;
+            return function(...args) {
+                clearTimeout(t);
+                t = setTimeout(() => fn.apply(this, args), wait);
+            };
+        }
+
+        // Test Helper
+        const resultsEl = document.getElementById('test-results');
+        const tests = [];
+
+        function addTest(name, fn) {
+            tests.push({ name, fn });
+        }
+
+        function runTests() {
+            resultsEl.innerHTML = '';
+            let passed = 0;
+            let failed = 0;
+
+            const runNext = (index) => {
+                if (index >= tests.length) {
+                    // Summary
+                    const summaryEl = document.createElement('div');
+                    summaryEl.className = `p-5 rounded-xl border mt-6 font-bold text-center ${failed === 0 ? 'bg-green-50 border-green-200 text-green-800 dark:bg-green-900/30 dark:border-green-800 dark:text-green-300' : 'bg-red-50 border-red-200 text-red-800 dark:bg-red-900/30 dark:border-red-800 dark:text-red-300'}`;
+                    summaryEl.innerHTML = `Tests Completed: ${passed} Passed, ${failed} Failed`;
+                    resultsEl.appendChild(summaryEl);
+                    return;
+                }
+
+                const test = tests[index];
+                const testRow = document.createElement('div');
+                testRow.className = 'p-4 border border-slate-200 dark:border-slate-700 rounded-lg flex items-center justify-between bg-slate-50 dark:bg-slate-700/50';
+                testRow.innerHTML = `<span>Running: ${test.name}...</span><span class="text-slate-400 font-mono">WAIT</span>`;
+                resultsEl.appendChild(testRow);
+
+                test.fn()
+                    .then(() => {
+                        testRow.className = 'p-4 border border-green-200 dark:border-green-800 rounded-lg flex items-center justify-between bg-green-50 dark:bg-green-950/20';
+                        testRow.innerHTML = `<span><strong>PASS</strong>: ${test.name}</span><span class="text-green-600 dark:text-green-400 font-bold">✓ SUCCESS</span>`;
+                        passed++;
+                        runNext(index + 1);
+                    })
+                    .catch((err) => {
+                        testRow.className = 'p-4 border border-red-200 dark:border-red-800 rounded-lg flex items-center justify-between bg-red-50 dark:bg-red-950/20';
+                        testRow.innerHTML = `<span><strong>FAIL</strong>: ${test.name}<br><small class="text-red-500">${err.message}</small></span><span class="text-red-600 dark:text-red-400 font-bold">✗ FAILED</span>`;
+                        failed++;
+                        runNext(index + 1);
+                    });
+            };
+
+            runNext(0);
+        }
+
+        // --- TEST CASES ---
+
+        addTest("Should execute once for multiple rapid calls", () => {
+            return new Promise((resolve, reject) => {
+                let callCount = 0;
+                const targetFn = () => { callCount++; };
+                const debounced = debounce(targetFn, 100);
+
+                debounced();
+                debounced();
+                debounced();
+
+                setTimeout(() => {
+                    if (callCount === 1) {
+                        resolve();
+                    } else {
+                        reject(new Error(`Expected function to be called exactly 1 time, but got ${callCount}`));
+                    }
+                }, 150);
+            });
+        });
+
+        addTest("Should execute with the last set of arguments", () => {
+            return new Promise((resolve, reject) => {
+                let lastArg = null;
+                const targetFn = (arg) => { lastArg = arg; };
+                const debounced = debounce(targetFn, 100);
+
+                debounced("first");
+                debounced("second");
+                debounced("third");
+
+                setTimeout(() => {
+                    if (lastArg === "third") {
+                        resolve();
+                    } else {
+                        reject(new Error(`Expected latest argument to be 'third', but got '${lastArg}'`));
+                    }
+                }, 150);
+            });
+        });
+
+        addTest("Should respect the delay before calling", () => {
+            return new Promise((resolve, reject) => {
+                let called = false;
+                const targetFn = () => { called = true; };
+                const debounced = debounce(targetFn, 100);
+
+                debounced();
+
+                // Check before delay expires
+                setTimeout(() => {
+                    if (called) {
+                        reject(new Error("Function was called prematurely before the delay expired"));
+                    }
+                }, 50);
+
+                // Check after delay expires
+                setTimeout(() => {
+                    if (called) {
+                        resolve();
+                    } else {
+                        reject(new Error("Function was not called after the delay expired"));
+                    }
+                }, 150);
+            });
+        });
+
+        // Run tests
+        setTimeout(runTests, 200);
+    </script>
+</body>
+</html>

@@ -10,6 +10,9 @@ if (!$user->isLoggedIn()) {
 require_once __DIR__ . '/../includes/header.php';
 ?>
 
+<!-- Hidden meta for SPA navigation highlighting -->
+<meta name="page" content="help">
+
 <!-- Help Center Header -->
 <div class="mb-12">
     <h1 class="text-4xl font-extrabold text-slate-900 dark:text-white mb-4">Help Center</h1>
@@ -20,7 +23,7 @@ require_once __DIR__ . '/../includes/header.php';
 <div class="mb-12">
     <div class="relative max-w-2xl mx-auto">
         <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">search</span>
-        <input type="text" placeholder="Search help articles..." class="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pl-12 pr-4 text-base focus:ring-2 focus:ring-blue-900 transition-all text-slate-900 dark:text-white" />
+        <input type="text" placeholder="Search help articles..." class="client-filter w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-4 pl-12 pr-4 text-base focus:ring-2 focus:ring-blue-900 transition-all text-slate-900 dark:text-white" data-target=".faq-item" data-filter-type="search" />
     </div>
 </div>
 
@@ -73,67 +76,92 @@ require_once __DIR__ . '/../includes/header.php';
 <div class="space-y-6 max-w-4xl">
     <h2 class="text-3xl font-bold text-slate-900 dark:text-white mb-8">Frequently Asked Questions</h2>
 
-    <!-- FAQ Item -->
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
-        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-3">How do I create a new youth profile?</h3>
-        <p class="text-slate-600 dark:text-slate-400 mb-3">
-            To create a new youth profile:
-        </p>
-        <ol class="list-decimal list-inside space-y-2 text-slate-600 dark:text-slate-400">
-            <li>Navigate to the KK Profiles page from the sidebar</li>
-            <li>Click the "Add New Profile" button</li>
-            <li>Fill in the required information (name, age, skills, etc.)</li>
-            <li>Click "Save Profile"</li>
-        </ol>
+    <!-- FAQ Item 1 -->
+    <div class="faq-item bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+        <button class="w-full text-left font-bold text-lg text-slate-900 dark:text-white flex justify-between items-center faq-toggle focus:outline-none">
+            <span>How do I create a new youth profile?</span>
+            <span class="material-symbols-outlined transition-transform duration-200">expand_more</span>
+        </button>
+        <div class="faq-content hidden mt-4 text-slate-600 dark:text-slate-400 border-t border-slate-100 dark:border-slate-700 pt-4">
+            <p class="mb-3">
+                To create a new youth profile:
+            </p>
+            <ol class="list-decimal list-inside space-y-2">
+                <li>Navigate to the KK Profiles page from the sidebar</li>
+                <li>Click the "Add New Profile" button</li>
+                <li>Fill in the required information (name, age, skills, etc.)</li>
+                <li>Click "Save Profile"</li>
+            </ol>
+        </div>
     </div>
 
-    <!-- FAQ Item -->
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
-        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-3">How does the skills matching work?</h3>
-        <p class="text-slate-600 dark:text-slate-400">
-            Our AI-powered matching algorithm analyzes the skills of each OSY profile and compares them with available opportunities.
-            It calculates a match score (0-100%) based on skill alignment, education level, and other relevant factors.
-            A higher score indicates a better fit for the opportunity.
-        </p>
+    <!-- FAQ Item 2 -->
+    <div class="faq-item bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+        <button class="w-full text-left font-bold text-lg text-slate-900 dark:text-white flex justify-between items-center faq-toggle focus:outline-none">
+            <span>How does the skills matching work?</span>
+            <span class="material-symbols-outlined transition-transform duration-200">expand_more</span>
+        </button>
+        <div class="faq-content hidden mt-4 text-slate-600 dark:text-slate-400 border-t border-slate-100 dark:border-slate-700 pt-4">
+            <p>
+                Our AI-powered matching algorithm analyzes the skills of each OSY profile and compares them with available opportunities.
+                It calculates a match score (0-100%) based on skill alignment, education level, and other relevant factors.
+                A higher score indicates a better fit for the opportunity.
+            </p>
+        </div>
     </div>
 
-    <!-- FAQ Item -->
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
-        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-3">Can I adjust the minimum match score threshold?</h3>
-        <p class="text-slate-600 dark:text-slate-400 mb-3">
-            Yes! On the Skills Matching page, you can use the slider to set your preferred minimum match score.
-            This allows you to filter candidates by your desired match quality:
-        </p>
-        <ul class="list-disc list-inside space-y-2 text-slate-600 dark:text-slate-400">
-            <li>60-70%: Potential candidates with room for training</li>
-            <li>70-85%: Good matches ready for opportunities</li>
-            <li>85-100%: Excellent matches with strong skill alignment</li>
-        </ul>
+    <!-- FAQ Item 3 -->
+    <div class="faq-item bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+        <button class="w-full text-left font-bold text-lg text-slate-900 dark:text-white flex justify-between items-center faq-toggle focus:outline-none">
+            <span>Can I adjust the minimum match score threshold?</span>
+            <span class="material-symbols-outlined transition-transform duration-200">expand_more</span>
+        </button>
+        <div class="faq-content hidden mt-4 text-slate-600 dark:text-slate-400 border-t border-slate-100 dark:border-slate-700 pt-4">
+            <p class="mb-3">
+                Yes! On the Skills Matching page, you can use the slider to set your preferred minimum match score.
+                This allows you to filter candidates by your desired match quality:
+            </p>
+            <ul class="list-disc list-inside space-y-2">
+                <li>60-70%: Potential candidates with room for training</li>
+                <li>70-85%: Good matches ready for opportunities</li>
+                <li>85-100%: Excellent matches with strong skill alignment</li>
+            </ul>
+        </div>
     </div>
 
-    <!-- FAQ Item -->
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
-        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-3">How do I send notifications to multiple users?</h3>
-        <p class="text-slate-600 dark:text-slate-400">
-            From the Notifications page, click "Send New Notification". You can select the recipient type
-            (All OSY, All Staff, or Specific users), compose your message, and broadcast it instantly.
-            The system logs all notifications for audit purposes.
-        </p>
+    <!-- FAQ Item 4 -->
+    <div class="faq-item bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+        <button class="w-full text-left font-bold text-lg text-slate-900 dark:text-white flex justify-between items-center faq-toggle focus:outline-none">
+            <span>How do I send notifications to multiple users?</span>
+            <span class="material-symbols-outlined transition-transform duration-200">expand_more</span>
+        </button>
+        <div class="faq-content hidden mt-4 text-slate-600 dark:text-slate-400 border-t border-slate-100 dark:border-slate-700 pt-4">
+            <p>
+                From the Notifications page, click "Send New Notification". You can select the recipient type
+                (All OSY, All Staff, or Specific users), compose your message, and broadcast it instantly.
+                The system logs all notifications for audit purposes.
+            </p>
+        </div>
     </div>
 
-    <!-- FAQ Item -->
-    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
-        <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-3">What reports are available?</h3>
-        <p class="text-slate-600 dark:text-slate-400 mb-3">
-            The system provides several useful reports:
-        </p>
-        <ul class="list-disc list-inside space-y-2 text-slate-600 dark:text-slate-400">
-            <li><strong>Youth Demographics Report:</strong> Age, gender, education distribution</li>
-            <li><strong>Skills Analysis Report:</strong> Most in-demand skills and gaps</li>
-            <li><strong>Matching Report:</strong> Success rates and match quality metrics</li>
-            <li><strong>Employment Status Report:</strong> Tracking youth employment outcomes</li>
-            <li><strong>Opportunity Performance Report:</strong> Usage and success of each opportunity posted</li>
-        </ul>
+    <!-- FAQ Item 5 -->
+    <div class="faq-item bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6">
+        <button class="w-full text-left font-bold text-lg text-slate-900 dark:text-white flex justify-between items-center faq-toggle focus:outline-none">
+            <span>What reports are available?</span>
+            <span class="material-symbols-outlined transition-transform duration-200">expand_more</span>
+        </button>
+        <div class="faq-content hidden mt-4 text-slate-600 dark:text-slate-400 border-t border-slate-100 dark:border-slate-700 pt-4">
+            <p class="mb-3">
+                The system provides several useful reports:
+            </p>
+            <ul class="list-disc list-inside space-y-2">
+                <li><strong>Youth Demographics Report:</strong> Age, gender, education distribution</li>
+                <li><strong>Skills Analysis Report:</strong> Most in-demand skills and gaps</li>
+                <li><strong>Matching Report:</strong> Success rates and match quality metrics</li>
+                <li><strong>Employment Status Report:</strong> Tracking youth employment outcomes</li>
+                <li><strong>Opportunity Performance Report:</strong> Usage and success of each opportunity posted</li>
+            </ul>
+        </div>
     </div>
 </div>
 
@@ -146,5 +174,45 @@ require_once __DIR__ . '/../includes/header.php';
         Contact Support
     </a>
 </div>
+
+<!-- Back to top button -->
+<button id="back-to-top" class="fixed bottom-6 right-6 p-3 bg-blue-900 text-white rounded-full shadow-lg hover:bg-blue-800 hidden transition-all duration-300 focus:outline-none z-50">
+    <span class="material-symbols-outlined">arrow_upward</span>
+</button>
+
+<script>
+(function() {
+    // Accordion Toggle logic
+    document.querySelectorAll('.faq-toggle').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const content = btn.nextElementSibling;
+            const icon = btn.querySelector('.material-symbols-outlined');
+            
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                content.classList.add('hidden');
+                icon.style.transform = 'rotate(0deg)';
+            }
+        });
+    });
+
+    // Back to top logic
+    const backToTopBtn = document.getElementById('back-to-top');
+    if (backToTopBtn) {
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 300) {
+                backToTopBtn.classList.remove('hidden');
+            } else {
+                backToTopBtn.classList.add('hidden');
+            }
+        });
+        backToTopBtn.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
+})();
+</script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

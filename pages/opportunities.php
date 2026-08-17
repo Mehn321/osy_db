@@ -327,6 +327,9 @@ if (in_array($_SESSION['role'], ['employer', 'training_provider'])) {
                         <button onclick="deleteOpportunity(<?php echo $opp['id']; ?>)" class="py-2 px-3 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400 transition-colors">
                             <span class="material-symbols-outlined">delete</span>
                         </button>
+                        <button onclick="viewApplications(<?php echo $opp['id']; ?>)" class="py-2 px-3 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg text-slate-600 dark:text-slate-300 transition-colors">
+                            <span class="material-symbols-outlined">people</span>
+                        </button>
                     <?php elseif ($_SESSION['role'] === 'youth' && $opp['status'] === 'Open'): ?>
                         <button onclick="applyToOpportunity(<?php echo $opp['id']; ?>)" class="py-2 px-3 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 transition-colors flex items-center gap-2">
                             <span class="material-symbols-outlined text-base">send</span>

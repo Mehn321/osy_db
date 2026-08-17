@@ -498,6 +498,62 @@ function renderMatchCard($match, $status) {
             const res = await fetch(`../api/get_opportunity_matches.php?opportunity_id=${id}`);
             const result = await res.json();
             
+            if (!result.success || !Array.isArray(result.data)) {
+                console.error('Failed to load matches or malformed response', result);
+                return;
+            }
+            
+            // Update Hero information if present
+            if (result.opportunity) {
+                document.getElementById('heroTitle').textContent = result.opportunity.title;
+                document.getElementById('heroDesc').textContent = result.opportunity.description;
+                document.getElementById('heroLocation').textContent = result.opportunity.location;
+                document.getElementById('heroDeadline').textContent = result.opportunity.deadline ? new Date(result.opportunity.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'No deadline';
+                document.getElementById('heroMatchCount').textContent = result.data.length + ' candidates found';
+                // Broadcast info
+                const bOppName = document.getElementById('broadcastOppName');
+                const bOppId = document.getElementById('broadcastOppId');
+                if (bOppName) bOppName.textContent = result.opportunity.title;
+                if (bOppId) bOppId.value = result.opportunity.id;
+                oppName = result.opportunity.title;
+                updateLivePreview();
+            }
+            
+            // Clear columns
+            colPending.innerHTML = result.data.filter(m => m.status === 'Pending').length ? '' : '<p id="pendingEmptyMsg" class="text-xs text-center text-slate-400 mt-10">No shortlisted candidates.</p>';
+            if (colRejected) colRejected.innerHTML = result.data.filter(m => m.status === 'Rejected').length ? '' : '<p id="rejectedEmptyMsg" class="text-xs text-center text-slate-400 mt-10">No rejected candidates.</p>';
+            colAccepted.innerHTML = result.data.filter(m => m.status === 'Accepted').length ? '' : '<p id="acceptedEmptyMsg" class="text-xs text-center text-slate-400 mt-10">No candidates accepted yet.</p>';
+            
+            result.data.forEach(match => {
+                const html = renderMatchCardJS(match, match.status);
+                if (match.status === 'Pending') {
+                    colPending.insertAdjacentHTML('beforeend', html);
+                } else if (match.status === 'Rejected' && colRejected) {
+                    colRejected.insertAdjacentHTML('beforeend', html);
+                } else if (match.status === 'Accepted') {
+                    colAccepted.insertAdjacentHTML('beforeend', html);
+                }
+            });
+            
+            // Update broadcast button visibility
+            const broadcastBtn = document.getElementById('broadcastBtn');
+            if (broadcastBtn) broadcastBtn.style.display = 'flex';
+            
+            // Refresh count and score filter
+            const scoreInput = document.querySelector('input[name="min_score"]');
+            if (scoreInput) updateScoreFilter(scoreInput.value);
+        } catch (e) {
+            console.error('Failed to load matches:', e);
+        } finally {
+            colPending.style.opacity = '1';
+            colAccepted.style.opacity = '1';
+        }
+    }
+
+        try {
+            const res = await fetch(`../api/get_opportunity_matches.php?opportunity_id=${id}`);
+            const result = await res.json();
+            
             if (result.success) {
                 // Update Hero information
                 if (result.opportunity) {
@@ -550,6 +606,66 @@ function renderMatchCard($match, $status) {
     }
 
     function renderMatchCardJS(match, status) {
+        if (!match) return '';
+        const scoreClass = match.match_score >= 85 ? 'text-green-600' : (match.match_score >= 70 ? 'text-yellow-600' : 'text-orange-600');
+        const firstLetter = match.first_name ? match.first_name.charAt(0).toUpperCase() : '?';
+        const matchData = JSON.stringify(match).replace(/"/g, '&quot;');
+        
+        let actionBtns = '';
+        if (status === 'Pending') {
+            actionBtns = `
+                <button onclick="updateMatchStatus(${match.id}, 'Accepted')" class="flex-1 py-1.5 px-3 bg-green-50 text-green-700 hover:bg-green-600 hover:text-white border border-green-200 hover:border-green-600 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95">
+                    <span class="material-symbols-outlined text-[16px]">how_to_reg</span> Accept
+                </button>
+                <button onclick="updateMatchStatus(${match.id}, 'Rejected')" class="flex-1 py-1.5 px-3 bg-slate-50 text-slate-600 hover:bg-red-500 hover:text-white border border-slate-200 hover:border-red-500 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95">
+                    <span class="material-symbols-outlined text-[16px]">cancel</span> Reject
+                </button>
+            `;
+        } else if (status === 'Rejected') {
+            actionBtns = `
+                <button onclick="updateMatchStatus(${match.id}, 'Accepted')" class="flex-1 py-1.5 px-3 bg-green-50 text-green-700 hover:bg-green-600 hover:text-white border border-green-200 hover:border-green-600 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95">
+                    <span class="material-symbols-outlined text-[16px]">how_to_reg</span> Accept
+                </button>
+            `;
+        } else if (status === 'Accepted') {
+            actionBtns = `
+                <button onclick="updateMatchStatus(${match.id}, 'Pending')" class="flex-1 py-1.5 px-3 bg-orange-50 text-orange-700 hover:bg-orange-600 hover:text-white border border-orange-200 hover:border-orange-600 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95">
+                    <span class="material-symbols-outlined text-[16px]">undo</span> Disapprove
+                </button>
+            `;
+        }
+        
+        const actionHtml = `
+            <div id="actionBtns-${match.id}" class="flex gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                <button onclick="showDetailsModal(${matchData})" class="flex-1 py-1.5 px-3 bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white border border-blue-200 hover:border-blue-600 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95">
+                    <span class="material-symbols-outlined text-[16px]">visibility</span> Details
+                </button>
+                ${actionBtns}
+            </div>
+        `;
+        
+        return `
+            <div id="matchCard-${match.id}" class="match-card bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-all duration-300 relative overflow-hidden group" data-score="${match.match_score}">
+                <div class="flex items-start justify-between mb-3">
+                    <div class="flex items-start gap-4">
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-bold text-base shadow-sm">
+                            ${firstLetter}
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-sm text-slate-900 dark:text-white">${match.first_name} ${match.last_name}</h3>
+                            <p class="text-[11px] text-slate-500 font-medium tracking-wide uppercase mt-0.5">${match.primary_skill}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-black ${scoreClass} tracking-tighter">${match.match_score}%</div>
+                    </div>
+                </div>
+                ${actionHtml}
+                <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                    <button onclick="analyzeMatchAI(${match.id})" id="aiBtn-${match.id}" class="w-full py-2 px-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-600 hover:text-white border border-blue-200 dark:border-blue-800 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-[18px] animate-pulse">auto_awesome</span> ${match.ai_insight ? 'View AI Rationale' : 'Analyze with AI'}
+                    </button>
+                    <div id="aiInsight-${match.id}" class="${match.ai_insight ? '' : 'hidden'} mt-3 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg border-l-4 border-blue-5... (truncated)
         const scoreClass = match.match_score >= 85 ? 'text-green-600' : (match.match_score >= 70 ? 'text-yellow-600' : 'text-orange-600');
         const firstLetter = match.first_name ? match.first_name.charAt(0).toUpperCase() : '?';
         const matchData = JSON.stringify(match).replace(/"/g, '&quot;');
@@ -620,44 +736,6 @@ function renderMatchCard($match, $status) {
         `;
     }
 
-    async function updateMatchStatus(matchId, status) {
-    const card = document.getElementById('matchCard-' + matchId);
-    const actionBtns = document.getElementById('actionBtns-' + matchId);
-    
-    // UI Loading state
-    card.style.opacity = '0.5';
-    card.style.pointerEvents = 'none';
-
-    try {
-        const res = await fetch('../api/update_match_status.php', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ match_id: matchId, status: status })
-        });
-        const data = await res.json();
-        
-        if (data.success) {
-            // Remove buttons
-            if (actionBtns) actionBtns.remove();
-            
-            // Animate out
-            card.style.transform = 'scale(0.95)';
-            setTimeout(() => {
-                loadMatchesAJAX(currentOpportunityId);
-            }, 300);
-            
-        } else {
-            alert('Failed to update status: ' + data.message);
-            card.style.opacity = '1';
-            card.style.pointerEvents = 'auto';
-        }
-    } catch (e) {
-        alert('Network error. Please try again.');
-        card.style.opacity = '1';
-        card.style.pointerEvents = 'auto';
-    }
-}
-
     function updateScoreFilter(val) {
         document.getElementById('scoreDisplay').textContent = val + '%';
         
@@ -692,6 +770,42 @@ function renderMatchCard($match, $status) {
         if(pMsg) pMsg.style.display = pendingVisible.length ? 'none' : 'block';
         if(rMsg) rMsg.style.display = rejectedVisible.length ? 'none' : 'block';
         if(aMsg) aMsg.style.display = acceptedVisible.length ? 'none' : 'block';
+    }
+    // Update match status (accept/reject/pending) with UI feedback
+    async function updateMatchStatus(matchId, status) {
+        const card = document.getElementById('matchCard-' + matchId);
+        const actionBtns = document.getElementById('actionBtns-' + matchId);
+        if (card) {
+            card.style.opacity = '0.5';
+            card.style.pointerEvents = 'none';
+        }
+        try {
+            const res = await fetch('../api/update_match_status.php', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ match_id: matchId, status: status })
+            });
+            const data = await res.json();
+            if (data.success) {
+                if (actionBtns) actionBtns.remove();
+                if (card) {
+                    card.style.transform = 'scale(0.95)';
+                    setTimeout(() => { loadMatchesAJAX(currentOpportunityId); }, 300);
+                }
+            } else {
+                alert('Failed to update status: ' + data.message);
+                if (card) {
+                    card.style.opacity = '1';
+                    card.style.pointerEvents = 'auto';
+                }
+            }
+        } catch (e) {
+            alert('Network error. Please try again.');
+            if (card) {
+                card.style.opacity = '1';
+                card.style.pointerEvents = 'auto';
+            }
+        }
     }
 
     async function analyzeMatchAI(matchId) {

@@ -176,6 +176,10 @@ $scoringPct = $syncStats['total_possible'] > 0
                         <span class="ml-auto w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
                     <?php endif; ?>
                 </button>
+                <button onclick="switchTab('appearance')" id="tab-appearance" class="w-full text-left px-4 py-3 <?php echo $activeTab === 'appearance' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'; ?> rounded-lg font-semibold flex items-center gap-3 transition-colors">
+                    <span class="material-symbols-outlined">palette</span>
+                    Appearance
+                </button>
                 <button onclick="switchTab('about')" id="tab-about" class="w-full text-left px-4 py-3 <?php echo $activeTab === 'about' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'; ?> rounded-lg font-semibold flex items-center gap-3 transition-colors">
                     <span class="material-symbols-outlined">info</span>
                     About System
@@ -654,6 +658,25 @@ $scoringPct = $syncStats['total_possible'] > 0
             </div>
         </div>
 
+        <!-- Appearance Settings -->
+        <div id="section-appearance" class="<?php echo $activeTab !== 'appearance' ? 'hidden' : ''; ?>">
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-8">
+                <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-6">Appearance Settings</h3>
+                <div class="space-y-6">
+                    <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <div>
+                            <h4 class="font-bold text-slate-900 dark:text-white mb-1">Dark Mode</h4>
+                            <p class="text-sm text-slate-600 dark:text-slate-400">Toggle dark mode interface theme.</p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="theme-toggle-checkbox" class="sr-only peer" <?php echo (isset($_SESSION['theme']) && $_SESSION['theme'] === 'dark') ? 'checked' : ''; ?> />
+                            <div class="w-14 h-8 bg-slate-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-7 after:w-7 after:transition-all dark:border-slate-600 peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- About System -->
         <div id="section-about" class="<?php echo $activeTab !== 'about' ? 'hidden' : ''; ?>">
             <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-8">
@@ -701,6 +724,23 @@ $scoringPct = $syncStats['total_possible'] > 0
         tabBtn.classList.remove('text-slate-700', 'dark:text-slate-300', 'hover:bg-slate-50', 'dark:hover:bg-slate-700/50');
         tabBtn.classList.add('bg-blue-50', 'dark:bg-blue-900/20', 'text-blue-900', 'dark:text-blue-400');
     }
+
+    document.getElementById('theme-toggle-checkbox')?.addEventListener('change', function(e) {
+        const theme = e.target.checked ? 'dark' : 'light';
+        if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+        fetch('../api/update_theme.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ theme: theme })
+        })
+        .then(r => r.json())
+        .then(d => { if (!d.success) console.error(d.message || 'Error updating theme'); })
+        .catch(console.error);
+    });
 </script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

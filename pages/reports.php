@@ -10,8 +10,11 @@ requireRole('lydo');
 
 require_once __DIR__ . '/../includes/header.php';
 
+$startDate = $_GET['start_date'] ?? '';
+$endDate = $_GET['end_date'] ?? '';
+
 $report = new Report($database);
-$stats = $report->generateMatchingStats();
+$stats = $report->generateMatchingStats(['start_date' => $startDate, 'end_date' => $endDate]);
 $message = '';
 $messageType = '';
 
@@ -93,6 +96,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 <?php endif; ?>
 
+<!-- Date Filter Card -->
+<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-8">
+    <form method="GET" class="flex flex-wrap items-end gap-4">
+        <div>
+            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Start Date</label>
+            <input type="date" name="start_date" id="filter-start-date" value="<?php echo htmlspecialchars($startDate); ?>" class="px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900" />
+        </div>
+        <div>
+            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">End Date</label>
+            <input type="date" name="end_date" id="filter-end-date" value="<?php echo htmlspecialchars($endDate); ?>" class="px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900" />
+        </div>
+        <div class="flex gap-2">
+            <button type="submit" class="px-6 py-2 bg-blue-900 text-white rounded-lg text-sm font-semibold hover:bg-blue-800 transition-colors">
+                Apply Filter
+            </button>
+            <?php if (!empty($startDate) || !empty($endDate)): ?>
+                <a href="reports.php" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
+                    Clear
+                </a>
+            <?php endif; ?>
+        </div>
+    </form>
+</div>
+
 <!-- Statistics Cards -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
     <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
@@ -120,8 +147,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 </div>
 
+<!-- Charts Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
+    <!-- Chart 1: Profiles by Type -->
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
+        <div>
+            <h3 class="font-bold text-slate-900 dark:text-white mb-2">Youth Profiles by Type</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mb-6">Distribution of youth profile registrations</p>
+        </div>
+        <div class="relative h-[250px] w-full flex items-center justify-center">
+            <canvas id="chart-profile-types"></canvas>
+        </div>
+    </div>
+
+    <!-- Chart 2: Employment Status -->
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
+        <div>
+            <h3 class="font-bold text-slate-900 dark:text-white mb-2">Employment Status</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mb-6">Current employment status breakdown</p>
+        </div>
+        <div class="relative h-[250px] w-full flex items-center justify-center">
+            <canvas id="chart-employment-status"></canvas>
+        </div>
+    </div>
+
+    <!-- Chart 3: Monthly Registrations -->
+    <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 flex flex-col justify-between">
+        <div>
+            <h3 class="font-bold text-slate-900 dark:text-white mb-2">Registrations Over Time</h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mb-6">Monthly trend of profile registrations</p>
+        </div>
+        <div class="relative h-[250px] w-full flex items-center justify-center">
+            <canvas id="chart-monthly-registrations"></canvas>
+        </div>
+    </div>
+</div>
+
 <!-- Report Options -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
     <!-- OSY Report -->
     <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-8">
         <div class="flex items-center gap-4 mb-6">
@@ -206,5 +269,117 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </form>
     </div>
 </div>
+
+<script>
+(function() {
+    const startDate = document.getElementById('filter-start-date')?.value || '';
+    const endDate = document.getElementById('filter-end-date')?.value || '';
+    const params = new URLSearchParams();
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+
+    fetch(`../api/report_stats.php?${params.toString()}`)
+        .then(res => res.json())
+        .then(data => {
+            if (!data.success) {
+                console.error(data.message);
+                return;
+            }
+            renderCharts(data);
+        })
+        .catch(console.error);
+
+    let charts = {};
+
+    function renderCharts(data) {
+        // Destroy existing if any
+        Object.keys(charts).forEach(key => charts[key].destroy());
+
+        // 1. Profile Types Chart
+        const typeLabels = data.profile_types.map(item => item.type);
+        const typeCounts = data.profile_types.map(item => item.count);
+        const ctxTypes = document.getElementById('chart-profile-types')?.getContext('2d');
+        if (ctxTypes) {
+            charts.profileTypes = new Chart(ctxTypes, {
+                type: 'bar',
+                data: {
+                    labels: typeLabels,
+                    datasets: [{
+                        label: 'Profiles',
+                        data: typeCounts,
+                        backgroundColor: '#1d4ed8',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0 }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 2. Employment Status Chart
+        const statusLabels = data.employment_status.map(item => item.status);
+        const statusCounts = data.employment_status.map(item => item.count);
+        const ctxStatus = document.getElementById('chart-employment-status')?.getContext('2d');
+        if (ctxStatus) {
+            charts.employmentStatus = new Chart(ctxStatus, {
+                type: 'doughnut',
+                data: {
+                    labels: statusLabels,
+                    datasets: [{
+                        data: statusCounts,
+                        backgroundColor: ['#10b981', '#f59e0b', '#3b82f6', '#ef4444', '#8b5cf6']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+
+        // 3. Monthly Registrations Chart
+        const monthlyLabels = data.monthly_registrations.map(item => item.month);
+        const monthlyCounts = data.monthly_registrations.map(item => item.count);
+        const ctxMonthly = document.getElementById('chart-monthly-registrations')?.getContext('2d');
+        if (ctxMonthly) {
+            charts.monthlyRegs = new Chart(ctxMonthly, {
+                type: 'line',
+                data: {
+                    labels: monthlyLabels,
+                    datasets: [{
+                        label: 'Registrations',
+                        data: monthlyCounts,
+                        borderColor: '#f97316',
+                        backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0 }
+                        }
+                    }
+                }
+            });
+        }
+    }
+})();
+</script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

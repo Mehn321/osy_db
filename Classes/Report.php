@@ -72,35 +72,51 @@ class Report
     /**
      * Generate matching statistics report
      */
-    public function generateMatchingStats()
+    public function generateMatchingStats($filters = [])
     {
+        $where = " WHERE 1=1";
+        if (!empty($filters['start_date'])) {
+            $where .= " AND created_at >= '{$this->db->escape($filters['start_date'])} 00:00:00'";
+        }
+        if (!empty($filters['end_date'])) {
+            $where .= " AND created_at <= '{$this->db->escape($filters['end_date'])} 23:59:59'";
+        }
+
         return [
             'total_matches_made' => $this->getQueryResult(
-                "SELECT COUNT(*) as count FROM osy_matches WHERE status = 'Accepted'"
+                "SELECT COUNT(*) as count FROM osy_matches " . $where . " AND status = 'Accepted'"
             ),
             'pending_matches' => $this->getQueryResult(
-                "SELECT COUNT(*) as count FROM osy_matches WHERE status = 'Pending'"
+                "SELECT COUNT(*) as count FROM osy_matches " . $where . " AND status = 'Pending'"
             ),
             'average_match_score' => $this->getQueryResult(
-                "SELECT AVG(match_score) as avg FROM osy_matches"
+                "SELECT AVG(match_score) as avg FROM osy_matches " . $where
             ),
             'highest_match_score' => $this->getQueryResult(
-                "SELECT MAX(match_score) as max FROM osy_matches"
+                "SELECT MAX(match_score) as max FROM osy_matches " . $where
             ),
-            'employment_success_rate' => $this->calculateSuccessRate()
+            'employment_success_rate' => $this->calculateSuccessRate($filters)
         ];
     }
 
     /**
      * Calculate employment success rate
      */
-    private function calculateSuccessRate()
+    private function calculateSuccessRate($filters = [])
     {
+        $where = " WHERE 1=1";
+        if (!empty($filters['start_date'])) {
+            $where .= " AND created_at >= '{$this->db->escape($filters['start_date'])} 00:00:00'";
+        }
+        if (!empty($filters['end_date'])) {
+            $where .= " AND created_at <= '{$this->db->escape($filters['end_date'])} 23:59:59'";
+        }
+
         $employed = $this->db->fetchOne(
-            "SELECT COUNT(*) as count FROM osy_profiles WHERE status = 'Employed'"
+            "SELECT COUNT(*) as count FROM osy_profiles" . $where . " AND status = 'Employed'"
         );
         $total = $this->db->fetchOne(
-            "SELECT COUNT(*) as count FROM osy_profiles"
+            "SELECT COUNT(*) as count FROM osy_profiles" . $where
         );
 
         $total_count = $total['count'] > 0 ? $total['count'] : 1;

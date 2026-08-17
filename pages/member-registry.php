@@ -5,6 +5,19 @@ require_once __DIR__ . '/../init.php';
 requireLogin();
 requireRole('lydo');
 
+// Handle Delete Member request
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_member']) && isset($_POST['user_id'])) {
+    // Validate CSRF nonce
+    if (!validateFormNonce($_POST['form_nonce'] ?? '')) {
+        die('Invalid CSRF token');
+    }
+    $userId = (int)$_POST['user_id'];
+    // Prepare and execute delete statement
+    $database->query('DELETE FROM users WHERE id = ?', [$userId], 'i');
+    header('Location: member-registry.php');
+    exit;
+}
+
 require_once __DIR__ . '/../includes/header.php';
 
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
@@ -110,8 +123,13 @@ $totalPages = ceil($totalMembers / $limit);
                             </td>
                             <td class="px-6 py-4 text-right">
                                 <div class="flex items-center justify-end gap-2">
-                                    <button class="p-2 text-slate-400 hover:text-blue-900"><span class="material-symbols-outlined text-xl">edit</span></button>
-                                    <button class="p-2 text-slate-400 hover:text-rose-600"><span class="material-symbols-outlined text-xl">block</span></button>
+                                   <a href="edit-member.php?user_id=<?php echo $member['id']; ?>" class="p-2 text-slate-400 hover:text-blue-900"><span class="material-symbols-outlined text-xl">edit</span></a>
+                                <form method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this member?');">
+                                    <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
+                                    <input type="hidden" name="delete_member" value="1">
+                                    <input type="hidden" name="user_id" value="<?php echo $member['id']; ?>">
+                                    <button type="submit" class="p-2 text-slate-400 hover:text-rose-600"><span class="material-symbols-outlined text-xl">block</span></button>
+                                </form>
                                 </div>
                             </td>
                         </tr>
