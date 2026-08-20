@@ -54,7 +54,7 @@ foreach ($jobs as $j) if ($j['status'] === 'Open') $activeJobs++;
 </div>
 
 <div class="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-    <div class="overflow-x-auto">
+    <div class="overflow-x-auto thin-scrollbar">
         <table class="w-full text-left">
             <thead>
                 <tr class="bg-slate-50 dark:bg-slate-700/50">

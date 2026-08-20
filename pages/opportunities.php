@@ -573,30 +573,30 @@ if (in_array($_SESSION['role'], ['employer', 'training_provider'])) {
     }
 
     function applyToOpportunity(id) {
-        if (!confirm('Are you sure you want to apply for this opportunity?')) {
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append('opportunity_id', id);
-        formData.append('action', 'apply');
-
-        fetch('../api/apply_to_opportunity.php', {
-                method: 'POST',
-                body: formData,
-                credentials: 'same-origin'
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showToast(data.message || 'Application submitted successfully.', 'success');
-                } else {
-                    showToast(data.message || 'Unable to submit application.', 'error');
-                }
-            })
-            .catch(() => {
-                showToast('Unable to submit application. Please try again later.', 'error');
-            });
+        customConfirm('Are you sure you want to apply for this opportunity?', (confirmed) => {
+            if (!confirmed) return;
+            
+            const formData = new FormData();
+            formData.append('opportunity_id', id);
+            formData.append('action', 'apply');
+            
+            fetch('../api/apply_to_opportunity.php', {
+                    method: 'POST',
+                    body: formData,
+                    credentials: 'same-origin'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast(data.message || 'Application submitted successfully.', 'success');
+                    } else {
+                        showToast(data.message || 'Unable to submit application.', 'error');
+                    }
+                })
+                .catch(() => {
+                    showToast('Unable to submit application. Please try again later.', 'error');
+                });
+        });
     }
 
     function showToast(message, type = 'success') {

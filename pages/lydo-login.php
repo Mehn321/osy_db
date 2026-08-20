@@ -12,12 +12,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $result = $user->login($username, $password);
 
     if ($result['success']) {
-        if (!empty($_SESSION['temp_password_required'])) {
-            header('Location: password-reset.php');
+        // Validate role for LYDO login
+        if (isset($result['user']['role']) && $result['user']['role'] === 'lydo') {
+            if (!empty($_SESSION['temp_password_required'])) {
+                header('Location: password-reset.php');
+            } else {
+                header('Location: dashboard.php');
+            }
+            exit;
         } else {
-            header('Location: dashboard.php');
+            $login_error = 'Invalid role for this login page.';
         }
-        exit;
     } else {
         $login_error = $result['message'];
     }
@@ -98,7 +103,7 @@ if ($user->isLoggedIn()) {
             <div class="p-8 md:p-16 flex flex-col justify-center">
                 <div class="mb-10">
                     <h2 class="text-3xl font-bold text-slate-900 mb-2">Welcome Back</h2>
-                    <p class="text-slate-600 font-medium">Enter your credentials to access the portal.</p>
+                    <p class="text-slate-600 font-medium">Enter your LYDO credentials to access the portal.</p>
                 </div>
 
                 <?php if ($login_error): ?>

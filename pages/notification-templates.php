@@ -78,6 +78,9 @@ $templates = $notification->getAllTemplates();
         <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight">Notification Templates</h2>
         <p class="text-slate-600 mt-1">Manage standardized messages for youth communication.</p>
     </div>
+    <a href="notifications.php" class="inline-flex items-center justify-center gap-2 rounded-xl border border-blue-200 dark:border-blue-800 bg-white dark:bg-slate-800 px-5 py-3 text-sm font-bold text-blue-900 dark:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+        <span class="material-symbols-outlined text-base">campaign</span> Notifications
+    </a>
     <button onclick="openCreateModal()" class="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-blue-900 to-blue-800 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:shadow-xl transition-all active:scale-[0.98]">
         <span class="material-symbols-outlined">add</span>
         Create Template
@@ -160,40 +163,6 @@ $templates = $notification->getAllTemplates();
         </div>
     <?php endif; ?>
 </div>
-
-<!-- Template Variables Guide -->
-<section class="bg-slate-50 dark:bg-slate-800 p-8 rounded-3xl border border-slate-200 dark:border-slate-700 mt-12">
-    <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-        <span class="material-symbols-outlined">info</span>
-        Template Variables Guide
-    </h2>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="space-y-1">
-            <p class="font-bold text-sm text-slate-900 dark:text-white">{{name}}</p>
-            <p class="text-xs text-slate-600 dark:text-slate-300">The full name of the OSY candidate.</p>
-        </div>
-        <div class="space-y-1">
-            <p class="font-bold text-sm text-slate-900 dark:text-white">{{opportunity}}</p>
-            <p class="text-xs text-slate-600 dark:text-slate-300">Title of the matched training or job.</p>
-        </div>
-        <div class="space-y-1">
-            <p class="font-bold text-sm text-slate-900 dark:text-white">{{company}}</p>
-            <p class="text-xs text-slate-600 dark:text-slate-300">Company name for job opportunities.</p>
-        </div>
-        <div class="space-y-1">
-            <p class="font-bold text-sm text-slate-900 dark:text-white">{{course}}</p>
-            <p class="text-xs text-slate-600 dark:text-slate-300">Name of the training course.</p>
-        </div>
-        <div class="space-y-1">
-            <p class="font-bold text-sm text-slate-900 dark:text-white">{{percentage}}</p>
-            <p class="text-xs text-slate-600 dark:text-slate-300">Percentage improvement in match score.</p>
-        </div>
-        <div class="space-y-1">
-            <p class="font-bold text-sm text-slate-900 dark:text-white">{{barangay}}</p>
-            <p class="text-xs text-slate-600 dark:text-slate-300">The residential area of the youth.</p>
-        </div>
-    </div>
-</section>
 
 <!-- Create/Edit Template Modal -->
 <div id="templateModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">

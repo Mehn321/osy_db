@@ -20,35 +20,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['provider_action'])) {
         $message = 'Duplicate or invalid form submission detected.';
         $messageType = 'error';
     } else {
-    $providerId = intval($_POST['provider_id']);
-    $action = $_POST['provider_action'] === 'approve' ? 'Active' : 'Declined';
-    $remark = trim($_POST['remark'] ?? '');
+        $providerId = intval($_POST['provider_id']);
+        $action = $_POST['provider_action'] === 'approve' ? 'Active' : 'Declined';
+        $remark = trim($_POST['remark'] ?? '');
 
-    $result = $userModel->approveProvider($providerId, $action, $remark);
-    if ($result['success']) {
-        $message = 'Provider account has been ' . ($action === 'Active' ? 'approved' : 'declined') . '.';
-        $messageType = 'success';
+        $result = $userModel->approveProvider($providerId, $action, $remark);
+        if ($result['success']) {
+            $message = 'Provider account has been ' . ($action === 'Active' ? 'approved' : 'declined') . '.';
+            $messageType = 'success';
 
-        $auditLog->logAction(
-            $_SESSION['user_id'],
-            $_SESSION['role'],
-            $action === 'Active' ? 'Approved provider account' : 'Declined provider account',
-            'User',
-            $providerId,
-            json_encode(['status' => $action, 'remark' => $remark])
-        );
+            $auditLog->logAction(
+                $_SESSION['user_id'],
+                $_SESSION['role'],
+                $action === 'Active' ? 'Approved provider account' : 'Declined provider account',
+                'User',
+                $providerId,
+                json_encode(['status' => $action, 'remark' => $remark])
+            );
 
-        $notification->create([
-            'title' => 'Provider Account ' . ($action === 'Active' ? 'Approved' : 'Declined'),
-            'message' => 'Your provider registration has been ' . strtolower($action) . ($remark ? ': ' . $remark : ''),
-            'type' => 'System',
-            'recipient_type' => 'Specific',
-            'recipient_id' => $providerId
-        ]);
-    } else {
-        $message = $result['message'];
-        $messageType = 'error';
-    }
+            $notification->create([
+                'title' => 'Provider Account ' . ($action === 'Active' ? 'Approved' : 'Declined'),
+                'message' => 'Your provider registration has been ' . strtolower($action) . ($remark ? ': ' . $remark : ''),
+                'type' => 'System',
+                'recipient_type' => 'Specific',
+                'recipient_id' => $providerId
+            ]);
+        } else {
+            $message = $result['message'];
+            $messageType = 'error';
+        }
     }
 }
 
@@ -64,8 +64,8 @@ $pendingProviders = $userModel->getUsersByRole('training_provider', ['status' =>
         <span class="material-symbols-outlined text-[14px]">chevron_right</span>
         <span class="text-blue-900 font-bold">Provider Approvals</span>
     </nav>
-    <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Provider Account Approval</h1>
-    <p class="text-slate-600 mt-2 max-w-2xl">Review and approve employer and training provider accounts before they can post opportunities and training programs.</p>
+    <h1 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Provider Account Approval</h1>
+    <p class="text-slate-600 dark:text-slate-400 mt-2 max-w-2xl">Review and approve employer and training provider accounts before they can post opportunities and training programs.</p>
 </div>
 
 <?php if ($message): ?>
@@ -103,7 +103,7 @@ $pendingProviders = $userModel->getUsersByRole('training_provider', ['status' =>
                                 <tr class="border-t border-slate-200 dark:border-slate-700">
                                     <td class="px-4 py-4"><?php echo htmlspecialchars($provider['fullname']); ?></td>
                                     <td class="px-4 py-4"><?php echo htmlspecialchars($provider['email']); ?></td>
-                                    <td class="px-4 py-4"><?php echo htmlspecialchars($provider['barangay'] ?? 'N/A'); ?></td>
+                                    <td class="px-4 py-4">All Barangays</td>
                                     <td class="px-4 py-4"><?php echo htmlspecialchars($provider['created_at']); ?></td>
                                     <td class="px-4 py-4">
                                         <form method="POST" class="flex flex-wrap gap-2">

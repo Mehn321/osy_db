@@ -160,7 +160,7 @@ $unreadCount = $notification->getUnreadCount($_SESSION['user_id']);
                     if (badgePage) badgePage.innerHTML = '';
                 }
             } else {
-                alert(data.message || 'Failed to mark notification as read');
+                customAlert(data.message || 'Failed to mark notification as read', "Error", "error");
                 if (btn) {
                     btn.disabled = false;
                     btn.innerHTML = 'Mark as Read';
@@ -169,6 +169,7 @@ $unreadCount = $notification->getUnreadCount($_SESSION['user_id']);
         })
         .catch(err => {
             console.error(err);
+            customAlert('Network error occurred.', "Error", "error");
             if (btn) {
                 btn.disabled = false;
                 btn.innerHTML = 'Mark as Read';

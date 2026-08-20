@@ -9,6 +9,12 @@ if (!$user->isLoggedIn()) {
     exit;
 }
 
+$role = $_SESSION['role'] ?? '';
+if (!in_array($role, ['lydo', 'employer'], true)) {
+    echo json_encode(['success' => false, 'message' => 'Access denied']);
+    exit;
+}
+
 $opportunity_id = isset($_GET['opportunity_id']) ? intval($_GET['opportunity_id']) : 0;
 
 if (!$opportunity_id) {
@@ -19,13 +25,14 @@ if (!$opportunity_id) {
 $matching = new Matching($database);
 $opportunityObj = new Opportunity($database);
 
-// Ensure matches are generated for this opportunity
-$matching->generateMatches($opportunity_id);
+$opportunity = $opportunityObj->getById($opportunity_id);
+if (!$opportunity || ($role === 'employer' && (int)$opportunity['provider_id'] !== (int)$_SESSION['user_id'])) {
+    echo json_encode(['success' => false, 'message' => 'Opportunity not found or not owned by this employer']);
+    exit;
+}
 
 // Get matches and opportunity details
 $matches = $matching->getMatchesForOpportunity($opportunity_id, 0);
-$opportunity = $opportunityObj->getById($opportunity_id);
-
 echo json_encode([
     'success' => true,
     'data' => $matches,

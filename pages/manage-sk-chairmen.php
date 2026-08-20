@@ -44,22 +44,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_chairman'])) {
     }
 }
 
-// Handle DEACTIVATE chairman
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['deactivate_chairman'])) {
+// Handle EDIT chairman details
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['edit_chairman'])) {
     if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
         $message = 'Invalid or expired form submission.';
         $messageType = 'error';
     } else {
         try {
             $chairmanId = intval($_POST['chairman_id']);
-            $newStatus = $_POST['new_status'] === 'Active' ? 'Inactive' : 'Active';
-            $database->execute("UPDATE users SET status = ? WHERE id = ? AND role = 'sk_chairman'", [$newStatus, $chairmanId], "si");
-            $message = 'SK Chairman status updated to ' . $newStatus . '.';
+            $fullname = trim($_POST['fullname'] ?? '');
+            $username = trim($_POST['username'] ?? '');
+            $email = trim($_POST['email'] ?? '');
+            $barangay = trim($_POST['barangay'] ?? '');
+            if ($fullname === '' || $username === '' || $email === '' || $barangay === '') {
+                throw new Exception('All chairman details are required.');
+            }
+            $existing = $database->fetchOne(
+                "SELECT id FROM users WHERE role = 'sk_chairman' AND barangay = ? AND id != ? AND status != 'Deleted' LIMIT 1",
+                [$barangay, $chairmanId],
+                'si'
+            );
+            if ($existing) {
+                throw new Exception('Another SK Chairman is already assigned to this barangay.');
+            }
+            $database->execute(
+                "UPDATE users SET fullname = ?, username = ?, email = ?, barangay = ? WHERE id = ? AND role = 'sk_chairman'",
+                [$fullname, $username, $email, $barangay, $chairmanId],
+                'ssssi'
+            );
+            $message = 'SK Chairman details updated successfully.';
             $messageType = 'success';
             $auditLog->logAction(
                 $_SESSION['user_id'],
                 $_SESSION['role'],
-                'Updated SK Chairman status to ' . $newStatus,
+                'Updated SK Chairman details',
                 'User',
                 $chairmanId,
                 ''
@@ -162,6 +180,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_chairman'])) {
 }
 
 $chairmen = $userModel->getUsersByRole('sk_chairman');
+$editId = isset($_GET['edit_id']) ? intval($_GET['edit_id']) : 0;
+$editChairman = $editId > 0 ? $database->fetchOne("SELECT * FROM users WHERE id = ? AND role = 'sk_chairman'", [$editId], 'i') : null;
 ?>
 
 <?php require_once __DIR__ . '/../includes/header.php'; ?>
@@ -172,8 +192,15 @@ $chairmen = $userModel->getUsersByRole('sk_chairman');
         <span class="material-symbols-outlined text-[14px]">chevron_right</span>
         <span class="text-blue-900 font-bold">SK Chairmen</span>
     </nav>
-    <h1 class="text-3xl font-extrabold text-slate-900 tracking-tight">Manage SK Chairmen</h1>
-    <p class="text-slate-600 mt-2 max-w-2xl">Create and review SK Chairman accounts for barangay-level youth verification and outreach coordination.</p>
+    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Manage SK Chairmen</h1>
+            <p class="text-slate-600 dark:text-slate-400 mt-2 max-w-2xl">Create, update, and remove SK Chairman accounts for barangay-level youth verification.</p>
+        </div>
+        <div class="inline-flex items-center gap-2 rounded-full bg-blue-50 dark:bg-blue-900/20 px-4 py-2 text-sm font-bold text-blue-800 dark:text-blue-300">
+            <span class="material-symbols-outlined text-base">groups</span><?php echo count($chairmen); ?> chairmen
+        </div>
+    </div>
 </div>
 
 <?php if ($message): ?>
@@ -254,21 +281,13 @@ $chairmen = $userModel->getUsersByRole('sk_chairman');
                                         </span>
                                     </td>
                                     <td class="px-4 py-4"><?php echo htmlspecialchars($chairman['created_at']); ?></td>
-                                    <td class="px-4 py-4 text-right">
-                                        <form method="POST" style="display: inline-block;" onsubmit="return confirm('<?php echo $chairman['status'] === 'Active' ? 'Deactivate this SK Chairman?' : 'Reactivate this SK Chairman?'; ?>');">
-                                            <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
-                                            <input type="hidden" name="deactivate_chairman" value="1">
-                                            <input type="hidden" name="chairman_id" value="<?php echo intval($chairman['id']); ?>">
-                                            <input type="hidden" name="new_status" value="<?php echo htmlspecialchars($chairman['status']); ?>">
-                                            <button type="submit" class="text-xs px-2 py-1 rounded-lg <?php echo $chairman['status'] === 'Active' ? 'bg-yellow-100 hover:bg-yellow-200 text-yellow-800' : 'bg-green-100 hover:bg-green-200 text-green-800'; ?> font-semibold transition">
-                                                <?php echo $chairman['status'] === 'Active' ? '🔒 Deactivate' : '🔓 Reactivate'; ?>
-                                            </button>
-                                        </form>
-                                        <form method="POST" style="display: inline-block; margin-left: 4px;" onsubmit="return confirm('Permanently delete this SK Chairman account? This cannot be undone.');">
+                                    <td class="px-4 py-4 text-right whitespace-nowrap">
+                                        <button type="button" class="edit-chairman-btn inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-800 font-semibold transition" data-id="<?php echo (int)$chairman['id']; ?>" data-fullname="<?php echo htmlspecialchars($chairman['fullname'], ENT_QUOTES); ?>" data-username="<?php echo htmlspecialchars($chairman['username'], ENT_QUOTES); ?>" data-email="<?php echo htmlspecialchars($chairman['email'], ENT_QUOTES); ?>" data-barangay="<?php echo htmlspecialchars($chairman['barangay'] ?? '', ENT_QUOTES); ?>"><span class="material-symbols-outlined text-base">edit</span>Edit</button>
+                                        <form method="POST" class="inline-block ml-2" onsubmit="return confirm('Permanently delete this SK Chairman account? This cannot be undone.');">
                                             <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
                                             <input type="hidden" name="delete_chairman" value="1">
                                             <input type="hidden" name="chairman_id" value="<?php echo intval($chairman['id']); ?>">
-                                            <button type="submit" class="text-xs px-2 py-1 rounded-lg bg-red-100 hover:bg-red-200 text-red-800 font-semibold transition">🗑️ Delete</button>
+                                            <button type="submit" class="inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-800 font-semibold transition"><span class="material-symbols-outlined text-base">delete</span>Delete</button>
                                         </form>
                                     </td>
                                 </tr>
@@ -280,5 +299,51 @@ $chairmen = $userModel->getUsersByRole('sk_chairman');
         </div>
     </div>
 </div>
+
+<div id="editChairmanModal" class="fixed inset-0 z-[80] hidden items-center justify-center bg-slate-950/60 p-4" role="dialog" aria-modal="true" aria-labelledby="editChairmanTitle">
+    <div class="w-full max-w-2xl rounded-3xl bg-white dark:bg-slate-800 shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+        <div class="flex items-start justify-between gap-4 border-b border-slate-200 dark:border-slate-700 px-6 py-5">
+            <div>
+                <h2 id="editChairmanTitle" class="text-xl font-bold text-slate-900 dark:text-white">Edit SK Chairman</h2>
+                <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Update account details and barangay assignment.</p>
+            </div>
+            <button type="button" id="closeEditChairman" class="text-slate-500 hover:text-slate-900 dark:hover:text-white" title="Close edit dialog"><span class="material-symbols-outlined">close</span></button>
+        </div>
+        <form method="POST" class="grid grid-cols-1 md:grid-cols-2 gap-4 p-6">
+            <input type="hidden" name="edit_chairman" value="1">
+            <input type="hidden" name="chairman_id" id="editChairmanId">
+            <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
+            <div><label class="text-sm font-semibold text-slate-700 dark:text-slate-300" for="editFullname">Full Name</label><input id="editFullname" name="fullname" required class="w-full mt-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 py-3 px-4 text-sm text-slate-900 dark:text-white"></div>
+            <div><label class="text-sm font-semibold text-slate-700 dark:text-slate-300" for="editUsername">Username</label><input id="editUsername" name="username" required class="w-full mt-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 py-3 px-4 text-sm text-slate-900 dark:text-white"></div>
+            <div><label class="text-sm font-semibold text-slate-700 dark:text-slate-300" for="editEmail">Email Address</label><input id="editEmail" type="email" name="email" required class="w-full mt-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 py-3 px-4 text-sm text-slate-900 dark:text-white"></div>
+            <div><label class="text-sm font-semibold text-slate-700 dark:text-slate-300" for="editBarangay">Assigned Barangay</label><select id="editBarangay" name="barangay" required class="w-full mt-2 rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 py-3 px-4 text-sm text-slate-900 dark:text-white"><?php foreach ($barangays as $barangay): ?><option value="<?php echo htmlspecialchars($barangay); ?>"><?php echo htmlspecialchars($barangay); ?></option><?php endforeach; ?></select></div>
+            <div class="md:col-span-2 flex justify-end gap-3 pt-2"><button type="button" id="cancelEditChairman" class="rounded-xl bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-3 px-6 text-sm font-semibold">Cancel</button><button type="submit" class="inline-flex items-center gap-2 rounded-xl bg-blue-900 text-white py-3 px-6 text-sm font-semibold hover:bg-blue-800"><span class="material-symbols-outlined text-base">save</span>Save Details</button></div>
+        </form>
+    </div>
+</div>
+
+<script>
+    const editChairmanModal = document.getElementById('editChairmanModal');
+    const closeEditChairman = () => editChairmanModal?.classList.replace('flex', 'hidden');
+    document.querySelectorAll('.edit-chairman-btn').forEach(button => {
+        button.addEventListener('click', () => {
+            document.getElementById('editChairmanId').value = button.dataset.id;
+            document.getElementById('editFullname').value = button.dataset.fullname;
+            document.getElementById('editUsername').value = button.dataset.username;
+            document.getElementById('editEmail').value = button.dataset.email;
+            document.getElementById('editBarangay').value = button.dataset.barangay;
+            editChairmanModal.classList.replace('hidden', 'flex');
+            document.getElementById('editFullname').focus();
+        });
+    });
+    document.getElementById('closeEditChairman')?.addEventListener('click', closeEditChairman);
+    document.getElementById('cancelEditChairman')?.addEventListener('click', closeEditChairman);
+    editChairmanModal?.addEventListener('click', event => {
+        if (event.target === editChairmanModal) closeEditChairman();
+    });
+    document.addEventListener('keydown', event => {
+        if (event.key === 'Escape') closeEditChairman();
+    });
+</script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

@@ -12,6 +12,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $result = $user->login($username, $password);
 
     if ($result['success']) {
+    // Validate role for Youth login
+    if (isset($result['user']['role']) && $result['user']['role'] === 'youth') {
         if (!empty($_SESSION['temp_password_required'])) {
             header('Location: password-reset.php');
         } else {
@@ -19,8 +21,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         exit;
     } else {
-        $login_error = $result['message'];
+        $login_error = 'Invalid role for this login page.';
     }
+} else {
+    $login_error = $result['message'];
+}
 }
 
 // Redirect if already logged in
@@ -98,7 +103,7 @@ if ($user->isLoggedIn()) {
             <div class="p-8 md:p-16 flex flex-col justify-center">
                 <div class="mb-10">
                     <h2 class="text-3xl font-bold text-slate-900 mb-2">Welcome Back</h2>
-                    <p class="text-slate-600 font-medium">Enter your credentials to access the portal.</p>
+                    <p class="text-slate-600 font-medium">Enter your youth credentials to access the portal.</p>
                 </div>
 
                 <?php if ($login_error): ?>
@@ -152,7 +157,7 @@ if ($user->isLoggedIn()) {
             </button>
             </form>
 
-            <!-- Youth & Provider Registration Links -->
+            <!-- Youth Registration Link -->
             <div class="mt-8 space-y-3 text-center border-t border-slate-200 pt-8">
                 <div>
                     <p class="text-sm text-slate-600 mb-2">Are you a youth looking for opportunities?</p>
@@ -160,14 +165,6 @@ if ($user->isLoggedIn()) {
                         class="inline-flex items-center gap-2 text-blue-900 font-semibold hover:underline">
                         <span class="material-symbols-outlined text-base">person_add</span>
                         Youth Sign Up
-                    </a>
-                </div>
-                <div>
-                    <p class="text-sm text-slate-600 mb-2">Are you an employer or training provider?</p>
-                    <a href="provider-registration.php"
-                        class="inline-flex items-center gap-2 text-blue-900 font-semibold hover:underline">
-                        <span class="material-symbols-outlined text-base">business</span>
-                        Register as Provider
                     </a>
                 </div>
             </div>

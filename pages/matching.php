@@ -793,14 +793,14 @@ function renderMatchCard($match, $status) {
                     setTimeout(() => { loadMatchesAJAX(currentOpportunityId); }, 300);
                 }
             } else {
-                alert('Failed to update status: ' + data.message);
+                customAlert('Failed to update status: ' + data.message, "Error", "error");
                 if (card) {
                     card.style.opacity = '1';
                     card.style.pointerEvents = 'auto';
                 }
             }
         } catch (e) {
-            alert('Network error. Please try again.');
+            customAlert('Network error. Please try again.', "Error", "error");
             if (card) {
                 card.style.opacity = '1';
                 card.style.pointerEvents = 'auto';
@@ -812,13 +812,11 @@ function renderMatchCard($match, $status) {
         const btn = document.getElementById('aiBtn-' + matchId);
         const insightBox = document.getElementById('aiInsight-' + matchId);
         
-        // If already visible, just toggle
         if (!insightBox.classList.contains('hidden') && insightBox.textContent.trim() !== '') {
             insightBox.classList.add('hidden');
             return;
         }
 
-        // Loading state
         const originalHtml = btn.innerHTML;
         btn.disabled = true;
         btn.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">sync</span> Analyzing...';
@@ -836,11 +834,11 @@ function renderMatchCard($match, $status) {
                 insightBox.classList.remove('hidden');
                 btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">auto_awesome</span> View AI Rationale';
             } else {
-                alert('AI Analysis failed: ' + data.message);
+                customAlert('AI Analysis failed: ' + data.message, "Error", "error");
                 btn.innerHTML = originalHtml;
             }
         } catch (e) {
-            alert('Network error. Could not reach AI service.');
+            customAlert('Network error. Could not reach AI service.', "Error", "error");
             btn.innerHTML = originalHtml;
         } finally {
             btn.disabled = false;
@@ -848,22 +846,24 @@ function renderMatchCard($match, $status) {
     }
 
     async function triggerGlobalSync() {
-        if (!confirm("This will start a background process to calculate AI scores for all profiles against all jobs. This may take several minutes. Proceed?")) return;
-        
-        const alertBox = document.getElementById('syncAlert');
-        try {
-            const res = await fetch('../api/trigger_global_sync.php');
-            const data = await res.json();
-            if (data.success) {
-                alertBox.innerHTML = `<span class="material-symbols-outlined text-blue-600 animate-spin">sync</span> 
-                                  <span class="text-blue-800">Background Sync Started. Scores will populate automatically over the next few minutes.</span>`;
-                alertBox.className = "flex items-center gap-3 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg text-sm";
-            } else {
-                alert(data.message);
+        customConfirm("This will start a background process to calculate AI scores for all profiles against all jobs. This may take several minutes. Proceed?", async (confirmed) => {
+            if (!confirmed) return;
+            
+            const alertBox = document.getElementById('syncAlert');
+            try {
+                const res = await fetch('../api/trigger_global_sync.php');
+                const data = await res.json();
+                if (data.success) {
+                    alertBox.innerHTML = `<span class="material-symbols-outlined text-blue-600 animate-spin">sync</span> 
+                                      <span class="text-blue-800">Background Sync Started. Scores will populate automatically over the next few minutes.</span>`;
+                    alertBox.className = "flex items-center gap-3 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg text-sm";
+                } else {
+                    customAlert(data.message, "Error", "error");
+                }
+            } catch (e) {
+                customAlert("Failed to trigger sync.", "Error", "error");
             }
-        } catch (e) {
-            alert("Failed to trigger sync.");
-        }
+        });
     }
 </script>
 

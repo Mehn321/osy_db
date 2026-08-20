@@ -22,6 +22,16 @@ class Notification
     public function create($data)
     {
         try {
+            // Enforce LYDO-only for AI credit alerts
+            if (isset($data['type']) && strtolower($data['type']) === 'ai_credit') {
+                // Find LYDO user id
+                $lydoUser = $this->db->fetchOne("SELECT id FROM users WHERE role = 'lydo' LIMIT 1");
+                $lydoId = $lydoUser['id'] ?? null;
+                if ($lydoId) {
+                    $data['recipient_type'] = 'Specific';
+                    $data['recipient_id'] = $lydoId;
+                }
+            }
             $query = "INSERT INTO {$this->table} 
                      (title, message, type, recipient_type, recipient_id, status, created_by, created_at) 
                      VALUES (?, ?, ?, ?, ?, 'Sent', ?, NOW())";
@@ -32,7 +42,7 @@ class Notification
             $this->db->execute($query, [
                 $data['title'],
                 $data['message'],
-                $data['type'], // 'Opportunity', 'Match', 'System', 'Reminder'
+                $data['type'], // 'Opportunity', 'Match', 'System', 'Reminder', 'AI_Credit'
                 $data['recipient_type'] ?? 'All', // 'All', 'OSY', 'Specific'
                 $recipientId,
                 $createdBy
@@ -154,6 +164,10 @@ class Notification
      */
     public function broadcastToRole($role, $title, $message, $type = 'System')
     {
+        // Enforce LYDO as the sole role recipient
+        if (strtolower($role) !== 'lydo') {
+            return ['success' => false, 'message' => 'Broadcast restricted to LYDO role only'];
+        }
         try {
             $query = "INSERT INTO {$this->table} (title, message, type, recipient_type, recipient_id, status, created_by, created_at)
                      SELECT ?, ?, ?, 'Specific', u.id, 'Sent', ?, NOW()
@@ -164,7 +178,7 @@ class Notification
 
             return [
                 'success' => true,
-                'message' => 'Notification broadcast to role successfully'
+                'message' => 'Notification broadcast to LYDO role successfully'
             ];
         } catch (Exception $e) {
             return [
@@ -409,12 +423,14 @@ class Notification
      */
     public function renderTemplate($template, $variables = [])
     {
-        $body = $template['body'];
-        $subject = $template['subject'] ?? '';
+        $body = (string)($template['body'] ?? '');
+        $subject = (string)($template['subject'] ?? '');
 
         foreach ($variables as $key => $value) {
-            $body = str_replace("{{{$key}}}", $value, $body);
-            $subject = str_replace("{{{$key}}}", $value, $subject);
+            $value = (string)($value ?? '');
+            $placeholder = '{{' . trim($key, '{} ') . '}}';
+            $body = str_replace($placeholder, $value, $body);
+            $subject = str_replace($placeholder, $value, $subject);
         }
 
         return [

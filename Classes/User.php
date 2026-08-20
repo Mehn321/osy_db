@@ -148,6 +148,10 @@ class User
                 throw new Exception("Your registration requires action. Please review your profile or contact your SK Chairman.");
             }
 
+            if ($status !== 'Active') {
+                throw new Exception("Your account is not active. Please contact the system administrator.");
+            }
+
             unset($_SESSION['login_attempts'][$attemptKey]);
             unset($_SESSION['login_lockout_until'][$attemptKey]);
 

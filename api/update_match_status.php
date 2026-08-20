@@ -8,6 +8,11 @@ if (!$user->isLoggedIn()) {
     exit;
 }
 
+if (($_SESSION['role'] ?? '') !== 'employer') {
+    echo json_encode(['success' => false, 'message' => 'Only employers can make candidate decisions.']);
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     echo json_encode(['success' => false, 'message' => 'Invalid request method']);
     exit;
@@ -25,6 +30,16 @@ if (!$match_id || !in_array($status, ['Accepted', 'Rejected', 'Pending'])) {
 
 require_once __DIR__ . '/../Classes/Matching.php';
 $matching = new Matching($database);
+
+$ownedMatch = $database->fetchOne(
+    "SELECT m.id FROM osy_matches m JOIN opportunities o ON o.id = m.opportunity_id WHERE m.id = ? AND o.provider_id = ? LIMIT 1",
+    [intval($match_id), (int)$_SESSION['user_id']],
+    'ii'
+);
+if (!$ownedMatch) {
+    echo json_encode(['success' => false, 'message' => 'You can only update matches for your own opportunities.']);
+    exit;
+}
 
 $result = $matching->updateMatchStatus(intval($match_id), $status);
 

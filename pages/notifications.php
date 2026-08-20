@@ -11,6 +11,8 @@ $osyClass = new OSYProfile($database);
 $allProfiles = $osyClass->getAll();
 $templates = $notification->getAllTemplates();
 
+$savedGroups = $database->fetchAll("SELECT * FROM notification_groups WHERE created_by = ? ORDER BY name ASC", [$user->getCurrentUserId()], 'i');
+
 $message = '';
 $messageType = '';
 
@@ -73,6 +75,9 @@ $notifications = $notification->getAll(20);
         <span class="material-symbols-outlined">add_circle</span>
         Send New Notification
     </button>
+    <a href="notification-templates.php" class="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl border border-blue-200 dark:border-blue-800 bg-white dark:bg-slate-800 text-blue-900 dark:text-blue-300 text-sm font-bold hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+        <span class="material-symbols-outlined text-base">description</span> Message Templates
+    </a>
 </div>
 
 <?php if ($message): ?>
@@ -164,6 +169,7 @@ $notifications = $notification->getAll(20);
             </div>
             <form method="POST" class="p-6 space-y-4">
                 <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
+                <input type="hidden" id="selected_template_id" name="template_id" value="">
                 <div>
                     <label class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block">Notification Title</label>
                     <input type="text" name="title" required placeholder="Alert title..." class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white">
@@ -175,58 +181,19 @@ $notifications = $notification->getAll(20);
                         <select id="templateSelect" class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white" onchange="applyTemplate()">
                             <option value="">-- Custom Message --</option>
                             <?php foreach ($templates as $t): ?>
-                                <option value="<?php echo htmlspecialchars($t['body']); ?>"><?php echo htmlspecialchars($t['name']); ?></option>
+                                <option value="<?php echo htmlspecialchars($t['body']); ?>" data-template-id="<?php echo (int)$t['id']; ?>"><?php echo htmlspecialchars($t['name']); ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
                     <div>
                         <div class="flex justify-between mb-2">
                             <label class="text-sm font-bold text-slate-700 dark:text-slate-300 block">Message Body</label>
-                            <span class="text-xs text-slate-500" title="Auto-replaced per recipient: {{name}}, {{barangay}} | Set below: {{opportunity}}, {{company}}, {{course}}, {{percentage}}">
-                                Variables: <code class="bg-slate-100 dark:bg-slate-700 px-1 rounded">{{name}}</code>
-                                <code class="bg-slate-100 dark:bg-slate-700 px-1 rounded">{{barangay}}</code>
-                                <code class="bg-slate-100 dark:bg-slate-700 px-1 rounded">{{opportunity}}</code> &amp; more
-                            </span>
                         </div>
-                        <textarea id="customMessageArea" name="message" rows="4" required class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white font-mono" onkeyup="updateLivePreview()">Hello {{name}}, this is a new update.</textarea>
-                    </div>
-
-                    <!-- Template Variable Fill-ins -->
-                    <div class="rounded-xl border border-blue-200 dark:border-blue-800 overflow-hidden">
-                        <button type="button" onclick="toggleVarPanel()" class="w-full flex items-center justify-between px-4 py-3 bg-blue-50 dark:bg-blue-900/20 text-left">
-                            <span class="text-xs font-bold text-blue-800 dark:text-blue-400 uppercase tracking-widest">📝 Fill Template Variables</span>
-                            <span class="material-symbols-outlined text-blue-500 text-[18px]" id="varPanelIcon">expand_more</span>
-                        </button>
-                        <div id="varPanel" class="hidden px-4 pb-4 pt-2 bg-blue-50/50 dark:bg-blue-900/10">
-                            <p class="text-[11px] text-slate-500 mb-3">These values replace placeholders in your message when sending. <strong>{{name}}</strong> and <strong>{{barangay}}</strong> are auto-filled from each recipient's profile.</p>
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1 block">{{opportunity}}</label>
-                                    <input type="text" id="tpl_opportunity" placeholder="e.g. Call Center Agent" class="w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg py-2 px-3 text-sm text-slate-900 dark:text-white" oninput="updateLivePreview()">
-                                </div>
-                                <div>
-                                    <label class="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1 block">{{company}}</label>
-                                    <input type="text" id="tpl_company" placeholder="e.g. ABC Corporation" class="w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg py-2 px-3 text-sm text-slate-900 dark:text-white" oninput="updateLivePreview()">
-                                </div>
-                                <div>
-                                    <label class="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1 block">{{course}}</label>
-                                    <input type="text" id="tpl_course" placeholder="e.g. NCII Cookery" class="w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg py-2 px-3 text-sm text-slate-900 dark:text-white" oninput="updateLivePreview()">
-                                </div>
-                                <div>
-                                    <label class="text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1 block">{{percentage}}</label>
-                                    <input type="text" id="tpl_percentage" placeholder="e.g. 85" class="w-full bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg py-2 px-3 text-sm text-slate-900 dark:text-white" oninput="updateLivePreview()">
-                                </div>
-                            </div>
-                        </div>
+                        <textarea id="customMessageArea" name="message" rows="4" required class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white font-mono">Hello, this is a new update.</textarea>
                     </div>
                 </div>
 
                 <!-- Live Preview Area -->
-                <div class="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800">
-                    <p class="text-xs font-bold text-blue-800 dark:text-blue-400 mb-2 uppercase tracking-wide">Live Preview Example</p>
-                    <div id="livePreviewBox" class="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap"></div>
-                </div>
-
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block">Type</label>
@@ -255,6 +222,30 @@ $notifications = $notification->getAll(20);
                 <!-- Specific Recipients Checkboxes -->
                 <div id="specific_recipients_container" class="hidden mt-4">
                     <label class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block">Select Specific Individuals</label>
+                    <!-- Search input for specific recipients -->
+                    <div class="flex items-center gap-2 mb-2">
+                        <input type="text" id="specific_search" placeholder="Search individuals..." class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-2 px-3 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white" oninput="filterSpecificRecipients()" />
+                    </div>
+                    <!-- Group creation UI -->
+                    <div class="flex items-center gap-2 mb-2">
+                        <input type="text" id="new_group_name" placeholder="Group name" class="flex-1 bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-2 px-3 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white" />
+                        <button type="button" onclick="saveGroup()" class="px-4 py-2 bg-blue-900 text-white rounded-xl font-medium hover:bg-blue-800">Save Group</button>
+                    </div>
+                    <!-- Existing groups dropdown -->
+                    <div class="flex items-center gap-2 mb-2">
+                        <select id="existing_groups" class="flex-1 bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-2 px-3 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white" onchange="loadGroup()">
+                            <option value="">-- Load Saved Group --</option>
+                            <?php foreach ($savedGroups as $g): ?>
+                                <option value="<?php echo $g['id']; ?>"><?php echo htmlspecialchars($g['name']); ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <button type="button" onclick="updateGroup()" class="px-3 py-2 bg-emerald-600 text-white rounded-xl font-medium hover:bg-emerald-700 transition" title="Update Selected Group">
+                            <span class="material-symbols-outlined text-sm block">save</span>
+                        </button>
+                        <button type="button" onclick="deleteGroup()" class="px-3 py-2 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition" title="Delete Selected Group">
+                            <span class="material-symbols-outlined text-sm block">delete</span>
+                        </button>
+                    </div>
                     <div class="w-full bg-slate-100 dark:bg-slate-700 rounded-xl p-4 h-48 overflow-y-auto border border-slate-200 dark:border-slate-600 grid grid-cols-1 md:grid-cols-2 gap-2">
                         <?php foreach ($allProfiles as $p): ?>
                             <label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-colors">
@@ -270,8 +261,12 @@ $notifications = $notification->getAll(20);
 
                 <!-- Delivery Methods -->
                 <div class="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700">
-                    <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-3">External Delivery Methods</h4>
+                    <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-3">Delivery Methods</h4>
                     <div class="flex gap-6">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="send_in_app" value="1" checked class="w-4 h-4 text-blue-900 bg-slate-100 border-slate-300 rounded focus:ring-blue-900">
+                            <span class="text-sm text-slate-600 dark:text-slate-300 font-medium">In-system notification</span>
+                        </label>
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" name="send_sms" class="w-4 h-4 text-blue-900 bg-slate-100 border-slate-300 rounded focus:ring-blue-900">
                             <span class="text-sm text-slate-600 dark:text-slate-300 font-medium">Auto-send via Traccar SMS</span>
@@ -296,64 +291,182 @@ $notifications = $notification->getAll(20);
 
             <script>
                 // Live Preview JS
-                var sampleProfile = {
-                    name: "<?php echo !empty($allProfiles) ? addslashes($allProfiles[0]['first_name'] . ' ' . $allProfiles[0]['last_name']) : 'Juan Dela Cruz'; ?>",
-                    barangay: "<?php echo !empty($allProfiles) ? addslashes($allProfiles[0]['barangay'] ?? 'Barangay 1') : 'Barangay 1'; ?>"
-                };
-
-                function getVarValue(id, fallback) {
-                    var el = document.getElementById(id);
-                    return el && el.value.trim() ? el.value.trim() : fallback;
-                }
-
                 function applyTemplate() {
                     const sel = document.getElementById('templateSelect');
+                    const selected = sel.options[sel.selectedIndex];
+                    document.getElementById('selected_template_id').value = selected?.dataset.templateId || '';
                     if (sel.value) {
                         document.getElementById('customMessageArea').value = sel.value;
-                        // Auto-open the variable panel if placeholders detected
-                        var hasVars = /\{\{(opportunity|company|course|percentage)\}\}/.test(sel.value);
-                        if (hasVars) openVarPanel();
-                    }
-                    updateLivePreview();
-                }
-
-                function toggleVarPanel() {
-                    var panel = document.getElementById('varPanel');
-                    var icon = document.getElementById('varPanelIcon');
-                    if (panel.classList.contains('hidden')) {
-                        openVarPanel();
-                    } else {
-                        panel.classList.add('hidden');
-                        icon.textContent = 'expand_more';
                     }
                 }
 
-                function openVarPanel() {
-                    document.getElementById('varPanel').classList.remove('hidden');
-                    document.getElementById('varPanelIcon').textContent = 'expand_less';
-                }
+                document.addEventListener("DOMContentLoaded", () => {});
 
-                function updateLivePreview() {
-                    let text = document.getElementById('customMessageArea').value;
-                    // Per-recipient vars replaced with sample profile data
-                    text = text.replace(/\{\{name\}\}/g, sampleProfile.name);
-                    text = text.replace(/\{\{barangay\}\}/g, sampleProfile.barangay);
-                    // Broadcast-wide vars replaced with input values
-                    text = text.replace(/\{\{opportunity\}\}/g, getVarValue('tpl_opportunity', '[opportunity]'));
-                    text = text.replace(/\{\{company\}\}/g, getVarValue('tpl_company', '[company]'));
-                    text = text.replace(/\{\{course\}\}/g, getVarValue('tpl_course', '[course]'));
-                    text = text.replace(/\{\{percentage\}\}/g, getVarValue('tpl_percentage', '[percentage]'));
-                    document.getElementById('livePreviewBox').textContent = text;
-                }
+                
+function toggleSpecificRecipients() {
+    const group = document.getElementById('target_group_select').value;
+    document.getElementById('specific_recipients_container').style.display = (group === 'Specific') ? 'block' : 'none';
+}
 
-                document.addEventListener("DOMContentLoaded", () => {
-                    updateLivePreview();
-                });
+// Filter specific recipients list based on search input
+function filterSpecificRecipients() {
+    const query = document.getElementById('specific_search').value.toLowerCase();
+    const container = document.getElementById('specific_recipients_container');
+    const labels = container.querySelectorAll('label');
+    labels.forEach(label => {
+        const text = label.textContent.toLowerCase();
+        if (text.includes(query)) {
+            label.style.display = '';
+        } else {
+            label.style.display = 'none';
+        }
+    });
+}
 
-                function toggleSpecificRecipients() {
-                    const group = document.getElementById('target_group_select').value;
-                    document.getElementById('specific_recipients_container').style.display = (group === 'Specific') ? 'block' : 'none';
-                }
+// Save a new group of selected individuals
+function saveGroup() {
+    const groupName = document.getElementById('new_group_name').value.trim();
+    if (!groupName) {
+        showNotifToast('Please enter a group name.', 'error');
+        return;
+    }
+    // Gather selected IDs
+    const selected = [];
+    document.querySelectorAll('[name="specific_ids[]"]:checked').forEach(cb => selected.push(cb.value));
+    if (selected.length === 0) {
+        showNotifToast('Select at least one individual to save a group.', 'error');
+        return;
+    }
+    const formData = new FormData();
+    formData.append('group_name', groupName);
+    selected.forEach(id => formData.append('profile_ids[]', id));
+    fetch('../api/save_notification_group.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            // Add to dropdown
+            const dropdown = document.getElementById('existing_groups');
+            const option = document.createElement('option');
+            option.value = data.group_id;
+            option.textContent = groupName;
+            dropdown.appendChild(option);
+            showNotifToast('Group saved successfully.', 'success');
+            // Clear input
+            document.getElementById('new_group_name').value = '';
+        } else {
+            showNotifToast(data.message || 'Failed to save group.', 'error');
+        }
+    })
+    .catch(() => showNotifToast('Network error while saving group.', 'error'));
+}
+
+// Load selected group members and check the corresponding checkboxes
+function loadGroup() {
+    const dropdown = document.getElementById('existing_groups');
+    const groupId = dropdown.value;
+    if (!groupId) return;
+    
+    // Auto-fill the new group name input to allow easy renaming/updating
+    const selectedOption = dropdown.options[dropdown.selectedIndex];
+    document.getElementById('new_group_name').value = selectedOption.text;
+
+    fetch('../api/get_notification_group_members.php?group_id=' + encodeURIComponent(groupId))
+    .then(r => r.json())
+    .then(data => {
+        if (data.success && Array.isArray(data.profile_ids)) {
+            // Uncheck all first
+            document.querySelectorAll('[name="specific_ids[]"]').forEach(cb => cb.checked = false);
+            // Check the ones in the group
+            data.profile_ids.forEach(id => {
+                const cb = document.querySelector('[name="specific_ids[]"][value="' + id + '"]');
+                if (cb) cb.checked = true;
+            });
+        } else {
+            showNotifToast(data.message || 'Failed to load group.', 'error');
+        }
+    })
+    .catch(() => showNotifToast('Network error while loading group.', 'error'));
+}
+
+function updateGroup() {
+    const dropdown = document.getElementById('existing_groups');
+    const groupId = dropdown.value;
+    if (!groupId) {
+        showNotifToast('Please load a group first to update it.', 'error');
+        return;
+    }
+
+    const groupName = document.getElementById('new_group_name').value.trim();
+    if (!groupName) {
+        showNotifToast('Group name cannot be empty.', 'error');
+        return;
+    }
+
+    const selected = [];
+    document.querySelectorAll('[name="specific_ids[]"]:checked').forEach(cb => selected.push(cb.value));
+    if (selected.length === 0) {
+        showNotifToast('Select at least one individual.', 'error');
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('group_id', groupId);
+    formData.append('group_name', groupName);
+    selected.forEach(id => formData.append('profile_ids[]', id));
+    
+    fetch('../api/update_notification_group.php', { method: 'POST', body: formData })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            dropdown.options[dropdown.selectedIndex].text = groupName;
+            showNotifToast('Group updated successfully.', 'success');
+        } else {
+            showNotifToast(data.message || 'Failed to update group.', 'error');
+        }
+    })
+    .catch(() => showNotifToast('Network error while updating group.', 'error'));
+}
+
+function deleteGroup() {
+    const dropdown = document.getElementById('existing_groups');
+    if (!dropdown.value) {
+        showNotifToast('Please select a group to delete.', 'error');
+        return;
+    }
+    // Show the custom delete modal instead of native confirm()
+    document.getElementById('deleteGroupModal').classList.remove('hidden');
+}
+
+function executeDeleteGroup() {
+    const dropdown = document.getElementById('existing_groups');
+    const groupId = dropdown.value;
+    
+    // Hide the modal immediately
+    document.getElementById('deleteGroupModal').classList.add('hidden');
+
+    if (!groupId) return;
+
+    const formData = new FormData();
+    formData.append('group_id', groupId);
+
+    fetch('../api/delete_notification_group.php', { method: 'POST', body: formData })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            dropdown.remove(dropdown.selectedIndex);
+            dropdown.value = '';
+            document.getElementById('new_group_name').value = '';
+            document.querySelectorAll('[name="specific_ids[]"]').forEach(cb => cb.checked = false);
+            showNotifToast('Group deleted successfully.', 'success');
+        } else {
+            showNotifToast(data.message || 'Failed to delete group.', 'error');
+        }
+    })
+    .catch(() => showNotifToast('Network error while deleting group.', 'error'));
+}
 
                 function submitNotificationAjax() {
                     var titleVal = document.querySelector('[name="title"]').value.trim();
@@ -377,14 +490,11 @@ $notifications = $notification->getAll(20);
                     formData.append('message', msgVal);
                     formData.append('type', typeVal);
                     formData.append('target_group', groupVal);
+                    formData.append('template_id', document.getElementById('selected_template_id')?.value || '');
                     if (sendSms) formData.append('send_sms', '1');
                     if (sendEmail) formData.append('send_email', '1');
-
-                    // Broadcast-wide template variables
-                    formData.append('tpl_opportunity', document.getElementById('tpl_opportunity')?.value.trim() || '');
-                    formData.append('tpl_company', document.getElementById('tpl_company')?.value.trim() || '');
-                    formData.append('tpl_course', document.getElementById('tpl_course')?.value.trim() || '');
-                    formData.append('tpl_percentage', document.getElementById('tpl_percentage')?.value.trim() || '');
+                    if (document.querySelector('[name="send_in_app"]')?.checked) formData.append('send_in_app', '1');
+                    
 
                     // Specific IDs
                     if (groupVal === 'Specific') {
@@ -469,6 +579,27 @@ $notifications = $notification->getAll(20);
                 }
             </script>
 
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="deleteGroupModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full">
+            <div class="p-6">
+                <div class="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 dark:bg-red-900/30 rounded-full mb-4">
+                    <span class="material-symbols-outlined text-red-600 dark:text-red-400">warning</span>
+                </div>
+                <h3 class="text-lg font-bold text-slate-900 dark:text-white text-center mb-2">Delete Group</h3>
+                <p class="text-slate-600 dark:text-slate-300 text-center text-sm mb-6">Are you sure? This action cannot be undone.</p>
+                <div class="flex gap-3">
+                    <button type="button" onclick="document.getElementById('deleteGroupModal').classList.add('hidden')" class="flex-1 px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-bold text-sm hover:bg-slate-200">
+                        Cancel
+                    </button>
+                    <button type="button" onclick="executeDeleteGroup()" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-bold text-sm hover:bg-red-700">
+                        Delete
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>

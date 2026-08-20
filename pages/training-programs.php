@@ -13,6 +13,7 @@ require_once __DIR__ . '/../includes/header.php';
 $opportunity = new Opportunity($database);
 $osyProfile = new OSYProfile($database);
 $notification = new Notification($database);
+$templates = $notification->getAllTemplates();
 $message = '';
 
 // Handle form submissions
@@ -51,6 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     } elseif ($target_group === 'Employed') {
                         $filters['status'] = 'Employed';
                     }
+                    $recipients = $osyProfile->getAll($filters);
                 }
 
                 require_once __DIR__ . '/../Classes/SmsService.php';
@@ -553,27 +555,27 @@ $templates = $notification->getAllTemplates();
                 </div>
                 <div><p class="text-xs font-bold text-slate-500 uppercase">Location</p><p class="text-sm text-slate-700 dark:text-slate-300">${opp.location}</p></div>
             `;
-                if (opp.training_provider) html +=
-                    `<div><p class="text-xs font-bold text-slate-500 uppercase">Training Provider</p><p class="text-sm text-slate-700 dark:text-slate-300">${opp.training_provider}</p></div>`;
-                if (opp.duration || opp.modality) {
-                    html += `<div class="grid grid-cols-2 gap-4 pt-2">
+            if (opp.training_provider) html +=
+                `<div><p class="text-xs font-bold text-slate-500 uppercase">Training Provider</p><p class="text-sm text-slate-700 dark:text-slate-300">${opp.training_provider}</p></div>`;
+            if (opp.duration || opp.modality) {
+                html += `<div class="grid grid-cols-2 gap-4 pt-2">
                     <div><p class="text-xs font-bold text-slate-500 uppercase">Duration</p><p class="text-sm text-slate-700 dark:text-slate-300">${opp.duration || 'N/A'}</p></div>
                     <div><p class="text-xs font-bold text-slate-500 uppercase">Modality</p><p class="text-sm text-slate-700 dark:text-slate-300">${opp.modality || 'N/A'}</p></div>
                 </div>`;
-                }
-                if (opp.certification) html +=
-                    `<div><p class="text-xs font-bold text-slate-500 uppercase">Certification Granted</p><p class="text-sm font-bold text-blue-900 dark:text-blue-400">${opp.certification}</p></div>`;
-                if (opp.description) html +=
-                    `<div><p class="text-xs font-bold text-slate-500 uppercase">Program Description</p><p class="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">${opp.description}</p></div>`;
-                html += `
+            }
+            if (opp.certification) html +=
+                `<div><p class="text-xs font-bold text-slate-500 uppercase">Certification Granted</p><p class="text-sm font-bold text-blue-900 dark:text-blue-400">${opp.certification}</p></div>`;
+            if (opp.description) html +=
+                `<div><p class="text-xs font-bold text-slate-500 uppercase">Program Description</p><p class="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">${opp.description}</p></div>`;
+            html += `
                 <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">
                     <div><p class="text-xs font-bold text-slate-500 uppercase">Slots</p><p class="text-sm font-bold text-slate-900 dark:text-white">${opp.total_slots}</p></div>
                     <div><p class="text-xs font-bold text-slate-500 uppercase">Deadline</p><p class="text-sm font-bold text-slate-900 dark:text-white">${opp.deadline}</p></div>
                 </div>
             `;
-                document.getElementById('detailContent').innerHTML = html;
-                document.getElementById('detailModal').classList.remove('hidden');
-            }
+            document.getElementById('detailContent').innerHTML = html;
+            document.getElementById('detailModal').classList.remove('hidden');
+        }
 
         function closeModal() {
             document.getElementById('opportunityModal').classList.add('hidden');

@@ -76,12 +76,26 @@ require_once __DIR__ . '/../includes/header.php';
                     class="client-filter bg-slate-100 dark:bg-slate-700 rounded-lg py-2 px-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all">
                     <option value="All">All Statuses</option>
                     <option value="Pending">Pending</option>
-                    <option value="Accepted">Accepted</option>
-                    <option value="Rejected">Rejected</option>
-                </select>
-            </div>
+    <!-- Client-side Filters -->
+    <div class="mb-6 bg-white dark:bg-slate-800 p-4 rounded-lg shadow border border-slate-200 dark:border-slate-700 flex flex-wrap gap-4 items-end">
+        <div class="flex-1 min-w-[200px]">
+            <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase pl-1">Search Applicants</label>
+            <input type="text" id="applicant_search" data-target=".applicant-row" data-filter-type="search" placeholder="Search by name, email, phone or skill..."
+                class="client-filter w-full bg-slate-100 dark:bg-slate-700 rounded-lg py-2 px-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all" />
         </div>
+        <div>
+            <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase pl-1">Filter by Status</label>
+            <select id="applicant_status" data-target=".applicant-row" data-filter-type="exact" data-filter-attr="status"
+                class="client-filter bg-slate-100 dark:bg-slate-700 rounded-lg py-2 px-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all">
+                <option value="All">All Statuses</option>
+                <option value="Pending">Pending</option>
+                <option value="Accepted">Accepted</option>
+                <option value="Rejected">Rejected</option>
+            </select>
+        </div>
+    </div>
 
+    <div class="overflow-x-auto">
         <table class="w-full table-auto bg-white dark:bg-slate-800 rounded-lg overflow-hidden shadow">
             <thead class="bg-gray-50 dark:bg-slate-700">
                 <tr>
@@ -95,41 +109,45 @@ require_once __DIR__ . '/../includes/header.php';
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($applications as $app): ?>
-                    <tr class="applicant-row border-b border-gray-200 dark:border-slate-700" data-status="<?= htmlspecialchars($app['status']) ?>">
-                        <td class="px-4 py-2">
-                            <?= htmlspecialchars($app['first_name'] . ' ' . $app['last_name']) ?><br>
-                            <span class="text-sm text-gray-500 dark:text-gray-400"><?= htmlspecialchars($app['email'] . ' | ' . $app['phone']) ?></span>
-                        </td>
-                        <td class="px-4 py-2 text-center"><?= htmlspecialchars($app['age'] ?? '-') ?></td>
-                        <td class="px-4 py-2"><?= htmlspecialchars($app['primary_skill'] ?? '-') ?></td>
-                        <td class="px-4 py-2">
-                            <span class="inline-block px-2 py-1 text-xs rounded <?= $app['status'] === 'Accepted' ? 'bg-emerald-100 text-emerald-800' : ($app['status'] === 'Rejected' ? 'bg-rose-100 text-rose-800' : 'bg-yellow-100 text-yellow-800') ?>">
-                                <?= htmlspecialchars($app['status']) ?>
-                            </span>
-                        </td>
-                        <?php if ($_SESSION['role'] !== 'youth'): ?>
-                        <td class="px-4 py-2 text-center">
-                            <?php if ($app['status'] === 'Pending'): ?>
-                                <form method="POST" class="inline" style="margin:0;">
-                                    <input type="hidden" name="form_nonce" value="<?= htmlspecialchars(getFormNonce()) ?>">
-                                    <input type="hidden" name="match_id" value="<?= $app['id'] ?>">
-                                    <input type="hidden" name="new_status" value="Accepted">
-                                    <button type="submit" class="px-2 py-1 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-xs">Accept</button>
-                                </form>
-                                <form method="POST" class="inline" style="margin:0;">
-                                    <input type="hidden" name="form_nonce" value="<?= htmlspecialchars(getFormNonce()) ?>">
-                                    <input type="hidden" name="match_id" value="<?= $app['id'] ?>">
-                                    <input type="hidden" name="new_status" value="Rejected">
-                                    <button type="submit" class="px-2 py-1 bg-rose-600 text-white rounded hover:bg-rose-700 text-xs">Reject</button>
-                                </form>
-                            <?php else: ?>
-                                —
+                <?php if (empty($applications)): ?>
+                    <tr><td colspan="5" class="px-4 py-4 text-center text-gray-500">No applications submitted yet.</td></tr>
+                <?php else: ?>
+                    <?php foreach ($applications as $app): ?>
+                        <tr class="applicant-row border-b border-gray-200 dark:border-slate-700" data-status="<?= htmlspecialchars($app['status']) ?>">
+                            <td class="px-4 py-2">
+                                <?= htmlspecialchars($app['first_name'] . ' ' . $app['last_name']) ?><br>
+                                <span class="text-sm text-gray-500 dark:text-gray-400"><?= htmlspecialchars($app['email'] . ' | ' . $app['phone']) ?></span>
+                            </td>
+                            <td class="px-4 py-2 text-center"><?= htmlspecialchars($app['age'] ?? '-') ?></td>
+                            <td class="px-4 py-2"><?= htmlspecialchars($app['primary_skill'] ?? '-') ?></td>
+                            <td class="px-4 py-2">
+                                <span class="inline-block px-2 py-1 text-xs rounded <?= $app['status'] === 'Accepted' ? 'bg-emerald-100 text-emerald-800' : ($app['status'] === 'Rejected' ? 'bg-rose-100 text-rose-800' : 'bg-yellow-100 text-yellow-800') ?>">
+                                    <?= htmlspecialchars($app['status']) ?>
+                                </span>
+                            </td>
+                            <?php if ($_SESSION['role'] !== 'youth'): ?>
+                            <td class="px-4 py-2 text-center">
+                                <?php if ($app['status'] === 'Pending'): ?>
+                                    <form method="POST" class="inline" style="margin:0;">
+                                        <input type="hidden" name="form_nonce" value="<?= htmlspecialchars(getFormNonce()) ?>">
+                                        <input type="hidden" name="match_id" value="<?= $app['id'] ?>">
+                                        <input type="hidden" name="new_status" value="Accepted">
+                                        <button type="submit" class="px-2 py-1 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-xs">Accept</button>
+                                    </form>
+                                    <form method="POST" class="inline" style="margin:0;">
+                                        <input type="hidden" name="form_nonce" value="<?= htmlspecialchars(getFormNonce()) ?>">
+                                        <input type="hidden" name="match_id" value="<?= $app['id'] ?>">
+                                        <input type="hidden" name="new_status" value="Rejected">
+                                        <button type="submit" class="px-2 py-1 bg-rose-600 text-white rounded hover:bg-rose-700 text-xs">Reject</button>
+                                    </form>
+                                <?php else: ?>
+                                    —
+                                <?php endif; ?>
+                            </td>
                             <?php endif; ?>
-                        </td>
-                        <?php endif; ?>
-                    </tr>
-                <?php endforeach; ?>
+                        </tr>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </tbody>
         </table>
     <?php endif; ?>

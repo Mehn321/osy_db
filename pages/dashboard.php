@@ -21,7 +21,7 @@ if ($userRole === 'lydo'):
     $stats = $dashboard->getStats();
     $skills = $dashboard->getSkillDistribution();
     $recent = $dashboard->getRecentRegistrations();
-    
+
     // Get in-training count dynamically
     $inTrainingResult = $database->fetchOne("SELECT COUNT(*) as cnt FROM osy_profiles WHERE status = 'In Training'");
     $inTrainingCount = $inTrainingResult['cnt'] ?? 0;
@@ -125,6 +125,18 @@ if ($userRole === 'lydo'):
                 </p>
             </div>
         </div>
+
+        <a href="settings.php?tab=match-youth" class="bg-amber-50 dark:bg-amber-900/20 p-6 rounded-xl shadow-sm border border-amber-200 dark:border-amber-800 flex items-start justify-between hover:border-amber-400 transition-colors">
+            <div>
+                <p class="text-sm font-semibold text-amber-800 dark:text-amber-300 uppercase tracking-wider mb-1">Match Youth</p>
+                <h3 class="text-4xl font-black text-amber-700 dark:text-amber-300"><?php echo number_format($syncStatsDash['missing_matches']); ?></h3>
+                <p class="text-xs text-amber-800 dark:text-amber-400 font-medium mt-2">Potential matches need scores</p>
+                <span class="inline-flex items-center gap-1 mt-3 text-xs font-bold text-amber-700 dark:text-amber-300">Open Match Youth <span class="material-symbols-outlined text-sm">arrow_forward</span></span>
+            </div>
+            <div class="p-3 bg-amber-200 dark:bg-amber-900/40 rounded-lg text-amber-700 dark:text-amber-300">
+                <span class="material-symbols-outlined text-3xl">hub</span>
+            </div>
+        </a>
     </div>
 
     <!-- Charts Row -->
@@ -198,7 +210,7 @@ if ($userRole === 'lydo'):
             <h4 class="text-lg font-bold text-slate-900 dark:text-white">Recent Registrations</h4>
             <a href="profiles.php" class="text-sm font-semibold text-blue-900 dark:text-blue-400 hover:underline">View All</a>
         </div>
-        <div class="overflow-x-auto">
+        <div class="overflow-x-auto thin-scrollbar">
             <table class="w-full text-left">
                 <thead>
                     <tr class="bg-slate-100 dark:bg-slate-700">
@@ -240,7 +252,7 @@ if ($userRole === 'lydo'):
         </div>
     </div>
 
-<?php elseif ($userRole === 'sk_chairman'): 
+<?php elseif ($userRole === 'sk_chairman'):
     // --- SK CHAIRMAN DASHBOARD ---
     $skStats = $dashboard->getSKStats($userBarangay);
     $recentBarangay = $dashboard->getRecentRegistrationsByBarangay($userBarangay);
@@ -315,10 +327,10 @@ if ($userRole === 'lydo'):
                                 <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300"><?php echo htmlspecialchars($reg['primary_skill'] ?? 'N/A'); ?></td>
                                 <td class="px-6 py-4">
                                     <span class="inline-flex px-3 py-1 rounded-full text-xs font-bold <?php
-                                        if ($reg['status'] == 'Active') echo 'bg-green-100 text-green-700';
-                                        elseif ($reg['status'] == 'Inactive') echo 'bg-slate-100 text-slate-700';
-                                        else echo 'bg-orange-100 text-orange-700';
-                                    ?>">
+                                                                                                        if ($reg['status'] == 'Active') echo 'bg-green-100 text-green-700';
+                                                                                                        elseif ($reg['status'] == 'Inactive') echo 'bg-slate-100 text-slate-700';
+                                                                                                        else echo 'bg-orange-100 text-orange-700';
+                                                                                                        ?>">
                                         <?php echo htmlspecialchars($reg['status']); ?>
                                     </span>
                                 </td>
@@ -339,7 +351,7 @@ if ($userRole === 'lydo'):
         </div>
     </div>
 
-<?php elseif ($userRole === 'employer' || $userRole === 'training_provider'): 
+<?php elseif ($userRole === 'employer' || $userRole === 'training_provider'):
     // --- PROVIDER DASHBOARD ---
     $providerStats = $dashboard->getProviderStats($userId);
     $recentOpp = $dashboard->getRecentOpportunitiesByProvider($userId);
@@ -395,10 +407,10 @@ if ($userRole === 'lydo'):
                 </thead>
                 <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
                     <?php if (!empty($recentOpp)): ?>
-                        <?php foreach ($recentOpp as $opp): 
-                             // Get application count for this specific opportunity
-                             $appCountRes = $database->fetchOne("SELECT COUNT(*) as cnt FROM osy_matches WHERE opportunity_id = ?", [$opp['id']]);
-                             $appCount = $appCountRes['cnt'] ?? 0;
+                        <?php foreach ($recentOpp as $opp):
+                            // Get application count for this specific opportunity
+                            $appCountRes = $database->fetchOne("SELECT COUNT(*) as cnt FROM osy_matches WHERE opportunity_id = ?", [$opp['id']]);
+                            $appCount = $appCountRes['cnt'] ?? 0;
                         ?>
                             <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                                 <td class="px-6 py-4">
@@ -424,14 +436,14 @@ if ($userRole === 'lydo'):
         </div>
     </div>
 
-<?php else: 
+<?php else:
     // --- YOUTH / DEFAULT DASHBOARD ---
 ?>
     <div class="mb-10">
         <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">Welcome to the Portal</h2>
         <p class="text-slate-600 dark:text-slate-400 font-medium">Find the best opportunities matched for your skills.</p>
     </div>
-    
+
     <div class="bg-blue-900 rounded-3xl p-12 text-white flex flex-col md:flex-row items-center justify-between gap-8">
         <div>
             <h3 class="text-3xl font-bold mb-4">Start Your Journey Today</h3>
@@ -441,7 +453,7 @@ if ($userRole === 'lydo'):
             </a>
         </div>
         <div class="hidden lg:block opacity-20">
-             <span class="material-symbols-outlined text-[200px]">rocket_launch</span>
+            <span class="material-symbols-outlined text-[200px]">rocket_launch</span>
         </div>
     </div>
 <?php endif; ?>

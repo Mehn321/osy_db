@@ -59,20 +59,6 @@ class Opportunity
 
             $opportunityId = $this->db->lastInsertId();
 
-            // Auto-generate matches for the newly created opportunity
-            require_once __DIR__ . '/Matching.php';
-            $matching = new Matching($this->db);
-            $matching->generateMatches($opportunityId);
-
-            // Broadcast match alerts to youth matching this opportunity (score >= 75)
-            require_once __DIR__ . '/Notification.php';
-            $notif = new Notification($this->db);
-            $notif->broadcastToMatches(
-                $opportunityId,
-                "New Matched Opportunity: " . $data['title'],
-                "A new opportunity '" . $data['title'] . "' has been posted that aligns with your profile skills. Check your matches to apply!"
-            );
-
             return [
                 'success' => true,
                 'message' => 'Opportunity created successfully',
@@ -100,7 +86,7 @@ class Opportunity
      */
     public function getAll($filters = [])
     {
-        $query = "SELECT * FROM {$this->table} WHERE 1=1";
+        $query = "SELECT o.*, u.fullname as provider_name, u.provider_type as provider_type FROM {$this->table} o LEFT JOIN users u ON o.created_by = u.id WHERE 1=1";
         $params = [];
         $types = '';
 
@@ -122,6 +108,12 @@ class Opportunity
             $query .= " AND status = ?";
             $params[] = $filters['status'];
             $types .= 's';
+        }
+
+        if (isset($filters['provider_id'])) {
+            $query .= " AND provider_id = ?";
+            $params[] = (int)$filters['provider_id'];
+            $types .= 'i';
         }
 
         if (isset($filters['search']) && $filters['search'] !== '') {
@@ -272,7 +264,7 @@ class Opportunity
     public function getByProvider($providerId = null)
     {
         $providerId = $providerId ?? $_SESSION['user_id'];
-        $query = "SELECT * FROM {$this->table} WHERE provider_id = ? ORDER BY created_at DESC";
+        $query = "SELECT o.*, u.fullname as provider_name FROM {$this->table} o LEFT JOIN users u ON o.provider_id = u.id WHERE provider_id = ? ORDER BY created_at DESC";
         return $this->db->fetchAll($query, [$providerId], "i");
     }
 

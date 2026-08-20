@@ -12,6 +12,7 @@ require_once __DIR__ . '/../init.php';
 require_once __DIR__ . '/../Classes/User.php';
 require_once __DIR__ . '/../Classes/OSYProfile.php';
 require_once __DIR__ . '/../Classes/AuditLog.php';
+require_once __DIR__ . '/../Classes/Reference.php';
 
 // If already logged in, redirect
 if (isset($_SESSION['user_id'])) {
@@ -216,6 +217,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
                 }
 
                 $userId = $userResult['user_id'];
+
+                // 1b. Also save the barangay on the users table for SK lookup
+                $database->execute(
+                    "UPDATE users SET barangay = ? WHERE id = ?",
+                    [$barangay, $userId],
+                    "si"
+                );
 
                 // 2. Create osy_profile with verification_status=Pending
                 $profileData = [

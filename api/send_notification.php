@@ -33,14 +33,29 @@ $type         = $_POST['type']              ?? 'System';
 $target_group = $_POST['target_group']      ?? 'All';
 $smsEnabled   = !empty($_POST['send_sms']);
 $emailEnabled = !empty($_POST['send_email']);
+$inAppEnabled = !empty($_POST['send_in_app']);
+
 
 // ── Broadcast-wide template variables (same for all recipients) ───────────────
 $tplOpportunity = trim($_POST['tpl_opportunity'] ?? '');
 $tplCompany     = trim($_POST['tpl_company']     ?? '');
 $tplCourse      = trim($_POST['tpl_course']      ?? '');
 $tplPercentage  = trim($_POST['tpl_percentage']  ?? '');
+$templateId    = (int)($_POST['template_id'] ?? 0);
 
 $target_barangay = trim($_POST['target_barangay'] ?? '');
+
+require_once __DIR__ . '/../Classes/Notification.php';
+$notification = new Notification($database);
+if ($templateId > 0) {
+  $template = $notification->getTemplateById($templateId);
+  if (!$template) {
+    echo json_encode(['success' => false, 'message' => 'Selected template was not found.']);
+    exit;
+  }
+  $message_text = $template['body'];
+  if (!$title && !empty($template['subject'])) $title = $template['subject'];
+}
 
 if (!$title || !$message_text) {
   echo json_encode(['success' => false, 'message' => 'Title and message are required.']);
@@ -106,16 +121,17 @@ function replaceTemplateVars(string $text, array $rec, array $broadcastVars): st
 {
   // Per-recipient (personalized)
   $fullName = trim(($rec['first_name'] ?? '') . ' ' . ($rec['last_name'] ?? ''));
-  $text = str_replace('{{name}}',  $fullName ?: ($rec['first_name'] ?? ''), $text);
-  $text = str_replace('{{barangay}}', $rec['barangay'] ?? '', $text);
+  global $notification;
+  $rendered = $notification->renderTemplate(['body' => $text], [
+    'name' => $fullName ?: ($rec['first_name'] ?? ''),
+    'barangay' => $rec['barangay'] ?? '',
+    'opportunity' => $broadcastVars['opportunity'],
+    'company' => $broadcastVars['company'],
+    'course' => $broadcastVars['course'],
+    'percentage' => $broadcastVars['percentage'],
+  ]);
 
-  // Broadcast-wide (same for everyone)
-  $text = str_replace('{{opportunity}}', $broadcastVars['opportunity'], $text);
-  $text = str_replace('{{company}}',     $broadcastVars['company'],     $text);
-  $text = str_replace('{{course}}',      $broadcastVars['course'],      $text);
-  $text = str_replace('{{percentage}}',  $broadcastVars['percentage'],  $text);
-
-  return $text;
+  return $rendered['body'];
 }
 
 $broadcastVars = [
@@ -233,54 +249,78 @@ if ($smsEnabled || $emailEnabled) {
 }
 
 // ── Log to DB ─────────────────────────────────────────────────────────────────
-$notification = new Notification($database);
+// Log to DB
 $result = ['success' => true, 'message' => 'Notification created successfully', 'id' => null];
 
-if ($recipient_type_db === 'Specific' && $target_group === 'Specific') {
-  $created = 0;
-  foreach ($recipients as $rec) {
-    $recipientId = $rec['created_by'] ?? null;
-    if (!$recipientId) {
-      continue;
+// If this is an AI credit notification, limit to LYDO only
+if (isset($type) && strtolower($type) === 'ai_credit') {
+    // Find LYDO user id
+    $lydoUser = $database->fetchOne("SELECT id FROM users WHERE role = 'lydo' LIMIT 1");
+    $lydoId = $lydoUser['id'] ?? null;
+    if (!$lydoId) {
+        echo json_encode(['success' => false, 'message' => 'LYDO user not found']);
+        exit;
     }
-
-    $note = $notification->create([
-      'title'          => $title,
-      'message'        => replaceTemplateVars($message_text, $rec, $broadcastVars),
-      'type'           => $type,
-      'recipient_type' => 'Specific',
-      'recipient_id'   => $recipientId
-    ]);
-
-    if ($note['success']) {
-      $created++;
+    if (!$inAppEnabled) {
+        $result['message'] = 'External notification sent successfully.';
+    } else {
+        $note = $notification->create([
+            'title'          => $title,
+            'message'        => $message_text,
+            'type'           => $type,
+            'recipient_type' => 'Specific',
+            'recipient_id'   => $lydoId
+        ]);
+        if ($note['success']) {
+            $result['id'] = $note['id'];
+            $result['message'] = 'Notification sent to LYDO successfully.';
+        } else {
+            $result = $note;
+        }
     }
-  }
-  $result['id'] = $created > 0 ? 1 : null;
-  $result['message'] = "Notification broadcast successfully to {$created} specific recipient(s).";
-} else if ($recipient_type_db === 'Barangay') {
-  // Create per-recipient notifications for barangay-scoped broadcasts
-  $created = 0;
-  foreach ($recipients as $rec) {
-    $recipientId = $rec['created_by'] ?? null;
-    if (!$recipientId) continue;
-    $note = $notification->create([
-      'title' => $title,
-      'message' => replaceTemplateVars($message_text, $rec, $broadcastVars),
-      'type' => $type,
-      'recipient_type' => 'Specific',
-      'recipient_id' => $recipientId
-    ]);
-    if ($note['success']) $created++;
-  }
-  $result = ['success' => true, 'message' => "Notification broadcast successfully to {$created} recipient(s).", 'id' => $created > 0 ? 1 : null];
 } else {
-  $result = $notification->create([
-    'title'          => $title,
-    'message'        => $message_text,
-    'type'           => $type,
-    'recipient_type' => $recipient_type_db,
-  ]);
+    // Existing generic handling
+    if (!$inAppEnabled) {
+        $result['message'] = 'External notification sent successfully.';
+    } elseif ($recipient_type_db === 'Specific' && $target_group === 'Specific') {
+        $created = 0;
+        foreach ($recipients as $rec) {
+            $recipientId = $rec['created_by'] ?? null;
+            if (!$recipientId) continue;
+            $note = $notification->create([
+                'title'          => $title,
+                'message'        => replaceTemplateVars($message_text, $rec, $broadcastVars),
+                'type'           => $type,
+                'recipient_type' => 'Specific',
+                'recipient_id'   => $recipientId
+            ]);
+            if ($note['success']) $created++;
+        }
+        $result['id'] = $created > 0 ? 1 : null;
+        $result['message'] = "Notification broadcast successfully to {$created} specific recipient(s).";
+    } elseif ($recipient_type_db === 'Barangay') {
+        $created = 0;
+        foreach ($recipients as $rec) {
+            $recipientId = $rec['created_by'] ?? null;
+            if (!$recipientId) continue;
+            $note = $notification->create([
+                'title'          => $title,
+                'message'        => replaceTemplateVars($message_text, $rec, $broadcastVars),
+                'type'           => $type,
+                'recipient_type' => 'Specific',
+                'recipient_id'   => $recipientId
+            ]);
+            if ($note['success']) $created++;
+        }
+        $result = ['success' => true, 'message' => "Notification broadcast successfully to {$created} recipient(s).", 'id' => $created > 0 ? 1 : null];
+    } else {
+        $result = $notification->create([
+            'title'          => $title,
+            'message'        => $message_text,
+            'type'           => $type,
+            'recipient_type' => $recipient_type_db,
+        ]);
+    }
 }
 
 $summary = 'Notification broadcast successfully to ' . count($recipients) . ' recipient(s).';

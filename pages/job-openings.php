@@ -219,9 +219,11 @@ require_once __DIR__ . '/../includes/header.php';
                         <span class="material-symbols-outlined text-base">visibility</span>
                         View Details
                     </button>
+                    <?php if ($userRole !== 'lydo'): ?>
                     <button onclick="openEditModal(<?php echo $opp['id']; ?>)" class="py-2 px-3 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg text-slate-600 dark:text-slate-300 transition-colors">
                         <span class="material-symbols-outlined">edit</span>
                     </button>
+<?php endif; ?>
                     <button onclick="deleteOpportunity(<?php echo $opp['id']; ?>)" class="py-2 px-3 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400 transition-colors">
                         <span class="material-symbols-outlined">delete</span>
                     </button>
@@ -469,7 +471,14 @@ require_once __DIR__ . '/../includes/header.php';
                 </div>
                 <div><p class="text-xs font-bold text-slate-500 uppercase">Location</p><p class="text-sm text-slate-700 dark:text-slate-300">${opp.location}</p></div>
             `;
-            if (opp.employment_type) {
+            // Add Posted By if available
+if (opp.provider_name) {
+    html += `<div>
+        <p class="text-xs font-bold text-slate-500 uppercase">Posted By</p>
+        <p class="text-sm text-slate-700 dark:text-slate-300">${opp.provider_name}</p>
+    </div>`;
+}
+if (opp.employment_type) {
                 html += `<div class="grid grid-cols-2 gap-4 pt-2">
                     <div><p class="text-xs font-bold text-slate-500 uppercase">Employment Type</p><p class="text-sm text-slate-700 dark:text-slate-300">${opp.employment_type}</p></div>
                     <div><p class="text-xs font-bold text-slate-500 uppercase">Work Schedule</p><p class="text-sm text-slate-700 dark:text-slate-300">${opp.work_schedule || 'N/A'}</p></div>
@@ -479,6 +488,51 @@ require_once __DIR__ . '/../includes/header.php';
             if (opp.required_skills) html += `<div><p class="text-xs font-bold text-slate-500 uppercase">Required Skills</p><p class="text-sm text-slate-700 dark:text-slate-300">${opp.required_skills}</p></div>`;
             if (opp.description) html += `<div><p class="text-xs font-bold text-slate-500 uppercase">Job Description</p><p class="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">${opp.description}</p></div>`;
             if (opp.compensation) html += `<div><p class="text-xs font-bold text-slate-500 uppercase">Compensation</p><p class="text-sm font-bold text-slate-900 dark:text-white">${opp.compensation}</p></div>`;
+            // Add Provider Type if available
+if (opp.provider_type) {
+    html += `<div>
+        <p class="text-xs font-bold text-slate-500 uppercase">Provider Type</p>
+        <p class="text-sm text-slate-700 dark:text-slate-300">${opp.provider_type}</p>
+    </div>`;
+}
+// Add Duration if available
+if (opp.duration) {
+    html += `<div>
+        <p class="text-xs font-bold text-slate-500 uppercase">Duration</p>
+        <p class="text-sm text-slate-700 dark:text-slate-300">${opp.duration}</p>
+    </div>`;
+}
+// Add Modality if available
+if (opp.modality) {
+    html += `<div>
+        <p class="text-xs font-bold text-slate-500 uppercase">Modality</p>
+        <p class="text-sm text-slate-700 dark:text-slate-300">${opp.modality}</p>
+    </div>`;
+}
+// Add Training Provider if available
+if (opp.training_provider) {
+    html += `<div>
+        <p class="text-xs font-bold text-slate-500 uppercase">Training Provider</p>
+        <p class="text-sm text-slate-700 dark:text-slate-300">${opp.training_provider}</p>
+    </div>`;
+}
+// Add Certification if available
+if (opp.certification) {
+    html += `<div>
+        <p class="text-xs font-bold text-slate-500 uppercase">Certification</p>
+        <p class="text-sm text-slate-700 dark:text-slate-300">${opp.certification}</p>
+    </div>`;
+}
+
+// Add Age Range if available
+if (opp.age_min !== null || opp.age_max !== null) {
+    const min = opp.age_min !== null ? opp.age_min : '';
+    const max = opp.age_max !== null ? opp.age_max : '';
+    html += `<div>
+        <p class="text-xs font-bold text-slate-500 uppercase">Age Range</p>
+        <p class="text-sm text-slate-700 dark:text-slate-300">${min} - ${max}</p>
+    </div>`;
+}
             if (opp.benefits) html += `<div><p class="text-xs font-bold text-slate-500 uppercase">Benefits</p><p class="text-sm text-slate-700 dark:text-slate-300">${opp.benefits}</p></div>`;
             html += `
                 <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-200 dark:border-slate-700">

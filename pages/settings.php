@@ -13,6 +13,8 @@ require_once __DIR__ . '/../includes/header.php';
 $message = '';
 $messageType = '';
 $activeTab = $_GET['tab'] ?? 'profile';
+$matching = new Matching($database);
+$syncStats = $matching->getGlobalSyncStats();
 
 // Get current system settings
 $sys_settings = [];
@@ -179,6 +181,10 @@ $scoringPct = $syncStats['total_possible'] > 0
                 <button onclick="switchTab('appearance')" id="tab-appearance" class="w-full text-left px-4 py-3 <?php echo $activeTab === 'appearance' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'; ?> rounded-lg font-semibold flex items-center gap-3 transition-colors">
                     <span class="material-symbols-outlined">palette</span>
                     Appearance
+                </button>
+                <button onclick="switchTab('match-youth')" id="tab-match-youth" class="w-full text-left px-4 py-3 <?php echo $activeTab === 'match-youth' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'; ?> rounded-lg font-semibold flex items-center gap-3 transition-colors">
+                    <span class="material-symbols-outlined">hub</span>
+                    Match Youth
                 </button>
                 <button onclick="switchTab('about')" id="tab-about" class="w-full text-left px-4 py-3 <?php echo $activeTab === 'about' ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-400' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50'; ?> rounded-lg font-semibold flex items-center gap-3 transition-colors">
                     <span class="material-symbols-outlined">info</span>
@@ -677,6 +683,28 @@ $scoringPct = $syncStats['total_possible'] > 0
             </div>
         </div>
 
+        <!-- Match Youth Settings -->
+        <div id="section-match-youth" class="<?php echo $activeTab !== 'match-youth' ? 'hidden' : ''; ?>">
+            <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-8">
+                <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-2">Match Youth</h3>
+                <p class="text-sm text-slate-600 dark:text-slate-400 mb-6">Create and synchronize youth-to-opportunity matches. Employers review and decide on candidates.</p>
+                <div class="p-5 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
+                    <div class="flex flex-col md:flex-row md:items-center gap-4">
+                        <span class="material-symbols-outlined text-amber-600 text-3xl">sync</span>
+                        <div class="flex-1">
+                            <h4 class="font-bold text-slate-900 dark:text-white">Match score synchronization</h4>
+                            <p class="text-sm text-amber-800 dark:text-amber-300"><strong><?php echo (int)$syncStats['missing_matches']; ?></strong> potential matches need scores.</p>
+                        </div>
+                        <label class="flex items-center gap-2 text-sm font-bold text-slate-700 dark:text-slate-300">
+                            <input id="autoSyncToggle" type="checkbox" class="rounded" /> Automatic
+                        </label>
+                        <button type="button" id="syncNowButton" class="px-4 py-2.5 bg-amber-600 text-white rounded-lg font-bold hover:bg-amber-700">Sync now</button>
+                    </div>
+                    <p id="syncStatus" class="hidden mt-3 text-sm text-blue-800 dark:text-blue-300"></p>
+                </div>
+            </div>
+        </div>
+
         <!-- About System -->
         <div id="section-about" class="<?php echo $activeTab !== 'about' ? 'hidden' : ''; ?>">
             <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-8">
@@ -733,14 +761,75 @@ $scoringPct = $syncStats['total_possible'] > 0
             document.documentElement.classList.remove('dark');
         }
         fetch('../api/update_theme.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ theme: theme })
-        })
-        .then(r => r.json())
-        .then(d => { if (!d.success) console.error(d.message || 'Error updating theme'); })
-        .catch(console.error);
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    theme: theme
+                })
+            })
+            .then(r => r.json())
+            .then(d => {
+                if (!d.success) console.error(d.message || 'Error updating theme');
+            })
+            .catch(console.error);
     });
+
+    async function triggerGlobalSync(confirmBeforeStart = true) {
+        const startSync = async () => {
+            const status = document.getElementById('syncStatus');
+            const button = document.getElementById('syncNowButton');
+            if (button) button.disabled = true;
+            if (status) {
+                status.textContent = 'Synchronization started. Scores will update in the background.';
+                status.classList.remove('hidden');
+            }
+            try {
+                const response = await fetch('../api/trigger_global_sync.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const result = await response.json();
+                if (!result.success && status) status.textContent = result.message || 'Synchronization could not be started.';
+            } catch (error) {
+                if (status) status.textContent = 'Synchronization could not be started.';
+            } finally {
+                if (button) button.disabled = false;
+            }
+        };
+
+        if (confirmBeforeStart) {
+            customConfirm('Start synchronization for all youth matches? This may take several minutes.', (confirmed) => {
+                if (confirmed) startSync();
+            });
+        } else {
+            startSync();
+        }
+    }
+
+    let autoSyncTimer = null;
+
+    function configureAutoSync(enabled) {
+        localStorage.setItem('matchingAutoSync', enabled ? '1' : '0');
+        if (autoSyncTimer) clearInterval(autoSyncTimer);
+        if (enabled) {
+            triggerGlobalSync(false);
+            autoSyncTimer = setInterval(() => triggerGlobalSync(false), 600000);
+        }
+    }
+
+    document.getElementById('syncNowButton')?.addEventListener('click', () => triggerGlobalSync());
+    document.getElementById('autoSyncToggle')?.addEventListener('change', function() {
+        configureAutoSync(this.checked);
+    });
+    const autoSyncToggle = document.getElementById('autoSyncToggle');
+    if (autoSyncToggle) {
+        autoSyncToggle.checked = localStorage.getItem('matchingAutoSync') === '1';
+        if (autoSyncToggle.checked) configureAutoSync(true);
+    }
 </script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

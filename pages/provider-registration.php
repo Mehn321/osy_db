@@ -65,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_provider']))
                 'password' => trim($_POST['password']),
                 'fullname' => trim($_POST['fullname']),
                 'role' => $_POST['provider_type'],
-                'barangay' => trim($_POST['address']),
+                'barangay' => $_POST['provider_type'] === 'employer' ? null : trim($_POST['address']),
                 'provider_type' => trim($_POST['provider_type']),
                 'provider_document_path' => $documentPath
             ];
