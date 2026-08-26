@@ -10,10 +10,163 @@ class Matching
 {
     private $db;
     private $table = 'osy_matches';
+    private $matchingConfig = []; // holds weights and filter flags
 
     public function __construct($database)
     {
         $this->db = $database;
+        // Load matching configuration (weights, filters)
+        $configPath = __DIR__ . '/../config/matching.php';
+        if (file_exists($configPath)) {
+            $this->matchingConfig = require $configPath;
+        } else {
+            // Default fallback configuration
+                $this->matchingConfig = [
+                    'demographic_weight' => 0.4,
+                    'semantic_weight'    => 0.6,
+                    'filter_age'        => true,
+                    'filter_location'   => true,
+                    'filter_education'  => true,
+                    'filter_gender'     => false,
+                ];
+        }
+
+    }
+
+    /**
+     * Filter demographic criteria based on config flags.
+     * Returns true if OSY passes all enabled demographic checks.
+     */
+    private function passesDemographicFilters(array $osy, array $opp): bool
+    {
+        // Age range
+        if (!empty($this->matchingConfig['filter_age'])) {
+            $userAge = intval($osy['age'] ?? 0);
+            $minAge = intval($opp['age_min'] ?? 0);
+            $maxAge = intval($opp['age_max'] ?? 0);
+            if ($userAge > 0) {
+                if ($minAge > 0 && $userAge < $minAge) return false;
+                if ($maxAge > 0 && $userAge > $maxAge) return false;
+            }
+        }
+
+        // Education level
+        if (!empty($this->matchingConfig['filter_education'])) {
+            $eduLevel = $osy['education_level'] ?? '';
+            $reqText = strtolower(($opp['certification'] ?? '') . ' ' . ($opp['description'] ?? ''));
+            $hasCollege = strpos($reqText, 'college') !== false || strpos($reqText, 'degree') !== false;
+            $hasHigh = strpos($reqText, 'high school') !== false || strpos($reqText, 'shs') !== false;
+            if ($hasCollege && !in_array($eduLevel, ['College Graduate', 'College Undergraduate'])) {
+                return false;
+            }
+            if ($hasHigh && !in_array($eduLevel, ['High School Graduate', 'Senior High School Graduate', 'College Undergraduate', 'College Graduate'])) {
+                return false;
+            }
+        }
+
+        // Location proximity / remote
+        if (!empty($this->matchingConfig['filter_location'])) {
+            $barangay = strtolower($osy['barangay'] ?? '');
+            $oppLoc = strtolower($opp['location'] ?? '');
+            if (strpos($oppLoc, $barangay) === false &&
+                strpos($oppLoc, 'any') === false &&
+                strpos($oppLoc, 'remote') === false &&
+                !empty($opp['location'])) {
+                return false;
+            }
+        }
+
+        // Gender (optional)
+        if (!empty($this->matchingConfig['filter_gender'])) {
+            if (isset($osy['gender']) && isset($opp['gender'])) {
+                if (strtolower($osy['gender']) !== strtolower($opp['gender'])) return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Obtain semantic skill alignment score via Gemini.
+     * Returns false on API failure.
+     */
+    private function calculateSemanticScore(array $osy, array $opp)
+    {
+        require_once __DIR__ . '/GeminiService.php';
+        $gemini = new GeminiService($this->db);
+        $score = $gemini->calculateScoreOnly($osy, $opp);
+        return $score; // may be false
+    }
+
+    /**
+     * Hybrid score combining demographic filter score and Gemini semantic score.
+     */
+    private function calculateHybridScore($osy_id, $opportunity_id)
+    {
+        // Load data
+        $osy = $this->db->fetchOne(
+            "SELECT primary_skill, skills, interests, education_level, age, barangay, gender FROM osy_profiles WHERE id = ? LIMIT 1",
+            [$osy_id],
+            "i"
+        );
+        $opp = $this->db->fetchOne(
+            "SELECT title, description, location, certification, age_min, age_max, gender FROM opportunities WHERE id = ? LIMIT 1",
+            [$opportunity_id],
+            "i"
+        );
+        if (!$osy || !$opp) return 0;
+
+        // Demographic score components (max 40)
+        $demoScore = 0;
+        // Age (up to 15)
+        if (!empty($this->matchingConfig['filter_age'])) {
+            $userAge = intval($osy['age'] ?? 0);
+            $minAge = intval($opp['age_min'] ?? 0);
+            $maxAge = intval($opp['age_max'] ?? 0);
+            if ($userAge > 0) {
+                if (($minAge == 0 || $userAge >= $minAge) && ($maxAge == 0 || $userAge <= $maxAge)) {
+                    $demoScore += 15;
+                }
+            }
+        }
+        // Education (up to 15)
+        if (!empty($this->matchingConfig['filter_education'])) {
+            $eduLevel = $osy['education_level'];
+            $reqText = strtolower(($opp['certification'] ?? '') . ' ' . ($opp['description'] ?? ''));
+            if (strpos($reqText, 'college') !== false || strpos($reqText, 'degree') !== false) {
+                if ($eduLevel == 'College Graduate') $demoScore += 15;
+                elseif ($eduLevel == 'College Undergraduate') $demoScore += 8;
+            } elseif (strpos($reqText, 'high school') !== false || strpos($reqText, 'shs') !== false) {
+                if (in_array($eduLevel, ['High School Graduate', 'Senior High School Graduate', 'College Undergraduate', 'College Graduate'])) {
+                    $demoScore += 15;
+                }
+            } else {
+                $demoScore += 5; // generic small credit
+            }
+        }
+        // Location (up to 10)
+        if (!empty($this->matchingConfig['filter_location'])) {
+            $barangay = strtolower($osy['barangay'] ?? '');
+            $oppLoc = strtolower($opp['location'] ?? '');
+            if (strpos($oppLoc, $barangay) !== false) {
+                $demoScore += 10;
+            } elseif (strpos($oppLoc, 'any') !== false || strpos($oppLoc, 'remote') !== false || empty($opp['location'])) {
+                $demoScore += 5;
+            }
+        }
+
+        // Semantic score via Gemini
+        $semanticScore = $this->calculateSemanticScore($osy, $opp);
+        if ($semanticScore === false) {
+            // Fallback to existing deterministic full match score
+            return $this->calculateMatchScore($osy_id, $opportunity_id);
+        }
+
+        // Weighting
+        $demoWeight = $this->matchingConfig['demographic_weight'] ?? 0.4;
+        $semanticWeight = $this->matchingConfig['semantic_weight'] ?? 0.6;
+        $combined = ($demoScore * $demoWeight) + ($semanticScore * $semanticWeight);
+        return min(100, max(0, $combined));
     }
 
     /**
@@ -350,7 +503,7 @@ class Matching
                 );
 
                 if (!$existing) {
-                    $score = $this->calculateMatchScore($osy['id'], $opportunity_id);
+                    $score = $this->calculateHybridScore($osy['id'], $opportunity_id);
                     $this->createMatch($osy['id'], $opportunity_id, $score);
                     $created++;
                 }

@@ -557,7 +557,9 @@ $basePath = $basePath === '/' ? '' : $basePath;
                     sidebar.classList.toggle('-translate-x-full');
                     overlay.classList.toggle('hidden');
                 }
-                document.getElementById('mobileMenuBtn')?.addEventListener('click', toggleSidebar);
+                document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('mobileMenuBtn')?.addEventListener('click', toggleSidebar);
+});
 
                 function toggleSubmenu(id) {
                     const el = document.getElementById(id);

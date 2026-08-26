@@ -76,7 +76,7 @@ class User
     /**
      * Login user
      */
-    public function login($username, $password)
+    public function login($username, $password, $allowedRoles = null)
     {
         try {
             $normalizedUsername = strtolower(trim($username));
@@ -127,6 +127,16 @@ class User
                 $this->db->execute("UPDATE users SET role = 'lydo' WHERE id = ?", [$user['id']], "i");
             }
             $status = $user['status'] ?? 'Active';
+
+            if ($allowedRoles !== null) {
+                if (is_string($allowedRoles)) {
+                    $allowedRoles = [$allowedRoles];
+                }
+
+                if (!in_array($role, $allowedRoles, true)) {
+                    throw new Exception('This account is not allowed to sign in on this page.');
+                }
+            }
 
             if (in_array($role, ['employer', 'training_provider']) && $status !== 'Active') {
                 throw new Exception("Your account is pending approval or not yet active.");
@@ -183,7 +193,7 @@ class User
                     'id' => $user['id'],
                     'username' => $user['username'],
                     'fullname' => $user['fullname'],
-                    'role' => $user['role']
+                    'role' => $role
                 ]
             ];
         } catch (Exception $e) {
