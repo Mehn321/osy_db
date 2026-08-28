@@ -9,22 +9,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = $_POST['username'] ?? '';
     $password = $_POST['password'] ?? '';
 
-    $result = $user->login($username, $password);
+    $result = $user->login($username, $password, ['lydo']);
 
-    if ($result['success']) {
-        // Validate role for LYDO login
-        if (isset($result['user']['role']) && $result['user']['role'] === 'lydo') {
-            if (!empty($_SESSION['temp_password_required'])) {
-                header('Location: password-reset.php');
-            } else {
-                header('Location: dashboard.php');
-            }
-            exit;
-        } else {
-            $login_error = 'Invalid role for this login page.';
-        }
+    if ($result['success'] && !empty($result['requires_otp'])) {
+        header('Location: verify-otp.php');
+        exit;
     } else {
-        $login_error = $result['message'];
+        $login_error = $result['message'] ?? 'Login failed.';
     }
 }
 
@@ -147,36 +138,36 @@ if ($user->isLoggedIn()) {
                         </div>
                     </div>
 
-            <!-- Submit Button -->
-            <button type="submit"
-                class="w-full bg-gradient-to-r from-blue-900 to-blue-800 text-white py-2 px-4 text-sm rounded-md font-medium shadow-md hover:shadow-lg transition-all active:scale-[0.98] mt-4">
-                <span class="flex items-center justify-center gap-2">
-                    <span class="material-symbols-outlined">login</span>
-                    Sign In
-                </span>
-            </button>
-            </form>
+                    <!-- Submit Button -->
+                    <button type="submit"
+                        class="w-full bg-gradient-to-r from-blue-900 to-blue-800 text-white py-2 px-4 text-sm rounded-md font-medium shadow-md hover:shadow-lg transition-all active:scale-[0.98] mt-4">
+                        <span class="flex items-center justify-center gap-2">
+                            <span class="material-symbols-outlined">login</span>
+                            Sign In
+                        </span>
+                    </button>
+                </form>
 
-            <!-- Youth & Provider Registration Links -->
-            <div class="mt-8 space-y-3 text-center border-t border-slate-200 pt-8">
-                <div>
-                    <p class="text-sm text-slate-600 mb-2">Are you a youth looking for opportunities?</p>
-                    <a href="youth-signup.php"
-                        class="inline-flex items-center gap-2 text-blue-900 font-semibold hover:underline">
-                        <span class="material-symbols-outlined text-base">person_add</span>
-                        Youth Sign Up
-                    </a>
-                </div>
-                <div>
-                    <p class="text-sm text-slate-600 mb-2">Are you an employer or training provider?</p>
-                    <a href="provider-registration.php"
-                        class="inline-flex items-center gap-2 text-blue-900 font-semibold hover:underline">
-                        <span class="material-symbols-outlined text-base">business</span>
-                        Register as Provider
-                    </a>
+                <!-- Youth & Provider Registration Links -->
+                <div class="mt-8 space-y-3 text-center border-t border-slate-200 pt-8">
+                    <div>
+                        <p class="text-sm text-slate-600 mb-2">Are you a youth looking for opportunities?</p>
+                        <a href="youth-signup.php"
+                            class="inline-flex items-center gap-2 text-blue-900 font-semibold hover:underline">
+                            <span class="material-symbols-outlined text-base">person_add</span>
+                            Youth Sign Up
+                        </a>
+                    </div>
+                    <div>
+                        <p class="text-sm text-slate-600 mb-2">Are you an employer or training provider?</p>
+                        <a href="provider-registration.php"
+                            class="inline-flex items-center gap-2 text-blue-900 font-semibold hover:underline">
+                            <span class="material-symbols-outlined text-base">business</span>
+                            Register as Provider
+                        </a>
+                    </div>
                 </div>
             </div>
-        </div>
         </div>
     </main>
 

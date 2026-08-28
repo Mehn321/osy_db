@@ -3,7 +3,7 @@ $pageTitle = 'Settings';
 require_once __DIR__ . '/../init.php';
 
 if (!$user->isLoggedIn()) {
-    header('Location: login.php');
+    header('Location: lydo-login.php');
     exit;
 }
 requireRole('lydo');
@@ -247,14 +247,14 @@ $scoringPct = $syncStats['total_possible'] > 0
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">New Password</label>
                         <div class="relative">
-                            <input type="password" name="new_password" required placeholder="Enter new password (min 6 chars)" minlength="6" class="w-full px-4 py-3 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-900" />
+                            <input type="password" name="new_password" required placeholder="Enter new password (12+ chars, letters/numbers/symbols)" minlength="12" class="w-full px-4 py-3 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-900" />
                             <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 toggle-password-btn"><span class="material-symbols-outlined">visibility</span></button>
                         </div>
                     </div>
 
                     <div>
                         <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Confirm New Password</label>
-                        <input type="password" name="confirm_password" required placeholder="Confirm new password" minlength="6" class="w-full px-4 py-3 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-900" />
+                        <input type="password" name="confirm_password" required placeholder="Confirm new password" minlength="12" class="w-full px-4 py-3 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-900" />
                     </div>
 
                     <button type="submit" name="change_password" value="1" class="px-8 py-3 bg-blue-900 text-white rounded-lg font-semibold hover:bg-blue-800 transition-colors">

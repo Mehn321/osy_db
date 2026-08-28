@@ -267,6 +267,69 @@ try {
     if (($adminCount['cnt'] ?? 0) > 0) {
         $conn->query("UPDATE users SET role = 'lydo' WHERE role = 'admin'");
     }
+
+    // ── 10. user_security_settings table ──────────────────────────────────────
+    $conn->query("CREATE TABLE IF NOT EXISTS `user_security_settings` (
+        `user_id` int(11) NOT NULL,
+        `two_factor_enabled` tinyint(1) NOT NULL DEFAULT 1,
+        `alert_email_enabled` tinyint(1) NOT NULL DEFAULT 1,
+        `last_password_changed_at` datetime DEFAULT NULL,
+        `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (`user_id`),
+        CONSTRAINT `fk_user_security_settings_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    $conn->query("INSERT IGNORE INTO user_security_settings (user_id, two_factor_enabled, alert_email_enabled)
+                  SELECT id, 1, 1 FROM users");
+
+    // ── 11. user_password_history table ───────────────────────────────────────
+    $conn->query("CREATE TABLE IF NOT EXISTS `user_password_history` (
+        `id` int(11) NOT NULL AUTO_INCREMENT,
+        `user_id` int(11) NOT NULL,
+        `password_hash` varchar(255) NOT NULL,
+        `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        KEY `idx_password_history_user` (`user_id`),
+        CONSTRAINT `fk_password_history_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    // Backfill password history for existing users (one record each)
+    $conn->query("INSERT INTO user_password_history (user_id, password_hash, created_at)
+                  SELECT u.id, u.password, NOW()
+                  FROM users u
+                  WHERE NOT EXISTS (
+                    SELECT 1 FROM user_password_history h WHERE h.user_id = u.id
+                  )");
+
+    // ── 12. user_2fa_codes table ──────────────────────────────────────────────
+    $conn->query("CREATE TABLE IF NOT EXISTS `user_2fa_codes` (
+        `id` int(11) NOT NULL AUTO_INCREMENT,
+        `user_id` int(11) NOT NULL,
+        `otp_hash` varchar(255) NOT NULL,
+        `expires_at` datetime NOT NULL,
+        `attempts` int(11) NOT NULL DEFAULT 0,
+        `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+        `consumed_at` datetime DEFAULT NULL,
+        PRIMARY KEY (`id`),
+        KEY `idx_user_2fa_user` (`user_id`),
+        KEY `idx_user_2fa_active` (`user_id`, `consumed_at`, `expires_at`),
+        CONSTRAINT `fk_user_2fa_codes_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    // ── 13. user_login_events table ───────────────────────────────────────────
+    $conn->query("CREATE TABLE IF NOT EXISTS `user_login_events` (
+        `id` int(11) NOT NULL AUTO_INCREMENT,
+        `user_id` int(11) NOT NULL,
+        `ip_address` varchar(45) DEFAULT NULL,
+        `user_agent` varchar(1000) DEFAULT NULL,
+        `login_at` datetime DEFAULT CURRENT_TIMESTAMP,
+        `login_result` enum('success','failed') NOT NULL,
+        `failure_reason` varchar(255) DEFAULT NULL,
+        PRIMARY KEY (`id`),
+        KEY `idx_user_login_events_user` (`user_id`),
+        KEY `idx_user_login_events_result` (`login_result`),
+        CONSTRAINT `fk_user_login_events_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 } catch (Exception $e) {
     // Silent – migrations must never interrupt page loads
     error_log('OSY Migration Error: ' . $e->getMessage());

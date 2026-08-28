@@ -4,12 +4,31 @@
  * Access control helpers for RBAC enforcement.
  */
 
+/**
+ * Return the correct login page for the current (or pending) user role.
+ */
+function getLoginPageForRole($role = null)
+{
+    if ($role === null) {
+        $role = $_SESSION['role'] ?? $_SESSION['pending_auth']['user']['role'] ?? null;
+    }
+    switch ($role) {
+        case 'lydo':       return 'lydo-login.php';
+        case 'sk_chairman': return 'sk-login.php';
+        case 'employer':
+        case 'training_provider': return 'provider-login.php';
+        case 'youth':
+        default:           return 'youth-login.php';
+    }
+}
+
 function requireLogin()
 {
     global $user;
     if (!isset($user) || !$user->isLoggedIn()) {
         $basePath = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
-        header('Location: ' . ($basePath === '/' ? '' : $basePath) . '/pages/login.php');
+        $loginPage = getLoginPageForRole();
+        header('Location: ' . ($basePath === '/' ? '' : $basePath) . '/pages/' . $loginPage);
         exit;
     }
 }
@@ -18,7 +37,8 @@ function requireRole($roles)
 {
     global $user;
     if (!isset($user) || !$user->isLoggedIn()) {
-        header('Location: pages/login.php');
+        $loginPage = getLoginPageForRole();
+        header('Location: ' . $loginPage);
         exit;
     }
 

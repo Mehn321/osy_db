@@ -103,8 +103,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
 
         if (empty($password)) {
             $errors[] = 'Password is required.';
-        } elseif (strlen($password) < 6) {
-            $errors[] = 'Password must be at least 6 characters.';
+        } elseif (strlen($password) < 12) {
+            $errors[] = 'Password must be at least 12 characters and include letters, numbers, and symbols.';
         }
 
         if ($password !== $confirmPassword) {

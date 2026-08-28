@@ -118,7 +118,7 @@ function consumeFormNonce($nonce)
 
 // Global CSRF Verification for POST requests
 // Exclude public pages from CSRF validation
-$publicPages = ['login.php', 'youth-signup.php', 'provider-registration.php', 'password-reset.php'];
+$publicPages = ['youth-login.php', 'lydo-login.php', 'sk-login.php', 'provider-login.php', 'youth-signup.php', 'provider-registration.php', 'password-reset.php', 'verify-otp.php'];
 $serverPhpSelf = $_SERVER['PHP_SELF'] ?? '';
 $serverRequestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $serverRequestUri = $_SERVER['REQUEST_URI'] ?? '';
@@ -159,7 +159,7 @@ if ($serverRequestMethod === 'POST' && !$isPublicPage) {
 if (isset($_SESSION['user_id']) && !empty($_SESSION['temp_password_required'])) {
     $isApi = (strpos($serverRequestUri, '/api/') !== false || strpos($serverPhpSelf, '/api/') !== false);
 
-    if ($currentPage !== 'password-reset.php' && $currentPage !== 'logout.php' && $currentPage !== 'login.php' && !$isApi) {
+    if ($currentPage !== 'password-reset.php' && $currentPage !== 'logout.php' && !$isApi) {
         $inPagesDir = (strpos($serverPhpSelf, '/pages/') !== false);
         if ($inPagesDir) {
             header('Location: password-reset.php');

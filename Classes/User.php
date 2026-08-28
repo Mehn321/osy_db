@@ -9,11 +9,22 @@
 class User
 {
     private $db;
+    private const PASSWORD_MIN_LENGTH = 12;
+    private const OTP_EXPIRY_SECONDS = 600;
+    private const OTP_RESEND_COOLDOWN_SECONDS = 60;
+    private const OTP_MAX_ATTEMPTS = 5;
     private $user_id;
     private $username;
     private $email;
     private $role;
     private $fullname;
+
+    private $commonWeakPasswords = [
+        'password', 'password123', '123456', '12345678', '123456789',
+        'qwerty', 'qwerty123', 'admin', 'admin123', 'letmein',
+        'welcome', 'iloveyou', 'abc123', '000000', '111111',
+        '123123', 'passw0rd', 'p@ssw0rd'
+    ];
 
     public function __construct($database)
     {
@@ -26,6 +37,15 @@ class User
     public function register($username, $email, $password, $fullname, $role = 'youth')
     {
         try {
+            $passwordValidation = $this->validateStrongPassword($password, [
+                'username' => $username,
+                'email' => $email,
+                'fullname' => $fullname,
+            ]);
+            if (!$passwordValidation['valid']) {
+                throw new Exception($passwordValidation['message']);
+            }
+
             // Check if username exists
             $existing = $this->db->fetchOne(
                 "SELECT id FROM users WHERE username = ? LIMIT 1",
@@ -60,10 +80,13 @@ class User
             $query = "INSERT INTO users (username, email, password, fullname, role, status, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())";
             $this->db->execute($query, [$username, $email, $hashed_password, $fullname, $role, $status], "ssssss");
 
+            $createdId = (int) $this->db->lastInsertId();
+            $this->rememberPassword($createdId, $hashed_password);
+
             return [
                 'success' => true,
                 'message' => 'User registered successfully',
-                'user_id' => $this->db->lastInsertId()
+                'user_id' => $createdId
             ];
         } catch (Exception $e) {
             return [
@@ -108,8 +131,15 @@ class User
                 $attempts++;
                 $_SESSION['login_attempts'][$attemptKey] = $attempts;
 
+                $this->recordLoginEvent((int) $user['id'], 'failed', 'invalid_password');
+
                 if ($attempts >= 5) {
                     $_SESSION['login_lockout_until'][$attemptKey] = $now + 900;
+                    $this->sendActivityAlertEmail(
+                        $user,
+                        'Security Alert: Login Locked',
+                        'Your account had multiple failed login attempts and has been temporarily locked for 15 minutes.'
+                    );
                     throw new Exception('Too many failed login attempts. Please wait 15 minutes before trying again.');
                 }
 
@@ -165,30 +195,31 @@ class User
             unset($_SESSION['login_attempts'][$attemptKey]);
             unset($_SESSION['login_lockout_until'][$attemptKey]);
 
-            // Regenerate session ID to prevent session fixation
-            if (session_status() === PHP_SESSION_ACTIVE) {
-                session_regenerate_id(true);
+            $ipAddress = $_SERVER['REMOTE_ADDR'] ?? '';
+            $userAgent = substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 1000);
+            $isNewDevice = !$this->isKnownLoginContext((int) $user['id'], $ipAddress, $userAgent);
+
+            $pendingUser = [
+                'id' => (int) $user['id'],
+                'username' => $user['username'],
+                'fullname' => $user['fullname'],
+                'email' => $user['email'],
+                'role' => $role,
+                'status' => $status,
+                'barangay' => $user['barangay'] ?? null,
+                'temp_password_required' => (int) ($user['temp_password_required'] ?? 0),
+                'is_new_device' => $isNewDevice,
+            ];
+
+            $otpResult = $this->startEmailOtpLogin($pendingUser);
+            if (!$otpResult['success']) {
+                throw new Exception($otpResult['message']);
             }
-
-            // Set session
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['username'] = $user['username'];
-            $_SESSION['fullname'] = $user['fullname'];
-            $_SESSION['role'] = $role;
-            $_SESSION['email'] = $user['email'];
-            $_SESSION['status'] = $status;
-            $_SESSION['barangay'] = $user['barangay'] ?? null;
-            $_SESSION['temp_password_required'] = $user['temp_password_required'] ?? 0;
-
-            $this->user_id = $user['id'];
-            $this->username = $user['username'];
-            $this->email = $user['email'];
-            $this->fullname = $user['fullname'];
-            $this->role = $role;
 
             return [
                 'success' => true,
-                'message' => 'Login successful',
+                'requires_otp' => true,
+                'message' => 'A verification code has been sent to your email address.',
                 'user' => [
                     'id' => $user['id'],
                     'username' => $user['username'],
@@ -256,8 +287,26 @@ class User
     public function updateProfile($user_id, $fullname, $email)
     {
         try {
+            $existing = $this->db->fetchOne(
+                "SELECT email, fullname FROM users WHERE id = ? LIMIT 1",
+                [$user_id],
+                "i"
+            );
+
             $query = "UPDATE users SET fullname = ?, email = ? WHERE id = ?";
             $this->db->execute($query, [$fullname, $email, $user_id], "ssi");
+
+            if ($existing && isset($existing['email']) && strcasecmp((string) $existing['email'], (string) $email) !== 0) {
+                $this->sendActivityAlertEmail(
+                    [
+                        'id' => (int) $user_id,
+                        'email' => (string) $email,
+                        'fullname' => (string) $fullname,
+                    ],
+                    'Security Alert: Email Address Changed',
+                    'Your account email address was changed. If this was not you, please secure your account immediately.'
+                );
+            }
 
             return [
                 'success' => true,
@@ -295,7 +344,7 @@ class User
     {
         try {
             $user = $this->db->fetchOne(
-                "SELECT password FROM users WHERE id = ? LIMIT 1",
+                "SELECT username, email, fullname, password FROM users WHERE id = ? LIMIT 1",
                 [$user_id],
                 "i"
             );
@@ -308,13 +357,40 @@ class User
                 throw new Exception("Current password is incorrect");
             }
 
-            if (strlen($new_password) < 6) {
-                throw new Exception("New password must be at least 6 characters");
+            $passwordValidation = $this->validateStrongPassword($new_password, [
+                'username' => $user['username'] ?? '',
+                'email' => $user['email'] ?? '',
+                'fullname' => $user['fullname'] ?? '',
+            ]);
+            if (!$passwordValidation['valid']) {
+                throw new Exception($passwordValidation['message']);
+            }
+
+            if ($this->isPasswordReused((int) $user_id, $new_password)) {
+                throw new Exception('You cannot reuse any of your last 5 passwords.');
             }
 
             $hashed = password_hash($new_password, PASSWORD_BCRYPT);
             $query = "UPDATE users SET password = ?, temp_password_required = 0 WHERE id = ?";
             $this->db->execute($query, [$hashed, $user_id], "si");
+            $this->rememberPassword((int) $user_id, $hashed);
+            $this->db->execute(
+                "INSERT INTO user_security_settings (user_id, two_factor_enabled, alert_email_enabled, last_password_changed_at, updated_at)
+                 VALUES (?, 1, 1, NOW(), NOW())
+                 ON DUPLICATE KEY UPDATE two_factor_enabled = 1, last_password_changed_at = NOW(), updated_at = NOW()",
+                [(int) $user_id],
+                'i'
+            );
+
+            $this->sendActivityAlertEmail(
+                [
+                    'id' => (int) $user_id,
+                    'email' => $user['email'] ?? '',
+                    'fullname' => $user['fullname'] ?? $user['username'] ?? 'User',
+                ],
+                'Security Alert: Password Changed',
+                'Your account password was changed. If this was not you, please contact support immediately.'
+            );
 
             return [
                 'success' => true,
@@ -352,7 +428,16 @@ class User
                 throw new Exception("Invalid role specified");
             }
 
-            $passwordPlain = $data['password'] ?? bin2hex(random_bytes(6));
+            $passwordPlain = $data['password'] ?? $this->generateStrongTemporaryPassword();
+            $passwordValidation = $this->validateStrongPassword($passwordPlain, [
+                'username' => $data['username'] ?? '',
+                'email' => $data['email'] ?? '',
+                'fullname' => $data['fullname'] ?? '',
+            ]);
+            if (!$passwordValidation['valid']) {
+                throw new Exception($passwordValidation['message']);
+            }
+
             $hashedPassword = password_hash($passwordPlain, PASSWORD_BCRYPT);
             $status = $data['status'] ?? 'Active';
             if (in_array($role, ['employer', 'training_provider'], true)) {
@@ -376,6 +461,7 @@ class User
             ], "sssssssssiss");
 
             $createdId = $this->db->lastInsertId();
+            $this->rememberPassword((int) $createdId, $hashedPassword);
             return [
                 'success' => true,
                 'message' => 'User created successfully',
@@ -472,5 +558,482 @@ class User
         $query .= " ORDER BY created_at DESC";
 
         return $this->db->fetchAll($query, $params, $types);
+    }
+
+    public function getSecuritySettings($userId)
+    {
+        $userId = (int) $userId;
+        $this->db->execute(
+            "INSERT IGNORE INTO user_security_settings (user_id, two_factor_enabled, alert_email_enabled) VALUES (?, 1, 1)",
+            [$userId],
+            'i'
+        );
+
+        $row = $this->db->fetchOne(
+            "SELECT two_factor_enabled, alert_email_enabled, last_password_changed_at, updated_at FROM user_security_settings WHERE user_id = ? LIMIT 1",
+            [$userId],
+            'i'
+        );
+
+        return [
+            'two_factor_enabled' => (int) ($row['two_factor_enabled'] ?? 1),
+            'alert_email_enabled' => (int) ($row['alert_email_enabled'] ?? 1),
+            'last_password_changed_at' => $row['last_password_changed_at'] ?? null,
+            'updated_at' => $row['updated_at'] ?? null,
+        ];
+    }
+
+    public function updateSecuritySettings($userId, $alertEmailEnabled)
+    {
+        try {
+            $userId = (int) $userId;
+            $alertEmailEnabled = $alertEmailEnabled ? 1 : 0;
+
+            // 2FA remains enforced and email-based in this rollout.
+            $this->db->execute(
+                "INSERT INTO user_security_settings (user_id, two_factor_enabled, alert_email_enabled, updated_at)
+                 VALUES (?, 1, ?, NOW())
+                 ON DUPLICATE KEY UPDATE two_factor_enabled = 1, alert_email_enabled = VALUES(alert_email_enabled), updated_at = NOW()",
+                [$userId, $alertEmailEnabled],
+                'ii'
+            );
+
+            return [
+                'success' => true,
+                'message' => 'Security preferences updated successfully.'
+            ];
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
+    public function getRecentLoginEvents($userId, $limit = 10)
+    {
+        $userId = (int) $userId;
+        $limit = max(1, min(50, (int) $limit));
+
+        return $this->db->fetchAll(
+            "SELECT login_at, ip_address, user_agent, login_result, failure_reason
+             FROM user_login_events
+             WHERE user_id = ?
+             ORDER BY id DESC
+             LIMIT ?",
+            [$userId, $limit],
+            'ii'
+        );
+    }
+
+    public function isOtpVerificationPending()
+    {
+        return !empty($_SESSION['pending_auth']) && !empty($_SESSION['pending_auth']['user']['id']);
+    }
+
+    public function getPendingOtpIdentityLabel()
+    {
+        if (!$this->isOtpVerificationPending()) {
+            return '';
+        }
+
+        $email = $_SESSION['pending_auth']['user']['email'] ?? '';
+        if ($email === '' || strpos($email, '@') === false) {
+            return 'your email';
+        }
+
+        [$local, $domain] = explode('@', $email, 2);
+        $maskedLocal = strlen($local) <= 2
+            ? substr($local, 0, 1) . '*'
+            : substr($local, 0, 2) . str_repeat('*', max(1, strlen($local) - 2));
+        return $maskedLocal . '@' . $domain;
+    }
+
+    public function verifyEmailOtpForPendingLogin($otp)
+    {
+        try {
+            if (!$this->isOtpVerificationPending()) {
+                throw new Exception('Your verification session has expired. Please log in again.');
+            }
+
+            $otp = trim($otp);
+            if (!preg_match('/^\d{6}$/', $otp)) {
+                throw new Exception('Enter a valid 6-digit verification code.');
+            }
+
+            $pendingUser = $_SESSION['pending_auth']['user'];
+            $userId = (int) $pendingUser['id'];
+
+            $otpRow = $this->db->fetchOne(
+                "SELECT id, otp_hash, expires_at, attempts FROM user_2fa_codes WHERE user_id = ? AND consumed_at IS NULL ORDER BY id DESC LIMIT 1",
+                [$userId],
+                'i'
+            );
+
+            if (!$otpRow) {
+                throw new Exception('Verification code not found. Please request a new code.');
+            }
+
+            if ((int) $otpRow['attempts'] >= self::OTP_MAX_ATTEMPTS) {
+                unset($_SESSION['pending_auth']);
+                throw new Exception('Too many verification attempts. Please log in again.');
+            }
+
+            $expiresAt = strtotime((string) $otpRow['expires_at']);
+            if ($expiresAt !== false && $expiresAt < time()) {
+                throw new Exception('Verification code expired. Please request a new code.');
+            }
+
+            if (!password_verify($otp, $otpRow['otp_hash'])) {
+                $this->db->execute(
+                    "UPDATE user_2fa_codes SET attempts = attempts + 1 WHERE id = ?",
+                    [(int) $otpRow['id']],
+                    'i'
+                );
+                throw new Exception('Invalid verification code.');
+            }
+
+            $this->db->execute(
+                "UPDATE user_2fa_codes SET consumed_at = NOW() WHERE id = ?",
+                [(int) $otpRow['id']],
+                'i'
+            );
+
+            $this->completeLoginSessionFromPendingAuth();
+
+            return [
+                'success' => true,
+                'message' => 'Verification successful.'
+            ];
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
+    public function resendEmailOtpForPendingLogin()
+    {
+        try {
+            if (!$this->isOtpVerificationPending()) {
+                throw new Exception('Your verification session has expired. Please log in again.');
+            }
+
+            $nextAllowedAt = (int) ($_SESSION['pending_auth']['resend_available_at'] ?? 0);
+            if ($nextAllowedAt > time()) {
+                $wait = $nextAllowedAt - time();
+                throw new Exception('Please wait ' . $wait . ' second(s) before requesting another code.');
+            }
+
+            $pendingUser = $_SESSION['pending_auth']['user'];
+            $otpResult = $this->sendEmailOtpCode($pendingUser);
+            if (!$otpResult['success']) {
+                throw new Exception($otpResult['message']);
+            }
+
+            $_SESSION['pending_auth']['resend_available_at'] = time() + self::OTP_RESEND_COOLDOWN_SECONDS;
+
+            return [
+                'success' => true,
+                'message' => 'A new verification code has been sent to your email.'
+            ];
+        } catch (Exception $e) {
+            return [
+                'success' => false,
+                'message' => $e->getMessage()
+            ];
+        }
+    }
+
+    private function startEmailOtpLogin(array $pendingUser)
+    {
+        if (empty($pendingUser['email']) || !filter_var($pendingUser['email'], FILTER_VALIDATE_EMAIL)) {
+            return [
+                'success' => false,
+                'message' => 'A valid email address is required to complete login verification.'
+            ];
+        }
+
+        $otpResult = $this->sendEmailOtpCode($pendingUser);
+        if (!$otpResult['success']) {
+            return $otpResult;
+        }
+
+        $_SESSION['pending_auth'] = [
+            'user' => $pendingUser,
+            'resend_available_at' => time() + self::OTP_RESEND_COOLDOWN_SECONDS,
+            'created_at' => time(),
+        ];
+
+        return [
+            'success' => true
+        ];
+    }
+
+    private function sendEmailOtpCode(array $pendingUser)
+    {
+        $userId = (int) ($pendingUser['id'] ?? 0);
+        $email = trim((string) ($pendingUser['email'] ?? ''));
+        if ($userId <= 0 || $email === '') {
+            return [
+                'success' => false,
+                'message' => 'Unable to send verification code. Missing account details.'
+            ];
+        }
+
+        $otpCode = (string) random_int(100000, 999999);
+        $otpHash = password_hash($otpCode, PASSWORD_BCRYPT);
+
+        $this->db->execute(
+            "UPDATE user_2fa_codes SET consumed_at = NOW() WHERE user_id = ? AND consumed_at IS NULL",
+            [$userId],
+            'i'
+        );
+
+        $this->db->execute(
+            "INSERT INTO user_2fa_codes (user_id, otp_hash, expires_at, attempts, created_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND), 0, NOW())",
+            [$userId, $otpHash, self::OTP_EXPIRY_SECONDS],
+            'isi'
+        );
+
+        require_once __DIR__ . '/EmailService.php';
+        $emailService = new EmailService($this->db);
+        $subject = 'Your Login Verification Code';
+        $body = $emailService->buildStyledEmail(
+            'Email Verification Required',
+            '<p>Hello,</p><p>Your one-time verification code is:</p><p style="font-size:30px;font-weight:800;letter-spacing:4px;margin:16px 0;color:#1d4ed8;">' . htmlspecialchars($otpCode) . '</p><p>This code expires in 10 minutes.</p><p>If you did not attempt to log in, please change your password immediately.</p>'
+        );
+
+        $sendResult = $emailService->send($email, $subject, $body);
+        if (!$sendResult['success']) {
+            return [
+                'success' => false,
+                'message' => 'Unable to send verification code email right now. Please try again later.'
+            ];
+        }
+
+        return [
+            'success' => true
+        ];
+    }
+
+    private function completeLoginSessionFromPendingAuth()
+    {
+        $pendingUser = $_SESSION['pending_auth']['user'] ?? null;
+        if (!$pendingUser || empty($pendingUser['id'])) {
+            throw new Exception('Verification session is invalid.');
+        }
+
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_regenerate_id(true);
+        }
+
+        $_SESSION['user_id'] = (int) $pendingUser['id'];
+        $_SESSION['username'] = $pendingUser['username'];
+        $_SESSION['fullname'] = $pendingUser['fullname'];
+        $_SESSION['role'] = $pendingUser['role'];
+        $_SESSION['email'] = $pendingUser['email'];
+        $_SESSION['status'] = $pendingUser['status'];
+        $_SESSION['barangay'] = $pendingUser['barangay'] ?? null;
+        $_SESSION['temp_password_required'] = (int) ($pendingUser['temp_password_required'] ?? 0);
+
+        $this->user_id = (int) $pendingUser['id'];
+        $this->username = $pendingUser['username'];
+        $this->email = $pendingUser['email'];
+        $this->fullname = $pendingUser['fullname'];
+        $this->role = $pendingUser['role'];
+
+        $this->recordLoginEvent((int) $pendingUser['id'], 'success', 'otp_verified');
+
+        if (!empty($pendingUser['is_new_device'])) {
+            $ip = $_SERVER['REMOTE_ADDR'] ?? 'Unknown IP';
+            $agent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown browser';
+            $this->sendActivityAlertEmail(
+                $pendingUser,
+                'Security Alert: New Login Activity',
+                'We noticed a login from a new browser or network. IP: ' . htmlspecialchars($ip) . '. Browser: ' . htmlspecialchars(substr($agent, 0, 120)) . '. If this was not you, reset your password immediately.'
+            );
+        }
+
+        unset($_SESSION['pending_auth']);
+    }
+
+    private function validateStrongPassword($password, array $context = [])
+    {
+        $password = (string) $password;
+
+        if (strlen($password) < self::PASSWORD_MIN_LENGTH) {
+            return [
+                'valid' => false,
+                'message' => 'Password must be at least ' . self::PASSWORD_MIN_LENGTH . ' characters long.'
+            ];
+        }
+
+        if (!preg_match('/[A-Z]/', $password) || !preg_match('/[a-z]/', $password)) {
+            return [
+                'valid' => false,
+                'message' => 'Password must include both uppercase and lowercase letters.'
+            ];
+        }
+
+        if (!preg_match('/\d/', $password)) {
+            return [
+                'valid' => false,
+                'message' => 'Password must include at least one number.'
+            ];
+        }
+
+        if (!preg_match('/[^a-zA-Z0-9]/', $password)) {
+            return [
+                'valid' => false,
+                'message' => 'Password must include at least one symbol.'
+            ];
+        }
+
+        $lower = strtolower(trim($password));
+        if (in_array($lower, $this->commonWeakPasswords, true)) {
+            return [
+                'valid' => false,
+                'message' => 'This password is too common or weak. Please choose a stronger password.'
+            ];
+        }
+
+        $keywords = [];
+        if (!empty($context['username'])) {
+            $keywords[] = strtolower((string) $context['username']);
+        }
+        if (!empty($context['email']) && strpos((string) $context['email'], '@') !== false) {
+            $keywords[] = strtolower(substr((string) $context['email'], 0, strpos((string) $context['email'], '@')));
+        }
+        if (!empty($context['fullname'])) {
+            $fullname = strtolower((string) $context['fullname']);
+            foreach (preg_split('/\s+/', $fullname) as $part) {
+                if ($part !== '') {
+                    $keywords[] = $part;
+                }
+            }
+        }
+
+        foreach (array_unique($keywords) as $keyword) {
+            if (strlen($keyword) >= 3 && strpos($lower, $keyword) !== false) {
+                return [
+                    'valid' => false,
+                    'message' => 'Password must not contain your personal account details.'
+                ];
+            }
+        }
+
+        return ['valid' => true, 'message' => 'OK'];
+    }
+
+    private function isPasswordReused($userId, $plainPassword)
+    {
+        $rows = $this->db->fetchAll(
+            "SELECT password_hash FROM user_password_history WHERE user_id = ? ORDER BY id DESC LIMIT 5",
+            [(int) $userId],
+            'i'
+        );
+
+        foreach ($rows as $row) {
+            if (!empty($row['password_hash']) && password_verify($plainPassword, $row['password_hash'])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function rememberPassword($userId, $hash)
+    {
+        $this->db->execute(
+            "INSERT INTO user_password_history (user_id, password_hash, created_at) VALUES (?, ?, NOW())",
+            [(int) $userId, $hash],
+            'is'
+        );
+
+        $this->db->execute(
+            "DELETE FROM user_password_history WHERE user_id = ? AND id NOT IN (SELECT id FROM (SELECT id FROM user_password_history WHERE user_id = ? ORDER BY id DESC LIMIT 5) t)",
+            [(int) $userId, (int) $userId],
+            'ii'
+        );
+    }
+
+    private function generateStrongTemporaryPassword()
+    {
+        $upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+        $lower = 'abcdefghijkmnopqrstuvwxyz';
+        $digits = '23456789';
+        $symbols = '!@#$%^&*()-_=+?';
+
+        $passwordChars = [
+            $upper[random_int(0, strlen($upper) - 1)],
+            $lower[random_int(0, strlen($lower) - 1)],
+            $digits[random_int(0, strlen($digits) - 1)],
+            $symbols[random_int(0, strlen($symbols) - 1)],
+        ];
+
+        $all = $upper . $lower . $digits . $symbols;
+        while (count($passwordChars) < 14) {
+            $passwordChars[] = $all[random_int(0, strlen($all) - 1)];
+        }
+
+        shuffle($passwordChars);
+        return implode('', $passwordChars);
+    }
+
+    private function isKnownLoginContext($userId, $ipAddress, $userAgent)
+    {
+        if ($ipAddress === '' && $userAgent === '') {
+            return true;
+        }
+
+        $row = $this->db->fetchOne(
+            "SELECT id FROM user_login_events WHERE user_id = ? AND login_result = 'success' AND ip_address = ? AND user_agent = ? LIMIT 1",
+            [(int) $userId, (string) $ipAddress, (string) $userAgent],
+            'iss'
+        );
+
+        return !empty($row);
+    }
+
+    private function recordLoginEvent($userId, $result, $reason = '')
+    {
+        $ipAddress = substr((string) ($_SERVER['REMOTE_ADDR'] ?? ''), 0, 45);
+        $userAgent = substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 1000);
+
+        $this->db->execute(
+            "INSERT INTO user_login_events (user_id, ip_address, user_agent, login_at, login_result, failure_reason) VALUES (?, ?, ?, NOW(), ?, ?)",
+            [(int) $userId, $ipAddress, $userAgent, (string) $result, (string) $reason],
+            'issss'
+        );
+    }
+
+    private function sendActivityAlertEmail(array $userData, $subject, $message)
+    {
+        $userId = (int) ($userData['id'] ?? 0);
+        $email = (string) ($userData['email'] ?? '');
+        if ($userId <= 0 || $email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return;
+        }
+
+        $alertPref = $this->db->fetchOne(
+            "SELECT alert_email_enabled FROM user_security_settings WHERE user_id = ? LIMIT 1",
+            [$userId],
+            'i'
+        );
+
+        if (isset($alertPref['alert_email_enabled']) && (int) $alertPref['alert_email_enabled'] !== 1) {
+            return;
+        }
+
+        require_once __DIR__ . '/EmailService.php';
+        $emailService = new EmailService($this->db);
+        $name = htmlspecialchars((string) ($userData['fullname'] ?? $userData['username'] ?? 'User'));
+        $body = $emailService->buildStyledEmail(
+            'Account Activity Alert',
+            '<p>Hello ' . $name . ',</p><p>' . htmlspecialchars($message) . '</p><p>Time: ' . date('Y-m-d H:i:s') . '</p>'
+        );
+        $emailService->send($email, $subject, $body);
     }
 }

@@ -21,8 +21,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_provider']))
             if (empty($password)) {
                 throw new Exception('Password is required.');
             }
-            if (strlen($password) < 6) {
-                throw new Exception('Password must be at least 6 characters.');
+            if (strlen($password) < 12) {
+                throw new Exception('Password must be at least 12 characters and include letters, numbers, and symbols.');
             }
             if ($password !== $confirmPassword) {
                 throw new Exception('Passwords do not match.');
@@ -223,7 +223,7 @@ if ($user->isLoggedIn()) {
                             <input type="password" name="password" id="password" required class="w-full bg-slate-100 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900" placeholder="Choose a secure password">
                             <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 toggle-password-btn"><span class="material-symbols-outlined">visibility</span></button>
                         </div>
-                        <p class="text-xs text-slate-500">Password must be at least 6 characters long.</p>
+                        <p class="text-xs text-slate-500">Use at least 12 characters with uppercase, lowercase, numbers, and symbols.</p>
                     </div>
 
                     <!-- Confirm Password -->

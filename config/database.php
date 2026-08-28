@@ -105,6 +105,24 @@ error_reporting(E_ALL);
 ini_set('display_errors', 0);
 
 // Session configuration
+ini_set('session.cookie_httponly', 1);
+ini_set('session.use_only_cookies', 1);
+ini_set('session.cookie_samesite', 'Lax');
+
+// If using HTTPS, force secure cookies (we check if it's HTTPS or typically true in prod)
+if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
+    ini_set('session.cookie_secure', 1);
+}
+
+// Security headers (CSP, HSTS, X-Frame-Options, Referrer-Policy, X-Content-Type-Options)
+header("X-Content-Type-Options: nosniff");
+header("X-Frame-Options: SAMEORIGIN");
+header("X-XSS-Protection: 1; mode=block");
+header("Referrer-Policy: strict-origin-when-cross-origin");
+header("Strict-Transport-Security: max-age=31536000; includeSubDomains");
+// Content-Security-Policy can be tricky depending on inline scripts, so we start with a permissive but solid base
+header("Content-Security-Policy: default-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://fonts.gstatic.com https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net data: blob:; img-src 'self' data: blob: https: http:;");
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }

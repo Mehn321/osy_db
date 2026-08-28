@@ -4,7 +4,8 @@ require_once __DIR__ . '/../init.php';
 
 // Ensure user is logged in
 if (!$user->isLoggedIn()) {
-    header('Location: login.php');
+    $loginPage = function_exists('getLoginPageForRole') ? getLoginPageForRole() : 'youth-login.php';
+    header('Location: ' . $loginPage);
     exit;
 }
 
@@ -23,8 +24,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = 'All fields are required.';
         } elseif ($new_password !== $confirm_password) {
             $error = 'New passwords do not match.';
-        } elseif (strlen($new_password) < 6) {
-            $error = 'New password must be at least 6 characters.';
+        } elseif (strlen($new_password) < 12) {
+            $error = 'New password must be at least 12 characters and include letters, numbers, and symbols.';
         } else {
             $result = $user->changePassword($_SESSION['user_id'], $current_password, $new_password);
             if ($result['success']) {
@@ -102,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="relative">
                     <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><span class="material-symbols-outlined text-lg">lock</span></span>
                     <div class="relative">
-                        <input type="password" name="new_password" required minlength="6" class="block w-full pl-4 pr-12 py-2.5 bg-slate-100 border border-transparent focus:border-blue-900 focus:ring-0 rounded-lg text-sm" placeholder="At least 6 characters">
+                        <input type="password" name="new_password" required minlength="12" class="block w-full pl-4 pr-12 py-2.5 bg-slate-100 border border-transparent focus:border-blue-900 focus:ring-0 rounded-lg text-sm" placeholder="Use 12+ chars with letters, numbers, symbols">
                         <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 toggle-password-btn"><span class="material-symbols-outlined">visibility</span></button>
                     </div>
                 </div>
@@ -113,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="relative">
                     <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><span class="material-symbols-outlined text-lg">lock</span></span>
                     <div class="relative">
-                        <input type="password" name="confirm_password" required minlength="6" class="block w-full pl-4 pr-12 py-2.5 bg-slate-100 border border-transparent focus:border-blue-900 focus:ring-0 rounded-lg text-sm" placeholder="Re-enter new password">
+                        <input type="password" name="confirm_password" required minlength="12" class="block w-full pl-4 pr-12 py-2.5 bg-slate-100 border border-transparent focus:border-blue-900 focus:ring-0 rounded-lg text-sm" placeholder="Re-enter new password">
                         <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 toggle-password-btn"><span class="material-symbols-outlined">visibility</span></button>
                     </div>
                 </div>
