@@ -22,65 +22,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_youth'])) {
         $message = 'Duplicate or invalid form submission detected.';
         $messageType = 'error';
     } else {
-    $profileId = intval($_POST['profile_id']);
-    
-    // Scoping check for SK Chairman
-    if ($_SESSION['role'] === 'sk_chairman') {
-        $checkProfile = $osyProfile->getById($profileId);
-        if ($checkProfile && $checkProfile['barangay'] !== $_SESSION['barangay']) {
-            die("Access Denied: Cannot verify youth from another barangay.");
-        }
-    }
+        $profileId = intval($_POST['profile_id']);
 
-    $action = $_POST['action'] === 'approve' ? 'Verified' : 'Declined';
-    $remark = trim($_POST['remark'] ?? '');
-
-    $result = $osyProfile->setVerificationStatus($profileId, $action, $remark, $_SESSION['user_id']);
-
-    if ($result['success']) {
-        // Get the profile with user_id (created_by)
-        $profile = $osyProfile->getById($profileId);
-
-        if ($profile && isset($profile['created_by'])) {
-            $userId = $profile['created_by'];
-
-            // Update user status to match verification
-            $userStatusMap = [
-                'Verified' => 'Active',   // Approved youth can now access system
-                'Declined' => 'Declined'  // Rejected youth cannot access
-            ];
-
-            $newUserStatus = $userStatusMap[$action] ?? 'Pending';
-            $database->execute(
-                "UPDATE users SET status = ? WHERE id = ?",
-                [$newUserStatus, $userId],
-                "si"
-            );
-
-            // Send notification to youth
-            $notification->sendToUser(
-                $userId,
-                'Profile Verification ' . ($action === 'Verified' ? 'Approved' : 'Declined'),
-                'Your youth registration has been ' . strtolower($action) . ($remark ? ': ' . $remark : '.'),
-                'System'
-            );
+        // Scoping check for SK Chairman
+        if ($_SESSION['role'] === 'sk_chairman') {
+            $checkProfile = $osyProfile->getById($profileId);
+            if ($checkProfile && $checkProfile['barangay'] !== $_SESSION['barangay']) {
+                die("Access Denied: Cannot verify youth from another barangay.");
+            }
         }
 
-        $message = 'Youth profile has been ' . strtolower($action) . '.';
-        $messageType = 'success';
+        $action = $_POST['action'] === 'approve' ? 'Verified' : 'Action Required';
+        $remark = trim($_POST['remark'] ?? '');
 
-        $auditLog->logAction(
-            $_SESSION['user_id'],
-            $_SESSION['role'],
-            $action === 'Verified' ? 'Approved youth verification' : 'Rejected youth verification',
-            'OSYProfile',
-            $profileId,
-            json_encode(['remark' => $remark])
-        );
-    } else {
-        $message = $result['message'];
-        $messageType = 'error';
-    }
+        $result = $osyProfile->setVerificationStatus($profileId, $action, $remark, $_SESSION['user_id']);
+
+        if ($result['success']) {
+            // Get the profile with user_id (created_by)
+            $profile = $osyProfile->getById($profileId);
+
+            if ($profile && isset($profile['created_by'])) {
+                $userId = $profile['created_by'];
+
+                // Update user status to match verification.
+                // For a returned-for-correction profile, keep the user pending so the youth cannot log in yet.
+                $newUserStatus = ($action === 'Verified') ? 'Active' : 'Pending';
+                $database->execute(
+                    "UPDATE users SET status = ? WHERE id = ?",
+                    [$newUserStatus, $userId],
+                    "si"
+                );
+
+                // Send notification to youth
+                $notification->sendToUser(
+                    $userId,
+                    'Profile Verification ' . ($action === 'Verified' ? 'Approved ✅' : 'Needs Action ⚠️'),
+                    $action === 'Verified'
+                        ? 'Your youth registration has been approved. You can now log in to the system.'
+                        : 'Your youth registration needs attention. ' . ($remark ? 'Reason: ' . $remark : 'Please review and update your profile.'),
+                    'System'
+                );
+            }
+
+            $message = 'Youth profile has been ' . ($action === 'Verified' ? 'approved' : 'returned for action') . '.';
+            $messageType = 'success';
+
+            $auditLog->logAction(
+                $_SESSION['user_id'],
+                $_SESSION['role'],
+                $action === 'Verified' ? 'Approved youth verification' : 'Returned youth for correction',
+                'OSYProfile',
+                $profileId,
+                json_encode(['remark' => $remark])
+            );
+        } else {
+            $message = $result['message'];
+            $messageType = 'error';
+        }
     }
 }
 

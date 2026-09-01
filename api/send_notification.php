@@ -9,6 +9,18 @@
  */
 header('Content-Type: application/json');
 
+// Suppress default error output and catch all errors
+set_error_handler(function ($errno, $errstr, $errfile, $errline) {
+  echo json_encode(['success' => false, 'message' => 'Server error: ' . $errstr]);
+  exit;
+});
+
+// Catch uncaught exceptions
+set_exception_handler(function ($exception) {
+  echo json_encode(['success' => false, 'message' => 'Server error: ' . $exception->getMessage()]);
+  exit;
+});
+
 require_once __DIR__ . '/../init.php';
 
 if (!$user->isLoggedIn()) {
@@ -21,8 +33,15 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
   exit;
 }
 
-// Prevent duplicate submissions using server-side form nonce
-if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
+// Validate form nonce exists (but don't consume yet - only consume after successful processing)
+$formNonce = $_POST['form_nonce'] ?? '';
+if (empty($formNonce)) {
+  echo json_encode(['success' => false, 'message' => 'Missing form nonce.']);
+  exit;
+}
+
+// Verify nonce is valid (check if it matches session)
+if (empty($_SESSION['form_nonce']) || !hash_equals($_SESSION['form_nonce'], $formNonce)) {
   echo json_encode(['success' => false, 'message' => 'This request has already been submitted or the session expired.']);
   exit;
 }
@@ -248,87 +267,127 @@ if ($smsEnabled || $emailEnabled) {
   }
 }
 
+// ── Send to Traccar App (for LYDO, SK, and Providers) ────────────────────────
+$traccar_sent = 0;
+$traccar_failed = 0;
+
+if ($inAppEnabled && in_array($_SESSION['role'] ?? '', ['lydo', 'sk_chairman', 'provider'])) {
+  require_once __DIR__ . '/../Classes/TraccarNotificationService.php';
+  $traccarNotif = new TraccarNotificationService($database);
+
+  // Collect recipient IDs
+  $recipientIds = [];
+  foreach ($recipients as $rec) {
+    if (!empty($rec['id'])) {
+      $recipientIds[] = $rec['id'];
+    }
+  }
+
+  if (!empty($recipientIds)) {
+    $personalMsg = replaceTemplateVars($message_text, ['first_name' => '', 'last_name' => ''], $broadcastVars);
+
+    if ($_SESSION['role'] === 'lydo') {
+      $r = $traccarNotif->sendFromLydo($_SESSION['user_id'], $recipientIds, $title, $personalMsg, $type);
+    } elseif ($_SESSION['role'] === 'sk_chairman') {
+      $r = $traccarNotif->sendFromSK($_SESSION['user_id'], $recipientIds, $title, $personalMsg, $type);
+    } elseif ($_SESSION['role'] === 'provider') {
+      $r = $traccarNotif->sendFromProvider($_SESSION['user_id'], $recipientIds, $title, $personalMsg, $type);
+    }
+
+    if (!empty($r)) {
+      $traccar_sent = $r['sent'] ?? 0;
+      $traccar_failed = $r['failed'] ?? 0;
+    }
+  }
+}
+
 // ── Log to DB ─────────────────────────────────────────────────────────────────
 // Log to DB
 $result = ['success' => true, 'message' => 'Notification created successfully', 'id' => null];
 
 // If this is an AI credit notification, limit to LYDO only
 if (isset($type) && strtolower($type) === 'ai_credit') {
-    // Find LYDO user id
-    $lydoUser = $database->fetchOne("SELECT id FROM users WHERE role = 'lydo' LIMIT 1");
-    $lydoId = $lydoUser['id'] ?? null;
-    if (!$lydoId) {
-        echo json_encode(['success' => false, 'message' => 'LYDO user not found']);
-        exit;
-    }
-    if (!$inAppEnabled) {
-        $result['message'] = 'External notification sent successfully.';
+  // Find LYDO user id
+  $lydoUser = $database->fetchOne("SELECT id FROM users WHERE role = 'lydo' LIMIT 1");
+  $lydoId = $lydoUser['id'] ?? null;
+  if (!$lydoId) {
+    echo json_encode(['success' => false, 'message' => 'LYDO user not found']);
+    exit;
+  }
+  if (!$inAppEnabled) {
+    $result['message'] = 'External notification sent successfully.';
+  } else {
+    $note = $notification->create([
+      'title'          => $title,
+      'message'        => $message_text,
+      'type'           => $type,
+      'recipient_type' => 'Specific',
+      'recipient_id'   => $lydoId
+    ]);
+    if ($note['success']) {
+      $result['id'] = $note['id'];
+      $result['message'] = 'Notification sent to LYDO successfully.';
     } else {
-        $note = $notification->create([
-            'title'          => $title,
-            'message'        => $message_text,
-            'type'           => $type,
-            'recipient_type' => 'Specific',
-            'recipient_id'   => $lydoId
-        ]);
-        if ($note['success']) {
-            $result['id'] = $note['id'];
-            $result['message'] = 'Notification sent to LYDO successfully.';
-        } else {
-            $result = $note;
-        }
+      $result = $note;
     }
+  }
 } else {
-    // Existing generic handling
-    if (!$inAppEnabled) {
-        $result['message'] = 'External notification sent successfully.';
-    } elseif ($recipient_type_db === 'Specific' && $target_group === 'Specific') {
-        $created = 0;
-        foreach ($recipients as $rec) {
-            $recipientId = $rec['created_by'] ?? null;
-            if (!$recipientId) continue;
-            $note = $notification->create([
-                'title'          => $title,
-                'message'        => replaceTemplateVars($message_text, $rec, $broadcastVars),
-                'type'           => $type,
-                'recipient_type' => 'Specific',
-                'recipient_id'   => $recipientId
-            ]);
-            if ($note['success']) $created++;
-        }
-        $result['id'] = $created > 0 ? 1 : null;
-        $result['message'] = "Notification broadcast successfully to {$created} specific recipient(s).";
-    } elseif ($recipient_type_db === 'Barangay') {
-        $created = 0;
-        foreach ($recipients as $rec) {
-            $recipientId = $rec['created_by'] ?? null;
-            if (!$recipientId) continue;
-            $note = $notification->create([
-                'title'          => $title,
-                'message'        => replaceTemplateVars($message_text, $rec, $broadcastVars),
-                'type'           => $type,
-                'recipient_type' => 'Specific',
-                'recipient_id'   => $recipientId
-            ]);
-            if ($note['success']) $created++;
-        }
-        $result = ['success' => true, 'message' => "Notification broadcast successfully to {$created} recipient(s).", 'id' => $created > 0 ? 1 : null];
-    } else {
-        $result = $notification->create([
-            'title'          => $title,
-            'message'        => $message_text,
-            'type'           => $type,
-            'recipient_type' => $recipient_type_db,
-        ]);
+  // Existing generic handling
+  if (!$inAppEnabled) {
+    $result['message'] = 'External notification sent successfully.';
+  } elseif ($recipient_type_db === 'Specific' && $target_group === 'Specific') {
+    $created = 0;
+    foreach ($recipients as $rec) {
+      $recipientId = $rec['created_by'] ?? null;
+      if (!$recipientId) continue;
+      $note = $notification->create([
+        'title'          => $title,
+        'message'        => replaceTemplateVars($message_text, $rec, $broadcastVars),
+        'type'           => $type,
+        'recipient_type' => 'Specific',
+        'recipient_id'   => $recipientId
+      ]);
+      if ($note['success']) $created++;
     }
+    $result['id'] = $created > 0 ? 1 : null;
+    $result['message'] = "Notification broadcast successfully to {$created} specific recipient(s).";
+  } elseif ($recipient_type_db === 'Barangay') {
+    $created = 0;
+    foreach ($recipients as $rec) {
+      $recipientId = $rec['created_by'] ?? null;
+      if (!$recipientId) continue;
+      $note = $notification->create([
+        'title'          => $title,
+        'message'        => replaceTemplateVars($message_text, $rec, $broadcastVars),
+        'type'           => $type,
+        'recipient_type' => 'Specific',
+        'recipient_id'   => $recipientId
+      ]);
+      if ($note['success']) $created++;
+    }
+    $result = ['success' => true, 'message' => "Notification broadcast successfully to {$created} recipient(s).", 'id' => $created > 0 ? 1 : null];
+  } else {
+    $result = $notification->create([
+      'title'          => $title,
+      'message'        => $message_text,
+      'type'           => $type,
+      'recipient_type' => $recipient_type_db,
+    ]);
+  }
 }
 
 $summary = 'Notification broadcast successfully to ' . count($recipients) . ' recipient(s).';
-if ($smsEnabled || $emailEnabled) {
+if ($smsEnabled || $emailEnabled || $traccar_sent > 0) {
   $parts = [];
   if ($smsEnabled)   $parts[] = "SMS: {$sms_sent} sent, {$sms_failed} failed";
   if ($emailEnabled) $parts[] = "Email: {$email_sent} sent, {$email_failed} failed";
+  if ($traccar_sent > 0 || $traccar_failed > 0) $parts[] = "Traccar App: {$traccar_sent} sent, {$traccar_failed} failed";
   $summary .= ' | ' . implode(' | ', $parts);
+}
+
+// Only consume the nonce after successful processing is complete
+if ($result['success']) {
+  unset($_SESSION['form_nonce']);
 }
 
 echo json_encode([
@@ -338,6 +397,8 @@ echo json_encode([
   'sms_failed'   => $sms_failed,
   'email_sent'   => $email_sent,
   'email_failed' => $email_failed,
+  'traccar_sent' => $traccar_sent,
+  'traccar_failed' => $traccar_failed,
   'errors'       => array_slice($errors, 0, 5),
   'notification' => $result['success'] ? [
     'id'             => $result['id'],

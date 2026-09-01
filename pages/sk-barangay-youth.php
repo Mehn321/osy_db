@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_youth'])) {
         $messageType = 'error';
     } else {
         $profileId = intval($_POST['profile_id'] ?? 0);
-        $actionRaw = $_POST['action'] ?? '';
+        $actionRaw = strtolower(trim($_POST['action'] ?? ''));
         $remark    = trim($_POST['remark'] ?? '');
 
         // Security: ensure this profile belongs to the SK's own barangay
@@ -39,23 +39,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_youth'])) {
         $result    = $osyProfile->setVerificationStatus($profileId, $newStatus, $remark, $_SESSION['user_id']);
 
         if ($result['success']) {
-            // Activate or keep pending the linked user account
-            if ($checkProfile['created_by']) {
+            // IMPORTANT: Activate or keep pending the linked user account
+            // The youth cannot login unless users.status = 'Active'
+            $updateSuccess = false;
+            if (!empty($checkProfile['created_by'])) {
                 $userStatus = ($newStatus === 'Verified') ? 'Active' : 'Pending';
-                $database->execute(
-                    "UPDATE users SET status = ? WHERE id = ?",
-                    [$userStatus, $checkProfile['created_by']],
-                    "si"
-                );
+                try {
+                    $updateResult = $database->execute(
+                        "UPDATE users SET status = ? WHERE id = ?",
+                        [$userStatus, $checkProfile['created_by']],
+                        "si"
+                    );
+                    
+                    // Verify the update succeeded
+                    if ($updateResult === 1 || $updateResult > 0) {
+                        $updateSuccess = true;
+                    } else {
+                        // Log warning but don't fail the approval
+                        error_log("WARNING: Users table update returned {$updateResult} affected rows. User ID: " . $checkProfile['created_by'] . ", Status: {$userStatus}");
+                    }
+                } catch (Exception $e) {
+                    error_log("ERROR: Failed to update user status. Exception: " . $e->getMessage());
+                }
+            } else {
+                error_log("WARNING: Profile created_by is missing or invalid. Profile ID: {$profileId}");
             }
 
             // Notify the youth
-            if ($checkProfile['created_by']) {
+            if (!empty($checkProfile['created_by'])) {
                 $notif->sendToUser(
                     $checkProfile['created_by'],
                     'Profile Verification ' . ($newStatus === 'Verified' ? 'Approved ✅' : 'Needs Action ⚠️'),
                     $newStatus === 'Verified'
-                        ? "Your registration in Barangay {$userBarangay} has been approved by your SK Chairman."
+                        ? "Your registration in Barangay {$userBarangay} has been approved by your SK Chairman. You can now log in to your account."
                         : "Your registration was reviewed. Reason: " . ($remark ?: 'Please update your submitted documents.'),
                     'SK Chairman'
                 );
@@ -67,7 +83,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_youth'])) {
                 $newStatus === 'Verified' ? 'Approved youth from barangay portal' : 'Flagged youth for action from barangay portal',
                 'OSYProfile',
                 $profileId,
-                json_encode(['remark' => $remark])
+                json_encode(['remark' => $remark, 'user_update_success' => $updateSuccess])
             );
 
             $message     = 'Youth profile has been ' . ($newStatus === 'Verified' ? 'approved' : 'returned for action') . '.';
@@ -81,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_youth'])) {
 
 // ── Fetch pending youth awaiting SK approval ───────────────────────────────
 $pendingYouth = $database->fetchAll(
-    "SELECT * FROM osy_profiles WHERE barangay = ? AND verification_status = 'Pending' ORDER BY created_at ASC",
+    "SELECT * FROM osy_profiles WHERE barangay = ? AND verification_status IN ('Pending', 'Drafting', 'Action Required') ORDER BY created_at ASC",
     [$userBarangay],
     "s"
 );
@@ -123,10 +139,10 @@ require_once __DIR__ . '/../includes/header.php';
                 Register Youth
             </a>
             <?php if (!empty($pendingYouth)): ?>
-            <span class="bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-bold border border-amber-200 dark:border-amber-800">
-                <span class="material-symbols-outlined text-base">hourglass_empty</span>
-                <?= count($pendingYouth) ?> Awaiting Approval
-            </span>
+                <span class="bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-bold border border-amber-200 dark:border-amber-800">
+                    <span class="material-symbols-outlined text-base">hourglass_empty</span>
+                    <?= count($pendingYouth) ?> Awaiting Approval
+                </span>
             <?php endif; ?>
             <div class="bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-200 px-4 py-2 rounded-xl flex items-center gap-2 border border-blue-200 dark:border-blue-800">
                 <span class="material-symbols-outlined text-base">groups</span>
@@ -138,123 +154,123 @@ require_once __DIR__ . '/../includes/header.php';
 </div>
 
 <?php if ($message): ?>
-<div class="mb-6 p-4 rounded-xl flex items-center gap-3 <?= $messageType === 'error' ? 'bg-red-50 border border-red-200 text-red-800' : 'bg-green-50 border border-green-200 text-green-800' ?>">
-    <span class="material-symbols-outlined"><?= $messageType === 'error' ? 'error' : 'check_circle' ?></span>
-    <?= htmlspecialchars($message) ?>
-</div>
+    <div class="mb-6 p-4 rounded-xl flex items-center gap-3 <?= $messageType === 'error' ? 'bg-red-50 border border-red-200 text-red-800' : 'bg-green-50 border border-green-200 text-green-800' ?>">
+        <span class="material-symbols-outlined"><?= $messageType === 'error' ? 'error' : 'check_circle' ?></span>
+        <?= htmlspecialchars($message) ?>
+    </div>
 <?php endif; ?>
 
 <?php if (!empty($pendingYouth)): ?>
-<!-- ══ PENDING APPROVALS SECTION ══════════════════════════════════════════ -->
-<div class="mb-10">
-    <div class="flex items-center gap-3 mb-5">
-        <span class="material-symbols-outlined text-amber-600 text-2xl">pending_actions</span>
-        <h2 class="text-xl font-extrabold text-slate-900 dark:text-white">Pending Approval <span class="ml-2 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 text-sm font-bold px-2 py-0.5 rounded-full"><?= count($pendingYouth) ?></span></h2>
-    </div>
-    <p class="text-sm text-slate-500 dark:text-slate-400 mb-5">These youth have self-registered and selected your barangay. Review their info and approve or return for correction.</p>
-
-    <div class="space-y-5">
-        <?php foreach ($pendingYouth as $p): ?>
-        <div class="bg-white dark:bg-slate-800 rounded-2xl border border-amber-200 dark:border-amber-800 shadow-sm overflow-hidden">
-            <!-- Profile Header -->
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-amber-50 dark:bg-amber-900/10 border-b border-amber-100 dark:border-amber-900/30">
-                <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                        <span class="material-symbols-outlined text-amber-700 dark:text-amber-400">person</span>
-                    </div>
-                    <div>
-                        <p class="font-extrabold text-slate-900 dark:text-white text-lg"><?= htmlspecialchars($p['first_name'] . ' ' . $p['last_name']) ?></p>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">
-                            Registered <?= htmlspecialchars(date('M j, Y', strtotime($p['created_at']))) ?>
-                            &nbsp;·&nbsp; <?= htmlspecialchars($p['gender'] ?? '') ?>
-                            &nbsp;·&nbsp; <?= htmlspecialchars($p['age'] ?? '-') ?> yrs
-                        </p>
-                    </div>
-                </div>
-                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-xs font-bold uppercase tracking-wide">
-                    <span class="material-symbols-outlined text-xs">hourglass_empty</span>
-                    Pending
-                </span>
-            </div>
-
-            <!-- Profile Details Grid -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-px bg-slate-100 dark:bg-slate-700">
-                <div class="bg-white dark:bg-slate-800 p-4">
-                    <p class="text-[10px] font-bold uppercase text-slate-400 tracking-widest mb-1">Education</p>
-                    <p class="text-sm font-semibold text-slate-800 dark:text-slate-200"><?= htmlspecialchars($p['education_level'] ?? '—') ?></p>
-                </div>
-                <div class="bg-white dark:bg-slate-800 p-4">
-                    <p class="text-[10px] font-bold uppercase text-slate-400 tracking-widest mb-1">Primary Skill</p>
-                    <p class="text-sm font-semibold text-slate-800 dark:text-slate-200"><?= htmlspecialchars($p['primary_skill'] ?? '—') ?></p>
-                </div>
-                <div class="bg-white dark:bg-slate-800 p-4">
-                    <p class="text-[10px] font-bold uppercase text-slate-400 tracking-widest mb-1">Contact</p>
-                    <p class="text-sm font-semibold text-slate-800 dark:text-slate-200"><?= htmlspecialchars($p['phone'] ?? '—') ?></p>
-                </div>
-                <div class="bg-white dark:bg-slate-800 p-4">
-                    <p class="text-[10px] font-bold uppercase text-slate-400 tracking-widest mb-1">Civil Status</p>
-                    <p class="text-sm font-semibold text-slate-800 dark:text-slate-200"><?= htmlspecialchars($p['civil_status'] ?? '—') ?></p>
-                </div>
-            </div>
-
-            <?php if (!empty($p['reason_for_not_in_school'])): ?>
-            <div class="px-6 py-3 bg-slate-50 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-700">
-                <p class="text-xs text-slate-500 dark:text-slate-400"><strong>Reason not in school:</strong> <?= htmlspecialchars($p['reason_for_not_in_school']) ?></p>
-            </div>
-            <?php endif; ?>
-
-            <!-- Government ID info -->
-            <?php if (!empty($p['govt_id_type']) || !empty($p['govt_id_number'])): ?>
-            <div class="px-6 py-3 bg-slate-50 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-700 flex items-center gap-2">
-                <span class="material-symbols-outlined text-slate-400 text-base">badge</span>
-                <p class="text-xs text-slate-600 dark:text-slate-400">
-                    <strong><?= htmlspecialchars($p['govt_id_type'] ?? 'ID') ?>:</strong> <?= htmlspecialchars($p['govt_id_number'] ?? 'N/A') ?>
-                </p>
-                <?php if (!empty($p['identity_document_path'])): ?>
-                <a href="../<?= htmlspecialchars($p['identity_document_path']) ?>" target="_blank"
-                   class="ml-auto text-xs text-blue-700 dark:text-blue-400 font-bold flex items-center gap-1 hover:underline">
-                    <span class="material-symbols-outlined text-xs">open_in_new</span> View ID Document
-                </a>
-                <?php endif; ?>
-            </div>
-            <?php endif; ?>
-
-            <!-- Approve / Reject Form -->
-            <div class="p-6 border-t border-slate-100 dark:border-slate-700">
-                <form method="POST" class="space-y-3">
-                    <input type="hidden" name="form_nonce"   value="<?= htmlspecialchars(getFormNonce()) ?>">
-                    <input type="hidden" name="verify_youth" value="1">
-                    <input type="hidden" name="profile_id"   value="<?= intval($p['id']) ?>">
-                    <div>
-                        <label class="text-xs font-semibold text-slate-500 dark:text-slate-400 block mb-1">
-                            Remark / reason (optional — shown to youth if returned)
-                        </label>
-                        <textarea name="remark" rows="2"
-                            class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-2 text-sm text-slate-800 dark:text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="e.g. Please re-upload a clearer photo of your ID..."></textarea>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-3">
-                        <button type="submit" name="action" value="approve"
-                            class="flex items-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white px-6 py-2.5 text-sm font-bold transition-all shadow-sm">
-                            <span class="material-symbols-outlined text-base">check_circle</span>
-                            Approve — This youth lives in my barangay
-                        </button>
-                        <button type="submit" name="action" value="reject"
-                            class="flex items-center gap-2 rounded-xl bg-slate-200 dark:bg-slate-700 hover:bg-rose-100 dark:hover:bg-rose-900/30 text-slate-700 dark:text-slate-300 hover:text-rose-700 dark:hover:text-rose-400 px-5 py-2.5 text-sm font-bold transition-all">
-                            <span class="material-symbols-outlined text-base">undo</span>
-                            Return for Correction
-                        </button>
-                        <a href="profile-detail.php?id=<?= intval($p['id']) ?>"
-                           class="ml-auto text-xs text-blue-700 dark:text-blue-400 font-bold hover:underline flex items-center gap-1">
-                            <span class="material-symbols-outlined text-xs">open_in_new</span>Full Profile
-                        </a>
-                    </div>
-                </form>
-            </div>
+    <!-- ══ PENDING APPROVALS SECTION ══════════════════════════════════════════ -->
+    <div class="mb-10">
+        <div class="flex items-center gap-3 mb-5">
+            <span class="material-symbols-outlined text-amber-600 text-2xl">pending_actions</span>
+            <h2 class="text-xl font-extrabold text-slate-900 dark:text-white">Pending Approval <span class="ml-2 bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 text-sm font-bold px-2 py-0.5 rounded-full"><?= count($pendingYouth) ?></span></h2>
         </div>
-        <?php endforeach; ?>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mb-5">These youth have self-registered and selected your barangay. Review their info and approve or return for correction.</p>
+
+        <div class="space-y-5">
+            <?php foreach ($pendingYouth as $p): ?>
+                <div class="bg-white dark:bg-slate-800 rounded-2xl border border-amber-200 dark:border-amber-800 shadow-sm overflow-hidden">
+                    <!-- Profile Header -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 bg-amber-50 dark:bg-amber-900/10 border-b border-amber-100 dark:border-amber-900/30">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                                <span class="material-symbols-outlined text-amber-700 dark:text-amber-400">person</span>
+                            </div>
+                            <div>
+                                <p class="font-extrabold text-slate-900 dark:text-white text-lg"><?= htmlspecialchars($p['first_name'] . ' ' . $p['last_name']) ?></p>
+                                <p class="text-xs text-slate-500 dark:text-slate-400">
+                                    Registered <?= htmlspecialchars(date('M j, Y', strtotime($p['created_at']))) ?>
+                                    &nbsp;·&nbsp; <?= htmlspecialchars($p['gender'] ?? '') ?>
+                                    &nbsp;·&nbsp; <?= htmlspecialchars($p['age'] ?? '-') ?> yrs
+                                </p>
+                            </div>
+                        </div>
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 text-xs font-bold uppercase tracking-wide">
+                            <span class="material-symbols-outlined text-xs">hourglass_empty</span>
+                            Pending
+                        </span>
+                    </div>
+
+                    <!-- Profile Details Grid -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-px bg-slate-100 dark:bg-slate-700">
+                        <div class="bg-white dark:bg-slate-800 p-4">
+                            <p class="text-[10px] font-bold uppercase text-slate-400 tracking-widest mb-1">Education</p>
+                            <p class="text-sm font-semibold text-slate-800 dark:text-slate-200"><?= htmlspecialchars($p['education_level'] ?? '—') ?></p>
+                        </div>
+                        <div class="bg-white dark:bg-slate-800 p-4">
+                            <p class="text-[10px] font-bold uppercase text-slate-400 tracking-widest mb-1">Primary Skill</p>
+                            <p class="text-sm font-semibold text-slate-800 dark:text-slate-200"><?= htmlspecialchars($p['primary_skill'] ?? '—') ?></p>
+                        </div>
+                        <div class="bg-white dark:bg-slate-800 p-4">
+                            <p class="text-[10px] font-bold uppercase text-slate-400 tracking-widest mb-1">Contact</p>
+                            <p class="text-sm font-semibold text-slate-800 dark:text-slate-200"><?= htmlspecialchars($p['phone'] ?? '—') ?></p>
+                        </div>
+                        <div class="bg-white dark:bg-slate-800 p-4">
+                            <p class="text-[10px] font-bold uppercase text-slate-400 tracking-widest mb-1">Civil Status</p>
+                            <p class="text-sm font-semibold text-slate-800 dark:text-slate-200"><?= htmlspecialchars($p['civil_status'] ?? '—') ?></p>
+                        </div>
+                    </div>
+
+                    <?php if (!empty($p['reason_for_not_in_school'])): ?>
+                        <div class="px-6 py-3 bg-slate-50 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-700">
+                            <p class="text-xs text-slate-500 dark:text-slate-400"><strong>Reason not in school:</strong> <?= htmlspecialchars($p['reason_for_not_in_school']) ?></p>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- Government ID info -->
+                    <?php if (!empty($p['govt_id_type']) || !empty($p['govt_id_number'])): ?>
+                        <div class="px-6 py-3 bg-slate-50 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-700 flex items-center gap-2">
+                            <span class="material-symbols-outlined text-slate-400 text-base">badge</span>
+                            <p class="text-xs text-slate-600 dark:text-slate-400">
+                                <strong><?= htmlspecialchars($p['govt_id_type'] ?? 'ID') ?>:</strong> <?= htmlspecialchars($p['govt_id_number'] ?? 'N/A') ?>
+                            </p>
+                            <?php if (!empty($p['identity_document_path'])): ?>
+                                <a href="../<?= htmlspecialchars($p['identity_document_path']) ?>" target="_blank"
+                                    class="ml-auto text-xs text-blue-700 dark:text-blue-400 font-bold flex items-center gap-1 hover:underline">
+                                    <span class="material-symbols-outlined text-xs">open_in_new</span> View ID Document
+                                </a>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <!-- Approve / Reject Form -->
+                    <div class="p-6 border-t border-slate-100 dark:border-slate-700">
+                        <form method="POST" class="space-y-3">
+                            <input type="hidden" name="form_nonce" value="<?= htmlspecialchars(getFormNonce()) ?>">
+                            <input type="hidden" name="verify_youth" value="1">
+                            <input type="hidden" name="profile_id" value="<?= intval($p['id']) ?>">
+                            <div>
+                                <label class="text-xs font-semibold text-slate-500 dark:text-slate-400 block mb-1">
+                                    Remark / reason (optional — shown to youth if returned)
+                                </label>
+                                <textarea name="remark" rows="2"
+                                    class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-4 py-2 text-sm text-slate-800 dark:text-white resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="e.g. Please re-upload a clearer photo of your ID..."></textarea>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-3">
+                                <button type="submit" name="action" value="approve"
+                                    class="flex items-center gap-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white px-6 py-2.5 text-sm font-bold transition-all shadow-sm">
+                                    <span class="material-symbols-outlined text-base">check_circle</span>
+                                    Approve — This youth lives in my barangay
+                                </button>
+                                <button type="submit" name="action" value="reject"
+                                    class="flex items-center gap-2 rounded-xl bg-slate-200 dark:bg-slate-700 hover:bg-rose-100 dark:hover:bg-rose-900/30 text-slate-700 dark:text-slate-300 hover:text-rose-700 dark:hover:text-rose-400 px-5 py-2.5 text-sm font-bold transition-all">
+                                    <span class="material-symbols-outlined text-base">undo</span>
+                                    Return for Correction
+                                </button>
+                                <a href="profile-detail.php?id=<?= intval($p['id']) ?>"
+                                    class="ml-auto text-xs text-blue-700 dark:text-blue-400 font-bold hover:underline flex items-center gap-1">
+                                    <span class="material-symbols-outlined text-xs">open_in_new</span>Full Profile
+                                </a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
     </div>
-</div>
 <?php endif; ?>
 
 <!-- ══ FULL REGISTRY TABLE ═══════════════════════════════════════════════ -->
@@ -281,10 +297,10 @@ require_once __DIR__ . '/../includes/header.php';
                 <?php if (!empty($allYouth)): ?>
                     <?php foreach ($allYouth as $person): ?>
                         <?php
-                            $vStatus    = $person['verification_status'] ?? 'Drafting';
-                            $badgeClass = 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300';
-                            if ($vStatus === 'Verified')         $badgeClass = 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400';
-                            elseif ($vStatus === 'Action Required') $badgeClass = 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400';
+                        $vStatus    = $person['verification_status'] ?? 'Drafting';
+                        $badgeClass = 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300';
+                        if ($vStatus === 'Verified')         $badgeClass = 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400';
+                        elseif ($vStatus === 'Action Required') $badgeClass = 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400';
                         ?>
                         <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
                             <td class="px-6 py-4">
@@ -320,7 +336,7 @@ require_once __DIR__ . '/../includes/header.php';
                             </td>
                             <td class="px-6 py-4 text-right">
                                 <a href="profile-detail.php?id=<?= $person['id'] ?>"
-                                   class="text-blue-700 dark:text-blue-400 text-sm font-bold hover:underline inline-flex items-center gap-1">
+                                    class="text-blue-700 dark:text-blue-400 text-sm font-bold hover:underline inline-flex items-center gap-1">
                                     View <span class="material-symbols-outlined text-xs">open_in_new</span>
                                 </a>
                             </td>
@@ -332,7 +348,7 @@ require_once __DIR__ . '/../includes/header.php';
                             <span class="material-symbols-outlined text-4xl opacity-20 block mb-3">groups_3</span>
                             <p class="font-medium">No verified youth found in Barangay <?= htmlspecialchars($userBarangay) ?>.</p>
                             <?php if (!empty($pendingYouth)): ?>
-                            <p class="text-sm mt-1">Approve the pending registrations above to populate this list.</p>
+                                <p class="text-sm mt-1">Approve the pending registrations above to populate this list.</p>
                             <?php endif; ?>
                         </td>
                     </tr>
@@ -342,16 +358,16 @@ require_once __DIR__ . '/../includes/header.php';
     </div>
 
     <?php if ($totalPages > 1): ?>
-    <div class="p-6 border-t border-slate-200 dark:border-slate-700 flex justify-center">
-        <nav class="flex gap-2">
-            <?php for ($i = 1; $i <= $totalPages; $i++): ?>
-                <a href="?page=<?= $i ?>"
-                   class="w-10 h-10 flex items-center justify-center rounded-lg font-bold transition-all <?= $i === $page ? 'bg-blue-900 text-white shadow-md' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200' ?>">
-                    <?= $i ?>
-                </a>
-            <?php endfor; ?>
-        </nav>
-    </div>
+        <div class="p-6 border-t border-slate-200 dark:border-slate-700 flex justify-center">
+            <nav class="flex gap-2">
+                <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                    <a href="?page=<?= $i ?>"
+                        class="w-10 h-10 flex items-center justify-center rounded-lg font-bold transition-all <?= $i === $page ? 'bg-blue-900 text-white shadow-md' : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200' ?>">
+                        <?= $i ?>
+                    </a>
+                <?php endfor; ?>
+            </nav>
+        </div>
     <?php endif; ?>
 </div>
 

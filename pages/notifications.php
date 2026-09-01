@@ -71,7 +71,7 @@ $notifications = $notification->getAll(20);
         <h2 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">Notifications Management</h2>
         <p class="text-slate-600 dark:text-slate-400">Manage and broadcast notifications to OSY and staff members.</p>
     </div>
-    <button onclick="document.getElementById('sendModal').classList.remove('hidden')" class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-900 to-blue-800 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all active:scale-[0.98]">
+    <button onclick="openSendNotificationModal()" class="inline-flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-900 to-blue-800 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all active:scale-[0.98]">
         <span class="material-symbols-outlined">add_circle</span>
         Send New Notification
     </button>
@@ -300,173 +300,208 @@ $notifications = $notification->getAll(20);
                     }
                 }
 
+                // Open send notification modal with fresh form nonce
+                function openSendNotificationModal() {
+                    // Refresh form nonce
+                    fetch('../api/get_form_nonce.php')
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.success) {
+                                document.querySelector('[name="form_nonce"]').value = data.form_nonce;
+                            }
+                        })
+                        .catch(() => {}); // Silently fail if nonce refresh fails
+
+                    // Clear form fields
+                    document.querySelector('[name="title"]').value = '';
+                    document.getElementById('customMessageArea').value = 'Hello, this is a new update.';
+                    document.querySelector('[name="type"]').value = 'System';
+                    document.getElementById('target_group_select').value = 'All';
+                    document.getElementById('templateSelect').value = '';
+                    document.getElementById('selected_template_id').value = '';
+                    document.querySelectorAll('[name="specific_ids[]"]').forEach(cb => cb.checked = false);
+                    document.querySelector('[name="send_in_app"]').checked = true;
+                    document.querySelector('[name="send_sms"]').checked = false;
+                    document.querySelector('[name="send_email"]').checked = false;
+                    document.getElementById('specific_recipients_container').style.display = 'none';
+
+                    // Show modal
+                    document.getElementById('sendModal').classList.remove('hidden');
+                }
+
                 document.addEventListener("DOMContentLoaded", () => {});
 
-                
-function toggleSpecificRecipients() {
-    const group = document.getElementById('target_group_select').value;
-    document.getElementById('specific_recipients_container').style.display = (group === 'Specific') ? 'block' : 'none';
-}
 
-// Filter specific recipients list based on search input
-function filterSpecificRecipients() {
-    const query = document.getElementById('specific_search').value.toLowerCase();
-    const container = document.getElementById('specific_recipients_container');
-    const labels = container.querySelectorAll('label');
-    labels.forEach(label => {
-        const text = label.textContent.toLowerCase();
-        if (text.includes(query)) {
-            label.style.display = '';
-        } else {
-            label.style.display = 'none';
-        }
-    });
-}
+                function toggleSpecificRecipients() {
+                    const group = document.getElementById('target_group_select').value;
+                    document.getElementById('specific_recipients_container').style.display = (group === 'Specific') ? 'block' : 'none';
+                }
 
-// Save a new group of selected individuals
-function saveGroup() {
-    const groupName = document.getElementById('new_group_name').value.trim();
-    if (!groupName) {
-        showNotifToast('Please enter a group name.', 'error');
-        return;
-    }
-    // Gather selected IDs
-    const selected = [];
-    document.querySelectorAll('[name="specific_ids[]"]:checked').forEach(cb => selected.push(cb.value));
-    if (selected.length === 0) {
-        showNotifToast('Select at least one individual to save a group.', 'error');
-        return;
-    }
-    const formData = new FormData();
-    formData.append('group_name', groupName);
-    selected.forEach(id => formData.append('profile_ids[]', id));
-    fetch('../api/save_notification_group.php', {
-        method: 'POST',
-        body: formData
-    })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            // Add to dropdown
-            const dropdown = document.getElementById('existing_groups');
-            const option = document.createElement('option');
-            option.value = data.group_id;
-            option.textContent = groupName;
-            dropdown.appendChild(option);
-            showNotifToast('Group saved successfully.', 'success');
-            // Clear input
-            document.getElementById('new_group_name').value = '';
-        } else {
-            showNotifToast(data.message || 'Failed to save group.', 'error');
-        }
-    })
-    .catch(() => showNotifToast('Network error while saving group.', 'error'));
-}
+                // Filter specific recipients list based on search input
+                function filterSpecificRecipients() {
+                    const query = document.getElementById('specific_search').value.toLowerCase();
+                    const container = document.getElementById('specific_recipients_container');
+                    const labels = container.querySelectorAll('label');
+                    labels.forEach(label => {
+                        const text = label.textContent.toLowerCase();
+                        if (text.includes(query)) {
+                            label.style.display = '';
+                        } else {
+                            label.style.display = 'none';
+                        }
+                    });
+                }
 
-// Load selected group members and check the corresponding checkboxes
-function loadGroup() {
-    const dropdown = document.getElementById('existing_groups');
-    const groupId = dropdown.value;
-    if (!groupId) return;
-    
-    // Auto-fill the new group name input to allow easy renaming/updating
-    const selectedOption = dropdown.options[dropdown.selectedIndex];
-    document.getElementById('new_group_name').value = selectedOption.text;
+                // Save a new group of selected individuals
+                function saveGroup() {
+                    const groupName = document.getElementById('new_group_name').value.trim();
+                    if (!groupName) {
+                        showNotifToast('Please enter a group name.', 'error');
+                        return;
+                    }
+                    // Gather selected IDs
+                    const selected = [];
+                    document.querySelectorAll('[name="specific_ids[]"]:checked').forEach(cb => selected.push(cb.value));
+                    if (selected.length === 0) {
+                        showNotifToast('Select at least one individual to save a group.', 'error');
+                        return;
+                    }
+                    const formData = new FormData();
+                    formData.append('group_name', groupName);
+                    selected.forEach(id => formData.append('profile_ids[]', id));
+                    fetch('../api/save_notification_group.php', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.success) {
+                                // Add to dropdown
+                                const dropdown = document.getElementById('existing_groups');
+                                const option = document.createElement('option');
+                                option.value = data.group_id;
+                                option.textContent = groupName;
+                                dropdown.appendChild(option);
+                                showNotifToast('Group saved successfully.', 'success');
+                                // Clear input
+                                document.getElementById('new_group_name').value = '';
+                            } else {
+                                showNotifToast(data.message || 'Failed to save group.', 'error');
+                            }
+                        })
+                        .catch(() => showNotifToast('Network error while saving group.', 'error'));
+                }
 
-    fetch('../api/get_notification_group_members.php?group_id=' + encodeURIComponent(groupId))
-    .then(r => r.json())
-    .then(data => {
-        if (data.success && Array.isArray(data.profile_ids)) {
-            // Uncheck all first
-            document.querySelectorAll('[name="specific_ids[]"]').forEach(cb => cb.checked = false);
-            // Check the ones in the group
-            data.profile_ids.forEach(id => {
-                const cb = document.querySelector('[name="specific_ids[]"][value="' + id + '"]');
-                if (cb) cb.checked = true;
-            });
-        } else {
-            showNotifToast(data.message || 'Failed to load group.', 'error');
-        }
-    })
-    .catch(() => showNotifToast('Network error while loading group.', 'error'));
-}
+                // Load selected group members and check the corresponding checkboxes
+                function loadGroup() {
+                    const dropdown = document.getElementById('existing_groups');
+                    const groupId = dropdown.value;
+                    if (!groupId) return;
 
-function updateGroup() {
-    const dropdown = document.getElementById('existing_groups');
-    const groupId = dropdown.value;
-    if (!groupId) {
-        showNotifToast('Please load a group first to update it.', 'error');
-        return;
-    }
+                    // Auto-fill the new group name input to allow easy renaming/updating
+                    const selectedOption = dropdown.options[dropdown.selectedIndex];
+                    document.getElementById('new_group_name').value = selectedOption.text;
 
-    const groupName = document.getElementById('new_group_name').value.trim();
-    if (!groupName) {
-        showNotifToast('Group name cannot be empty.', 'error');
-        return;
-    }
+                    fetch('../api/get_notification_group_members.php?group_id=' + encodeURIComponent(groupId))
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.success && Array.isArray(data.profile_ids)) {
+                                // Uncheck all first
+                                document.querySelectorAll('[name="specific_ids[]"]').forEach(cb => cb.checked = false);
+                                // Check the ones in the group
+                                data.profile_ids.forEach(id => {
+                                    const cb = document.querySelector('[name="specific_ids[]"][value="' + id + '"]');
+                                    if (cb) cb.checked = true;
+                                });
+                            } else {
+                                showNotifToast(data.message || 'Failed to load group.', 'error');
+                            }
+                        })
+                        .catch(() => showNotifToast('Network error while loading group.', 'error'));
+                }
 
-    const selected = [];
-    document.querySelectorAll('[name="specific_ids[]"]:checked').forEach(cb => selected.push(cb.value));
-    if (selected.length === 0) {
-        showNotifToast('Select at least one individual.', 'error');
-        return;
-    }
+                function updateGroup() {
+                    const dropdown = document.getElementById('existing_groups');
+                    const groupId = dropdown.value;
+                    if (!groupId) {
+                        showNotifToast('Please load a group first to update it.', 'error');
+                        return;
+                    }
 
-    const formData = new FormData();
-    formData.append('group_id', groupId);
-    formData.append('group_name', groupName);
-    selected.forEach(id => formData.append('profile_ids[]', id));
-    
-    fetch('../api/update_notification_group.php', { method: 'POST', body: formData })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            dropdown.options[dropdown.selectedIndex].text = groupName;
-            showNotifToast('Group updated successfully.', 'success');
-        } else {
-            showNotifToast(data.message || 'Failed to update group.', 'error');
-        }
-    })
-    .catch(() => showNotifToast('Network error while updating group.', 'error'));
-}
+                    const groupName = document.getElementById('new_group_name').value.trim();
+                    if (!groupName) {
+                        showNotifToast('Group name cannot be empty.', 'error');
+                        return;
+                    }
 
-function deleteGroup() {
-    const dropdown = document.getElementById('existing_groups');
-    if (!dropdown.value) {
-        showNotifToast('Please select a group to delete.', 'error');
-        return;
-    }
-    // Show the custom delete modal instead of native confirm()
-    document.getElementById('deleteGroupModal').classList.remove('hidden');
-}
+                    const selected = [];
+                    document.querySelectorAll('[name="specific_ids[]"]:checked').forEach(cb => selected.push(cb.value));
+                    if (selected.length === 0) {
+                        showNotifToast('Select at least one individual.', 'error');
+                        return;
+                    }
 
-function executeDeleteGroup() {
-    const dropdown = document.getElementById('existing_groups');
-    const groupId = dropdown.value;
-    
-    // Hide the modal immediately
-    document.getElementById('deleteGroupModal').classList.add('hidden');
+                    const formData = new FormData();
+                    formData.append('group_id', groupId);
+                    formData.append('group_name', groupName);
+                    selected.forEach(id => formData.append('profile_ids[]', id));
 
-    if (!groupId) return;
+                    fetch('../api/update_notification_group.php', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.success) {
+                                dropdown.options[dropdown.selectedIndex].text = groupName;
+                                showNotifToast('Group updated successfully.', 'success');
+                            } else {
+                                showNotifToast(data.message || 'Failed to update group.', 'error');
+                            }
+                        })
+                        .catch(() => showNotifToast('Network error while updating group.', 'error'));
+                }
 
-    const formData = new FormData();
-    formData.append('group_id', groupId);
+                function deleteGroup() {
+                    const dropdown = document.getElementById('existing_groups');
+                    if (!dropdown.value) {
+                        showNotifToast('Please select a group to delete.', 'error');
+                        return;
+                    }
+                    // Show the custom delete modal instead of native confirm()
+                    document.getElementById('deleteGroupModal').classList.remove('hidden');
+                }
 
-    fetch('../api/delete_notification_group.php', { method: 'POST', body: formData })
-    .then(r => r.json())
-    .then(data => {
-        if (data.success) {
-            dropdown.remove(dropdown.selectedIndex);
-            dropdown.value = '';
-            document.getElementById('new_group_name').value = '';
-            document.querySelectorAll('[name="specific_ids[]"]').forEach(cb => cb.checked = false);
-            showNotifToast('Group deleted successfully.', 'success');
-        } else {
-            showNotifToast(data.message || 'Failed to delete group.', 'error');
-        }
-    })
-    .catch(() => showNotifToast('Network error while deleting group.', 'error'));
-}
+                function executeDeleteGroup() {
+                    const dropdown = document.getElementById('existing_groups');
+                    const groupId = dropdown.value;
+
+                    // Hide the modal immediately
+                    document.getElementById('deleteGroupModal').classList.add('hidden');
+
+                    if (!groupId) return;
+
+                    const formData = new FormData();
+                    formData.append('group_id', groupId);
+
+                    fetch('../api/delete_notification_group.php', {
+                            method: 'POST',
+                            body: formData
+                        })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.success) {
+                                dropdown.remove(dropdown.selectedIndex);
+                                dropdown.value = '';
+                                document.getElementById('new_group_name').value = '';
+                                document.querySelectorAll('[name="specific_ids[]"]').forEach(cb => cb.checked = false);
+                                showNotifToast('Group deleted successfully.', 'success');
+                            } else {
+                                showNotifToast(data.message || 'Failed to delete group.', 'error');
+                            }
+                        })
+                        .catch(() => showNotifToast('Network error while deleting group.', 'error'));
+                }
 
                 function submitNotificationAjax() {
                     var titleVal = document.querySelector('[name="title"]').value.trim();
@@ -491,10 +526,11 @@ function executeDeleteGroup() {
                     formData.append('type', typeVal);
                     formData.append('target_group', groupVal);
                     formData.append('template_id', document.getElementById('selected_template_id')?.value || '');
+                    formData.append('form_nonce', document.querySelector('[name="form_nonce"]')?.value || '');
                     if (sendSms) formData.append('send_sms', '1');
                     if (sendEmail) formData.append('send_email', '1');
                     if (document.querySelector('[name="send_in_app"]')?.checked) formData.append('send_in_app', '1');
-                    
+
 
                     // Specific IDs
                     if (groupVal === 'Specific') {
@@ -510,6 +546,16 @@ function executeDeleteGroup() {
                         .then(r => r.json())
                         .then(data => {
                             if (data.success) {
+                                // Refresh form nonce for next submission
+                                fetch('../api/get_form_nonce.php')
+                                    .then(r => r.json())
+                                    .then(nonceData => {
+                                        if (nonceData.success) {
+                                            document.querySelector('[name="form_nonce"]').value = nonceData.form_nonce;
+                                        }
+                                    })
+                                    .catch(() => {}); // Silently fail if nonce refresh fails
+
                                 // Close modal
                                 document.getElementById('sendModal').classList.add('hidden');
 
@@ -579,95 +625,95 @@ function executeDeleteGroup() {
                 }
             </script>
 
-</div>
+        </div>
 
-<!-- Delete Confirmation Modal -->
-<div id="deleteGroupModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
-    <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full">
-            <div class="p-6">
-                <div class="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 dark:bg-red-900/30 rounded-full mb-4">
-                    <span class="material-symbols-outlined text-red-600 dark:text-red-400">warning</span>
-                </div>
-                <h3 class="text-lg font-bold text-slate-900 dark:text-white text-center mb-2">Delete Group</h3>
-                <p class="text-slate-600 dark:text-slate-300 text-center text-sm mb-6">Are you sure? This action cannot be undone.</p>
-                <div class="flex gap-3">
-                    <button type="button" onclick="document.getElementById('deleteGroupModal').classList.add('hidden')" class="flex-1 px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-bold text-sm hover:bg-slate-200">
-                        Cancel
-                    </button>
-                    <button type="button" onclick="executeDeleteGroup()" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-bold text-sm hover:bg-red-700">
-                        Delete
-                    </button>
+        <!-- Delete Confirmation Modal -->
+        <div id="deleteGroupModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+            <div class="flex items-center justify-center min-h-screen p-4">
+                <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full">
+                    <div class="p-6">
+                        <div class="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 dark:bg-red-900/30 rounded-full mb-4">
+                            <span class="material-symbols-outlined text-red-600 dark:text-red-400">warning</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-900 dark:text-white text-center mb-2">Delete Group</h3>
+                        <p class="text-slate-600 dark:text-slate-300 text-center text-sm mb-6">Are you sure? This action cannot be undone.</p>
+                        <div class="flex gap-3">
+                            <button type="button" onclick="document.getElementById('deleteGroupModal').classList.add('hidden')" class="flex-1 px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-bold text-sm hover:bg-slate-200">
+                                Cancel
+                            </button>
+                            <button type="button" onclick="executeDeleteGroup()" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg font-bold text-sm hover:bg-red-700">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-</div>
 
-<!-- View Notification Modal -->
-<div id="viewModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
-    <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full">
-            <div class="p-6 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                <h3 class="text-xl font-bold text-slate-900 dark:text-white">Notification Details</h3>
-                <button onclick="document.getElementById('viewModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
-                    <span class="material-symbols-outlined">close</span>
-                </button>
-            </div>
-            <div class="p-6">
-                <h4 id="viewTitle" class="font-bold text-lg text-slate-900 dark:text-white mb-3"></h4>
-                <p id="viewMessage" class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed"></p>
+        <!-- View Notification Modal -->
+        <div id="viewModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+            <div class="flex items-center justify-center min-h-screen p-4">
+                <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-lg w-full">
+                    <div class="p-6 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                        <h3 class="text-xl font-bold text-slate-900 dark:text-white">Notification Details</h3>
+                        <button onclick="document.getElementById('viewModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+                            <span class="material-symbols-outlined">close</span>
+                        </button>
+                    </div>
+                    <div class="p-6">
+                        <h4 id="viewTitle" class="font-bold text-lg text-slate-900 dark:text-white mb-3"></h4>
+                        <p id="viewMessage" class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed"></p>
+                    </div>
+                </div>
             </div>
         </div>
-    </div>
-</div>
 
-<script>
-    var notificationsData = {};
-    <?php foreach ($notifications as $n): ?>
-        notificationsData[<?php echo $n['id']; ?>] = <?php echo json_encode($n); ?>;
-    <?php endforeach; ?>
+        <script>
+            var notificationsData = {};
+            <?php foreach ($notifications as $n): ?>
+                notificationsData[<?php echo $n['id']; ?>] = <?php echo json_encode($n); ?>;
+            <?php endforeach; ?>
 
-    function toggleDropdown(id) {
-        // Close all other dropdowns
-        document.querySelectorAll('[id^="dropdown-"]').forEach(d => {
-            if (d.id !== 'dropdown-' + id) d.classList.add('hidden');
-        });
-        document.getElementById('dropdown-' + id).classList.toggle('hidden');
-    }
-
-    function viewNotification(id) {
-        var n = notificationsData[id];
-        if (n) {
-            document.getElementById('viewTitle').textContent = n.title;
-            document.getElementById('viewMessage').textContent = n.message;
-            document.getElementById('viewModal').classList.remove('hidden');
-        }
-        // Close dropdowns
-        document.querySelectorAll('[id^="dropdown-"]').forEach(d => d.classList.add('hidden'));
-    }
-
-    // Close dropdowns on outside click
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('[id^="dropdown-"]') && !e.target.closest('button')) {
-            document.querySelectorAll('[id^="dropdown-"]').forEach(d => d.classList.add('hidden'));
-        }
-    });
-
-    // Real-time filtering for notifications
-    function filterNotifications() {
-        const searchVal = document.getElementById('notif_search').value.toLowerCase();
-        const items = document.querySelectorAll('.notif-item');
-
-        items.forEach(item => {
-            const dataSearch = item.getAttribute('data-search');
-            if (searchVal && !dataSearch.includes(searchVal)) {
-                item.style.display = 'none';
-            } else {
-                item.style.display = 'block';
+            function toggleDropdown(id) {
+                // Close all other dropdowns
+                document.querySelectorAll('[id^="dropdown-"]').forEach(d => {
+                    if (d.id !== 'dropdown-' + id) d.classList.add('hidden');
+                });
+                document.getElementById('dropdown-' + id).classList.toggle('hidden');
             }
-        });
-    }
-</script>
 
-<?php require_once __DIR__ . '/../includes/footer.php'; ?>
+            function viewNotification(id) {
+                var n = notificationsData[id];
+                if (n) {
+                    document.getElementById('viewTitle').textContent = n.title;
+                    document.getElementById('viewMessage').textContent = n.message;
+                    document.getElementById('viewModal').classList.remove('hidden');
+                }
+                // Close dropdowns
+                document.querySelectorAll('[id^="dropdown-"]').forEach(d => d.classList.add('hidden'));
+            }
+
+            // Close dropdowns on outside click
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('[id^="dropdown-"]') && !e.target.closest('button')) {
+                    document.querySelectorAll('[id^="dropdown-"]').forEach(d => d.classList.add('hidden'));
+                }
+            });
+
+            // Real-time filtering for notifications
+            function filterNotifications() {
+                const searchVal = document.getElementById('notif_search').value.toLowerCase();
+                const items = document.querySelectorAll('.notif-item');
+
+                items.forEach(item => {
+                    const dataSearch = item.getAttribute('data-search');
+                    if (searchVal && !dataSearch.includes(searchVal)) {
+                        item.style.display = 'none';
+                    } else {
+                        item.style.display = 'block';
+                    }
+                });
+            }
+        </script>
+
+        <?php require_once __DIR__ . '/../includes/footer.php'; ?>

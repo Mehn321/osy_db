@@ -11,18 +11,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $result = $user->login($username, $password, ['youth']);
 
-    if ($result['success'] && !empty($result['requires_otp'])) {
-        header('Location: verify-otp.php');
-        exit;
+    if ($result['success']) {
+        if (!empty($result['requires_otp'])) {
+            header('Location: verify-otp.php');
+            exit;
+        } else {
+            header('Location: dashboard.php');
+            exit;
+        }
     } else {
         $login_error = $result['message'] ?? 'Login failed.';
     }
 }
 
-// Redirect if already logged in
+// Redirect if already logged in as youth
 if ($user->isLoggedIn()) {
-    header('Location: dashboard.php');
-    exit;
+    if (isset($_SESSION['role']) && $_SESSION['role'] === 'youth') {
+        header('Location: dashboard.php');
+        exit;
+    } else {
+        $user->logout();
+        session_start(); // Restart session for CSRF token etc
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -126,7 +136,7 @@ if ($user->isLoggedIn()) {
                         <div class="flex justify-between items-center px-1">
                             <label
                                 class="block text-xs font-bold uppercase tracking-widest text-slate-600">Password</label>
-                            <a href="password-reset.php"
+                            <a href="forgot-password.php"
                                 class="text-xs font-bold text-blue-900 hover:underline uppercase tracking-widest">Forgot?</a>
                         </div>
                         <div class="relative">

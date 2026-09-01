@@ -247,6 +247,11 @@ class OSYProfile
     public function update($id, $data, $profileImageFile = null, $govtIdImageFile = null)
     {
         try {
+            $currentProfile = $this->getById($id);
+            if (!$currentProfile) {
+                throw new Exception("Profile not found");
+            }
+
             $updates = [];
             $params = [];
             $types = '';
@@ -304,6 +309,44 @@ class OSYProfile
                 throw new Exception("No valid fields to update");
             }
 
+            $linkedUserId = !empty($currentProfile['created_by']) ? (int) $currentProfile['created_by'] : 0;
+            $newFirstName = trim((string) ($data['first_name'] ?? $currentProfile['first_name'] ?? ''));
+            $newLastName = trim((string) ($data['last_name'] ?? $currentProfile['last_name'] ?? ''));
+            $newFullname = trim($newFirstName . ' ' . $newLastName);
+            $newEmail = trim((string) ($data['email'] ?? $currentProfile['email'] ?? ''));
+
+            if ($linkedUserId > 0) {
+                if ($newFullname !== '') {
+                    $this->db->execute(
+                        "UPDATE users SET fullname = ? WHERE id = ?",
+                        [$newFullname, $linkedUserId],
+                        "si"
+                    );
+                }
+
+                if ($newEmail !== '') {
+                    if (!filter_var($newEmail, FILTER_VALIDATE_EMAIL)) {
+                        throw new Exception("The email address is invalid.");
+                    }
+
+                    $existingUserEmail = $this->db->fetchOne(
+                        "SELECT id FROM users WHERE email = ? AND id != ? LIMIT 1",
+                        [$newEmail, $linkedUserId],
+                        "si"
+                    );
+
+                    if ($existingUserEmail) {
+                        throw new Exception("This email address is already in use by another account.");
+                    }
+
+                    $this->db->execute(
+                        "UPDATE users SET email = ?, fullname = ? WHERE id = ?",
+                        [$newEmail, $newFullname, $linkedUserId],
+                        "ssi"
+                    );
+                }
+            }
+
             $params[] = $id;
             $types .= 'i';
 
@@ -340,7 +383,7 @@ class OSYProfile
     public function setVerificationStatus($profile_id, $status, $remark = null, $approved_by = null)
     {
         try {
-            $validStatuses = ['Drafting', 'Pending', 'Verified', 'Rejected', 'Action Required'];
+            $validStatuses = ['Drafting', 'Pending', 'Verified', 'Rejected', 'Action Required', 'Declined'];
             if (!in_array($status, $validStatuses, true)) {
                 throw new Exception("Invalid verification status");
             }
@@ -360,9 +403,9 @@ class OSYProfile
                 $types .= 's';
             }
 
-            if ($status === 'Rejected') {
+            if (in_array($status, ['Rejected', 'Declined', 'Action Required'], true)) {
                 $updates[] = 'registration_status = ?';
-                $params[] = 'Declined';
+                $params[] = 'Submitted';
                 $types .= 's';
             }
 
@@ -389,7 +432,7 @@ class OSYProfile
      */
     public function getPendingByBarangay($barangay)
     {
-        $query = "SELECT * FROM {$this->table} WHERE barangay = ? AND verification_status = 'Pending' ORDER BY created_at DESC";
+        $query = "SELECT * FROM {$this->table} WHERE barangay = ? AND verification_status IN ('Pending', 'Drafting', 'Action Required') ORDER BY created_at DESC";
         return $this->db->fetchAll($query, [$barangay], 's');
     }
 

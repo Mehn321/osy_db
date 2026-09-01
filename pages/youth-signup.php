@@ -58,36 +58,36 @@ $consentAccepted = 0;
 $dataPrivacyAccepted = 0;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
+    // Unconditionally capture POST data to retain inputs on validation or CSRF failure
+    $username = trim($_POST['username'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $password = $_POST['password'] ?? '';
+    $confirmPassword = $_POST['confirm_password'] ?? '';
+    $firstName = trim($_POST['first_name'] ?? '');
+    $middleName = trim($_POST['middle_name'] ?? '');
+    $lastName = trim($_POST['last_name'] ?? '');
+    $gender = $_POST['gender'] ?? '';
+    $dateOfBirth = $_POST['date_of_birth'] ?? '';
+    $address = trim($_POST['address'] ?? '');
+    $barangay = trim($_POST['barangay'] ?? '');
+    $phone = trim($_POST['phone'] ?? '');
+    $age = trim($_POST['age'] ?? '');
+    $educationLevel = trim($_POST['education_level'] ?? '');
+    $civilStatus = $_POST['civil_status'] ?? '';
+    $primarySkill = trim($_POST['primary_skill'] ?? '');
+    $certifications = trim($_POST['certifications'] ?? '');
+    $interests = trim($_POST['interests'] ?? '');
+    $reasonNotInSchool = trim($_POST['reason_not_in_school'] ?? '');
+    $engagementStatus = trim($_POST['engagement_status'] ?? '');
+    $govtIdType = $_POST['govt_id_type'] ?? '';
+    $govtIdNumber = trim($_POST['govt_id_number'] ?? '');
+    $consentAccepted = isset($_POST['consent_accepted']) ? 1 : 0;
+    $dataPrivacyAccepted = isset($_POST['data_privacy_accepted']) ? 1 : 0;
+
     // Prevent duplicate submissions using server-side form nonce
     if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
         $errors[] = 'This form has already been submitted or the session expired. Please refresh the page and try again.';
     } else {
-        // Validate required fields
-        $username = trim($_POST['username'] ?? '');
-        $email = trim($_POST['email'] ?? '');
-        $password = $_POST['password'] ?? '';
-        $confirmPassword = $_POST['confirm_password'] ?? '';
-        $firstName = trim($_POST['first_name'] ?? '');
-        $middleName = trim($_POST['middle_name'] ?? '');
-        $lastName = trim($_POST['last_name'] ?? '');
-        $gender = $_POST['gender'] ?? '';
-        $dateOfBirth = $_POST['date_of_birth'] ?? '';
-        $address = trim($_POST['address'] ?? '');
-        $barangay = trim($_POST['barangay'] ?? '');
-        $phone = trim($_POST['phone'] ?? '');
-        $age = trim($_POST['age'] ?? '');
-        $educationLevel = trim($_POST['education_level'] ?? '');
-        $civilStatus = $_POST['civil_status'] ?? '';
-        $primarySkill = trim($_POST['primary_skill'] ?? '');
-        $certifications = trim($_POST['certifications'] ?? '');
-        $interests = trim($_POST['interests'] ?? '');
-        $reasonNotInSchool = trim($_POST['reason_not_in_school'] ?? '');
-        $engagementStatus = trim($_POST['engagement_status'] ?? '');
-        $govtIdType = $_POST['govt_id_type'] ?? '';
-        $govtIdNumber = trim($_POST['govt_id_number'] ?? '');
-        $consentAccepted = isset($_POST['consent_accepted']) ? 1 : 0;
-        $dataPrivacyAccepted = isset($_POST['data_privacy_accepted']) ? 1 : 0;
-
         // Step 1: Account & Identity Validation
         if (empty($username)) {
             $errors[] = 'Username is required.';
@@ -414,18 +414,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
                                     </div>
                                     <div class="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label
-                                                class="block text-sm font-semibold text-slate-700 mb-2">Password</label>
-                                            <input type="password" name="password" required
-                                                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                placeholder="6+ characters">
+                                            <label class="block text-sm font-semibold text-slate-700 mb-2">Password</label>
+                                            <div class="relative">
+                                                <input type="password" name="password" required
+                                                    class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    placeholder="6+ characters">
+                                                <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 toggle-password-btn"><span class="material-symbols-outlined">visibility</span></button>
+                                            </div>
                                         </div>
                                         <div>
-                                            <label class="block text-sm font-semibold text-slate-700 mb-2">Confirm
-                                                Password</label>
-                                            <input type="password" name="confirm_password" required
-                                                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                placeholder="Confirm password">
+                                            <label class="block text-sm font-semibold text-slate-700 mb-2">Confirm Password</label>
+                                            <div class="relative">
+                                                <input type="password" name="confirm_password" required
+                                                    class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    placeholder="Confirm password">
+                                                <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 toggle-password-btn"><span class="material-symbols-outlined">visibility</span></button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -913,6 +917,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
             if (dobInput) {
                 dobInput.addEventListener('change', updateAge);
             }
+
+            // Password visibility toggle
+            document.querySelectorAll('button.toggle-password-btn').forEach(btn => {
+                const container = btn.closest('div');
+                const input = container.querySelector('input');
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (input.type === 'password') {
+                        input.type = 'text';
+                        btn.innerHTML = '<span class="material-symbols-outlined">visibility_off</span>';
+                    } else {
+                        input.type = 'password';
+                        btn.innerHTML = '<span class="material-symbols-outlined">visibility</span>';
+                    }
+                });
+            });
         });
     </script>
 </body>

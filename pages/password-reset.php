@@ -129,6 +129,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <a href="logout.php" class="text-xs text-red-600 hover:underline font-bold uppercase tracking-wider">Cancel and Logout</a>
         </div>
     </div>
+
+    <script>
+        // Password visibility toggle
+        document.querySelectorAll('button.toggle-password-btn').forEach(btn => {
+            const container = btn.closest('div');
+            const input = container.querySelector('input');
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    btn.innerHTML = '<span class="material-symbols-outlined">visibility_off</span>';
+                } else {
+                    input.type = 'password';
+                    btn.innerHTML = '<span class="material-symbols-outlined">visibility</span>';
+                }
+            });
+        });
+    </script>
 </body>
 
 </html>

@@ -47,34 +47,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
         $message = 'This form has already been submitted or the session expired. Please refresh and try again.';
         $messageType = 'error';
     } else {
-    $data = [
-        'first_name' => $_POST['first_name'] ?? $profile['first_name'],
-        'middle_name' => $_POST['middle_name'] ?? null,
-        'last_name' => $_POST['last_name'] ?? $profile['last_name'],
-        'email' => $_POST['email'] ?? $profile['email'],
-        'phone' => $_POST['phone'] ?? $profile['phone'],
-        'age' => $_POST['age'] ?? $profile['age'],
-        'date_of_birth' => $_POST['date_of_birth'] ?? $profile['date_of_birth'],
-        'gender' => $_POST['gender'] ?? $profile['gender'],
-        'civil_status' => $_POST['civil_status'] ?? $profile['civil_status'],
-        'barangay' => $profile['barangay'], // Cannot change barangay
-        'education_level' => $_POST['education_level'] ?? $profile['education_level'],
-        'primary_skill' => $_POST['primary_skill'] ?? $profile['primary_skill'],
-        'skills' => $_POST['skills'] ?? $profile['skills'],
-        'interests' => $_POST['interests'] ?? $profile['interests'],
-    ];
+        $data = [
+            'first_name' => $_POST['first_name'] ?? $profile['first_name'],
+            'middle_name' => $_POST['middle_name'] ?? null,
+            'last_name' => $_POST['last_name'] ?? $profile['last_name'],
+            'email' => $_POST['email'] ?? $profile['email'],
+            'phone' => $_POST['phone'] ?? $profile['phone'],
+            'age' => $_POST['age'] ?? $profile['age'],
+            'date_of_birth' => $_POST['date_of_birth'] ?? $profile['date_of_birth'],
+            'gender' => $_POST['gender'] ?? $profile['gender'],
+            'civil_status' => $_POST['civil_status'] ?? $profile['civil_status'],
+            'barangay' => $profile['barangay'], // Cannot change barangay
+            'education_level' => $_POST['education_level'] ?? $profile['education_level'],
+            'primary_skill' => $_POST['primary_skill'] ?? $profile['primary_skill'],
+            'skills' => $_POST['skills'] ?? $profile['skills'],
+            'interests' => $_POST['interests'] ?? $profile['interests'],
+        ];
 
-    $result = $osyProfile->update($profile['id'], $data);
-    if ($result['success']) {
-        $resubmitted = false;
-        if ($profile['verification_status'] === 'Declined' || $profile['verification_status'] === 'Action Required') {
-            $osyProfile->setVerificationStatus($profile['id'], 'Pending', 'Resubmitted by user');
-            
-            // Set user status back to Pending
-            $database->execute("UPDATE users SET status = 'Pending' WHERE id = ?", [$profile['created_by']], "i");
-            
-            $resubmitted = true;
-        }
+        $result = $osyProfile->update($profile['id'], $data);
+        if ($result['success']) {
+            $resubmitted = false;
+            if (in_array($profile['verification_status'], ['Rejected', 'Declined', 'Action Required'], true)) {
+                $osyProfile->setVerificationStatus($profile['id'], 'Pending', 'Resubmitted by user');
+
+                // Set user status back to Pending
+                $database->execute("UPDATE users SET status = 'Pending' WHERE id = ?", [$profile['created_by']], "i");
+
+                $resubmitted = true;
+            }
 
         // Notify SK Chairman of this barangay
         if ($resubmitted) {

@@ -43,7 +43,7 @@ class Dashboard
         $res = $this->db->fetchOne("SELECT COUNT(*) as cnt FROM osy_profiles WHERE barangay = ?", [$barangay]);
         $stats['total_kk'] = $res['cnt'] ?? 0;
         
-        $res = $this->db->fetchOne("SELECT COUNT(*) as cnt FROM osy_profiles WHERE barangay = ? AND (verification_status = 'Pending' OR registration_status = 'Submitted')", [$barangay]);
+        $res = $this->db->fetchOne("SELECT COUNT(*) as cnt FROM osy_profiles WHERE barangay = ? AND verification_status IN ('Pending', 'Drafting', 'Action Required')", [$barangay]);
         $stats['pending_verification'] = $res['cnt'] ?? 0;
         
         $res = $this->db->fetchOne("SELECT COUNT(*) as cnt FROM osy_profiles WHERE barangay = ? AND verification_status = 'Verified'", [$barangay]);

@@ -8,7 +8,22 @@ $message = '';
 $messageType = 'success';
 $errors = [];
 
+// Initialize variables so form doesn't crash on initial GET
+$providerType = 'employer';
+$fullname = '';
+$username = '';
+$email = '';
+$address = '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_provider'])) {
+    
+    // Unconditionally capture POST data to retain inputs
+    $providerType = $_POST['provider_type'] ?? 'employer';
+    $fullname = trim($_POST['fullname'] ?? '');
+    $username = trim($_POST['username'] ?? '');
+    $email = trim($_POST['email'] ?? '');
+    $address = trim($_POST['address'] ?? '');
+
     // Prevent duplicate submissions using server-side form nonce
     if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
         $errors[] = 'This form has already been submitted or the session expired. Please refresh the page and try again.';
@@ -60,13 +75,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_provider']))
             }
 
             $data = [
-                'username' => trim($_POST['username']),
-                'email' => trim($_POST['email']),
-                'password' => trim($_POST['password']),
-                'fullname' => trim($_POST['fullname']),
-                'role' => $_POST['provider_type'],
-                'barangay' => $_POST['provider_type'] === 'employer' ? null : trim($_POST['address']),
-                'provider_type' => trim($_POST['provider_type']),
+                'username' => $username,
+                'email' => $email,
+                'password' => $password,
+                'fullname' => $fullname,
+                'role' => $providerType,
+                'barangay' => $providerType === 'employer' ? null : $address,
+                'provider_type' => $providerType,
                 'provider_document_path' => $documentPath
             ];
 
@@ -186,12 +201,12 @@ if ($user->isLoggedIn()) {
                         <label class="block text-sm font-bold text-slate-700">Provider Type</label>
                         <div class="space-y-2">
                             <label class="flex items-center gap-3 cursor-pointer">
-                                <input type="radio" name="provider_type" value="employer" checked class="w-4 h-4 text-blue-900">
+                                <input type="radio" name="provider_type" value="employer" <?php echo $providerType === 'employer' ? 'checked' : ''; ?> class="w-4 h-4 text-blue-900">
                                 <span class="text-sm font-semibold text-slate-900">Employer</span>
                                 <span class="text-xs text-slate-500 ml-auto">Post job openings</span>
                             </label>
                             <label class="flex items-center gap-3 cursor-pointer">
-                                <input type="radio" name="provider_type" value="training_provider" class="w-4 h-4 text-blue-900">
+                                <input type="radio" name="provider_type" value="training_provider" <?php echo $providerType === 'training_provider' ? 'checked' : ''; ?> class="w-4 h-4 text-blue-900">
                                 <span class="text-sm font-semibold text-slate-900">Training Provider</span>
                                 <span class="text-xs text-slate-500 ml-auto">Offer training programs</span>
                             </label>
@@ -201,19 +216,19 @@ if ($user->isLoggedIn()) {
                     <!-- Full Name -->
                     <div class="space-y-2">
                         <label class="block text-sm font-bold text-slate-700">Full Name / Company Name</label>
-                        <input type="text" name="fullname" required class="w-full bg-slate-100 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900" placeholder="Enter your full name or company name">
+                        <input type="text" name="fullname" value="<?php echo htmlspecialchars($fullname); ?>" required class="w-full bg-slate-100 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900" placeholder="Enter your full name or company name">
                     </div>
 
                     <!-- Username -->
                     <div class="space-y-2">
                         <label class="block text-sm font-bold text-slate-700">Username</label>
-                        <input type="text" name="username" required class="w-full bg-slate-100 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900" placeholder="Choose a username">
+                        <input type="text" name="username" value="<?php echo htmlspecialchars($username); ?>" required class="w-full bg-slate-100 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900" placeholder="Choose a username">
                     </div>
 
                     <!-- Email -->
                     <div class="space-y-2">
                         <label class="block text-sm font-bold text-slate-700">Email Address</label>
-                        <input type="email" name="email" required class="w-full bg-slate-100 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900" placeholder="your@email.com">
+                        <input type="email" name="email" value="<?php echo htmlspecialchars($email); ?>" required class="w-full bg-slate-100 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900" placeholder="your@email.com">
                     </div>
 
                     <!-- Password -->
@@ -239,7 +254,7 @@ if ($user->isLoggedIn()) {
                     <!-- Address -->
                     <div class="space-y-2">
                         <label class="block text-sm font-bold text-slate-700">Address</label>
-                        <input type="text" name="address" required class="w-full bg-slate-100 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900" placeholder="Enter your address">
+                        <input type="text" name="address" value="<?php echo htmlspecialchars($address); ?>" required class="w-full bg-slate-100 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900" placeholder="Enter your address">
                     </div>
 
                     <!-- Proof of Legitimacy Document -->
@@ -287,6 +302,22 @@ if ($user->isLoggedIn()) {
             } else {
                 passwordMatchError.classList.add('hidden');
             }
+        });
+
+        // Password visibility toggle
+        document.querySelectorAll('button.toggle-password-btn').forEach(btn => {
+            const container = btn.closest('div');
+            const input = container.querySelector('input');
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    btn.innerHTML = '<span class="material-symbols-outlined">visibility_off</span>';
+                } else {
+                    input.type = 'password';
+                    btn.innerHTML = '<span class="material-symbols-outlined">visibility</span>';
+                }
+            });
         });
     </script>
 </body>

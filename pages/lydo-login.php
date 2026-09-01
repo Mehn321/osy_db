@@ -11,9 +11,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $result = $user->login($username, $password, ['lydo']);
 
-    if ($result['success'] && !empty($result['requires_otp'])) {
-        header('Location: verify-otp.php');
-        exit;
+    if ($result['success']) {
+        if (!empty($result['requires_otp'])) {
+            header('Location: verify-otp.php');
+            exit;
+        } else {
+            header('Location: dashboard.php');
+            exit;
+        }
     } else {
         $login_error = $result['message'] ?? 'Login failed.';
     }
@@ -21,8 +26,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 // Redirect if already logged in
 if ($user->isLoggedIn()) {
-    header('Location: dashboard.php');
-    exit;
+    if (isset($_SESSION['role']) && $_SESSION['role'] === 'lydo') {
+        header('Location: dashboard.php');
+        exit;
+    } else {
+        $user->logout();
+        session_start();
+    }
 }
 ?>
 <!DOCTYPE html>
@@ -126,7 +136,7 @@ if ($user->isLoggedIn()) {
                         <div class="flex justify-between items-center px-1">
                             <label
                                 class="block text-xs font-bold uppercase tracking-widest text-slate-600">Password</label>
-                            <a href="password-reset.php"
+                            <a href="forgot-password.php"
                                 class="text-xs font-bold text-blue-900 hover:underline uppercase tracking-widest">Forgot?</a>
                         </div>
                         <div class="relative">
@@ -147,26 +157,6 @@ if ($user->isLoggedIn()) {
                         </span>
                     </button>
                 </form>
-
-                <!-- Youth & Provider Registration Links -->
-                <div class="mt-8 space-y-3 text-center border-t border-slate-200 pt-8">
-                    <div>
-                        <p class="text-sm text-slate-600 mb-2">Are you a youth looking for opportunities?</p>
-                        <a href="youth-signup.php"
-                            class="inline-flex items-center gap-2 text-blue-900 font-semibold hover:underline">
-                            <span class="material-symbols-outlined text-base">person_add</span>
-                            Youth Sign Up
-                        </a>
-                    </div>
-                    <div>
-                        <p class="text-sm text-slate-600 mb-2">Are you an employer or training provider?</p>
-                        <a href="provider-registration.php"
-                            class="inline-flex items-center gap-2 text-blue-900 font-semibold hover:underline">
-                            <span class="material-symbols-outlined text-base">business</span>
-                            Register as Provider
-                        </a>
-                    </div>
-                </div>
             </div>
         </div>
     </main>

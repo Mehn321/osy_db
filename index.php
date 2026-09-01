@@ -49,12 +49,17 @@
                         "surface-variant": "#e1e2e4",
                         "primary": "#00288e",
                         "primary-container": "#1e40af",
+                        "primary-fixed": "#dce1ff",
                         "on-primary": "#ffffff",
                         "secondary": "#525c87",
                         "on-secondary": "#ffffff",
+                        "tertiary": "#6b538c",
+                        "on-tertiary": "#ffffff",
                         "background": "#f8f9fb",
+                        "on-background": "#191c1e",
                         "surface": "#f8f9fb",
                         "on-surface": "#191c1e",
+                        "on-surface-variant": "#44474f",
                         "surface-container-low": "#f3f4f6",
                         "surface-container-lowest": "#ffffff",
                         "surface-container": "#edeef0",
@@ -62,6 +67,7 @@
                         "surface-container-highest": "#e1e2e4",
                         "surface-bright": "#f8f9fb",
                         "outline": "#757684",
+                        "outline-variant": "#c5c6d0",
                         "error": "#ba1a1a",
                         "error-container": "#ffdad6",
                         "on-error-container": "#93000a"
@@ -89,7 +95,104 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap"
         rel="stylesheet" />
 
-    <title>Youth & Provider Hub – Youth Profiling System</title>
+    <link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css" />
+    <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+    <style>
+        /* ── Highlight flash ── */
+        .highlight { animation: highlightFade 2s forwards; }
+        @keyframes highlightFade {
+            from { box-shadow: 0 0 0 4px rgba(0,120,255,0.5); }
+            to   { box-shadow: none; }
+        }
+
+        /* ── Hero text entrance ── */
+        @keyframes heroSlideUp {
+            from { opacity:0; transform:translateY(40px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+        .hero-title  { animation: heroSlideUp .9s ease both; }
+        .hero-sub    { animation: heroSlideUp .9s .2s ease both; }
+        .hero-cta    { animation: heroSlideUp .9s .4s ease both; }
+
+        /* ── Floating blobs in hero ── */
+        @keyframes floatBlob {
+            0%,100% { transform: translateY(0) scale(1); }
+            50%      { transform: translateY(-24px) scale(1.04); }
+        }
+        .blob { animation: floatBlob 7s ease-in-out infinite; }
+        .blob-2 { animation: floatBlob 9s 2s ease-in-out infinite; }
+        .blob-3 { animation: floatBlob 11s 4s ease-in-out infinite; }
+
+        /* ── Pulse ring on profile icon ── */
+        @keyframes pulseRing {
+            0%   { box-shadow: 0 0 0 0 rgba(0,40,142,.45); }
+            70%  { box-shadow: 0 0 0 10px rgba(0,40,142,0); }
+            100% { box-shadow: 0 0 0 0   rgba(0,40,142,0); }
+        }
+        #profile-icon { animation: pulseRing 2.4s ease-out infinite; cursor:pointer; }
+
+        /* ── Shimmer on partner logos ── */
+        @keyframes shimmer {
+            0%   { background-position: -400px 0; }
+            100% { background-position: 400px 0; }
+        }
+
+        /* ── Gradient text ── */
+        .grad-text {
+            background: linear-gradient(135deg, #00288e 0%, #6b538c 60%, #525c87 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* ── Card tilt on hover ── */
+        .tilt-card {
+            transition: transform .35s cubic-bezier(.25,.46,.45,.94), box-shadow .35s ease;
+        }
+        .tilt-card:hover { transform: translateY(-6px) rotate(-0.5deg); box-shadow: 0 20px 60px rgba(0,40,142,.12); }
+
+        /* ── Step icon bounce ── */
+        @keyframes iconBounce {
+            0%,100% { transform:translateY(0); }
+            50%      { transform:translateY(-6px); }
+        }
+        .step-card:hover .step-icon { animation: iconBounce .6s ease; }
+
+        /* ── Wave SVG divider ── */
+        .wave-divider svg { display:block; }
+
+        /* ── Scroll indicator bounce ── */
+        @keyframes scrollBounce {
+            0%,100% { transform:translateY(0); opacity:.8; }
+            50%      { transform:translateY(8px); opacity:1; }
+        }
+        .scroll-indicator { animation: scrollBounce 1.8s ease-in-out infinite; }
+
+        /* ── Gradient section backgrounds ── */
+        .grad-section-blue {
+            background: linear-gradient(160deg, #eef1ff 0%, #f8f9fb 60%);
+        }
+        .grad-section-purple {
+            background: linear-gradient(160deg, #f3eeff 0%, #f8f9fb 70%);
+        }
+        .grad-section-dark {
+            background: linear-gradient(135deg, #00288e 0%, #1e40af 50%, #6b538c 100%);
+        }
+
+        /* ── Glow badge ── */
+        .glow-badge {
+            box-shadow: 0 0 0 4px rgba(0,40,142,.08), 0 2px 12px rgba(0,40,142,.15);
+        }
+
+        /* ── Footer gradient ── */
+        footer {
+            background: linear-gradient(160deg, #1a1e2e 0%, #0d1422 100%) !important;
+        }
+        footer, footer a, footer p, footer h4, footer span { color: #c5c6d0 !important; }
+        footer a:hover { color: #a8b4ff !important; }
+        footer .text-primary { color: #a8b4ff !important; }
+        footer .border-outline-variant\/15 { border-color: rgba(255,255,255,.08) !important; }
+    </style>
 </head>
 
 <body class="bg-surface font-body text-on-surface">
@@ -107,7 +210,7 @@
                 <a href="pages/about.php" class="text-sm text-on-surface-variant hover:text-on-surface transition-colors">About</a>
             </nav>
             <div class="flex items-center gap-4">
-                <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                <div id="profile-icon" class="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
                     <span class="material-symbols-outlined text-on-primary text-[18px]">person</span>
                 </div>
             </div>
@@ -117,33 +220,53 @@
     <main class="w-full pt-16">
         <!-- HERO SECTION -->
         <section class="relative w-full h-[600px] lg:h-[700px] flex items-center justify-center -mt-16 pt-16 overflow-hidden">
-            <div class="absolute inset-0 w-full h-full bg-cover bg-center"
-                style="background-image: url('https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=1600&q=80');">
-            </div>
-            <div class="absolute inset-0 bg-on-background/60 backdrop-blur-[2px]"></div>
+            <!-- Background image -->
+            <img src="assets/images/hero_background.jpg" alt="Filipino youth skills training - TESDA" class="absolute inset-0 w-full h-full object-cover z-0" />
+            <!-- Gradient overlay: dark bottom + blue tint -->
+            <div class="absolute inset-0 z-10" style="background:linear-gradient(to bottom, rgba(0,20,70,.45) 0%, rgba(0,10,40,.65) 100%);"></div>
 
-            <div class="relative z-10 max-w-7xl mx-auto px-6 lg:px-12 w-full flex flex-col items-center text-center">
-                <h1 class="font-display font-black text-5xl md:text-6xl lg:text-7xl text-on-primary tracking-tight mb-6 max-w-4xl drop-shadow-lg">
-                    Bridge the Gap to Your Future
+            <!-- Floating decorative blobs -->
+            <div class="blob absolute top-12 left-10 w-56 h-56 rounded-full z-10 pointer-events-none" style="background:radial-gradient(circle,rgba(107,83,140,.35) 0%,transparent 70%);"></div>
+            <div class="blob-2 absolute bottom-16 right-12 w-72 h-72 rounded-full z-10 pointer-events-none" style="background:radial-gradient(circle,rgba(0,40,142,.3) 0%,transparent 70%);"></div>
+            <div class="blob-3 absolute top-1/3 right-1/4 w-40 h-40 rounded-full z-10 pointer-events-none" style="background:radial-gradient(circle,rgba(82,92,135,.25) 0%,transparent 70%);"></div>
+
+            <!-- Hero content -->
+            <div class="relative z-20 max-w-7xl mx-auto px-6 lg:px-12 w-full flex flex-col items-center text-center">
+                <span class="hero-title inline-block mb-4 px-4 py-1.5 rounded-full text-xs font-label font-bold uppercase tracking-widest glow-badge" style="background:rgba(255,255,255,.12);color:#dce1ff;border:1px solid rgba(255,255,255,.2);">🇵🇭 Youth &amp; Skills — Philippines</span>
+                <h1 class="hero-title font-display font-black text-5xl md:text-6xl lg:text-7xl text-white tracking-tight mb-6 max-w-4xl drop-shadow-lg leading-tight">
+                    Bridge the Gap<br><span style="background:linear-gradient(90deg,#a8b4ff,#d4aaff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">to Your Future</span>
                 </h1>
-                <p class="font-body text-lg md:text-xl text-surface-container-highest max-w-2xl mb-12 font-medium">
-                    Connect with verified local opportunities. Whether you're a youth looking for internships or a provider seeking talent,
-                    our platform empowers both sides to grow together.
+                <p class="hero-sub font-body text-lg md:text-xl max-w-2xl mb-12 font-medium drop-shadow" style="color:rgba(220,225,255,.9);">
+                    Connect Filipino youth with verified TESDA training, internships, and local job opportunities. Build skills. Find work. Grow together.
                 </p>
 
-                <div class="flex flex-col sm:flex-row items-center gap-6 w-full max-w-md mx-auto sm:max-w-none sm:justify-center">
+                <div class="hero-cta flex flex-col sm:flex-row items-center gap-4 w-full max-w-md mx-auto sm:max-w-none sm:justify-center">
                     <a href="pages/youth-login.php"
-                        class="w-full sm:w-auto px-8 py-4 bg-gradient-to-br from-primary to-primary-container text-on-primary rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 font-label font-bold tracking-wide flex items-center justify-center gap-2 group">
+                        class="w-full sm:w-auto px-8 py-4 rounded-lg shadow-lg font-label font-bold tracking-wide flex items-center justify-center gap-2 group transition-all duration-300 hover:scale-105"
+                        style="background:linear-gradient(135deg,#00288e,#3b5bdb);color:#fff;box-shadow:0 8px 32px rgba(0,40,142,.4);">
                         <span class="material-symbols-outlined group-hover:scale-110 transition-transform">school</span>
                         I am a Youth
                     </a>
-
                     <a href="pages/provider-login.php"
-                        class="w-full sm:w-auto px-8 py-4 bg-surface-container-lowest text-primary hover:bg-surface-container-low rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 font-label font-bold tracking-wide flex items-center justify-center gap-2 group border border-outline-variant/20">
+                        class="w-full sm:w-auto px-8 py-4 rounded-lg font-label font-bold tracking-wide flex items-center justify-center gap-2 group transition-all duration-300 hover:scale-105"
+                        style="background:rgba(255,255,255,.12);color:#fff;border:1.5px solid rgba(255,255,255,.35);backdrop-filter:blur(8px);">
                         <span class="material-symbols-outlined group-hover:scale-110 transition-transform">domain</span>
                         I am a Provider
                     </a>
                 </div>
+            </div>
+
+            <!-- Scroll down indicator -->
+            <div class="scroll-indicator absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center gap-1" style="color:rgba(255,255,255,.6);">
+                <span class="text-xs font-label uppercase tracking-widest">Scroll</span>
+                <span class="material-symbols-outlined text-2xl">expand_more</span>
+            </div>
+
+            <!-- Wave bottom divider -->
+            <div class="wave-divider absolute bottom-0 left-0 w-full z-20 pointer-events-none">
+                <svg viewBox="0 0 1440 60" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style="height:60px;width:100%;">
+                    <path d="M0,30 C360,60 1080,0 1440,30 L1440,60 L0,60 Z" fill="#f8f9fb"/>
+                </svg>
             </div>
         </section>
 
@@ -171,20 +294,24 @@
         </section>
 
         <!-- WHY JOIN SECTION -->
-        <section class="w-full py-24 bg-surface-container-low relative">
+        <section class="w-full py-24 grad-section-blue relative overflow-hidden">
+            <!-- Background decoration -->
+            <div class="absolute -top-32 -right-32 w-96 h-96 rounded-full pointer-events-none" style="background:radial-gradient(circle,rgba(0,40,142,.06) 0%,transparent 70%);"></div>
+            <div class="absolute -bottom-24 -left-24 w-80 h-80 rounded-full pointer-events-none" style="background:radial-gradient(circle,rgba(107,83,140,.06) 0%,transparent 70%);"></div>
+
             <div class="max-w-7xl mx-auto px-6 lg:px-12">
-                <div class="text-center mb-16">
+                <div class="text-center mb-16" data-aos="fade-up">
                     <span class="text-primary font-label font-bold uppercase tracking-[0.2em] text-sm">Value Propositions</span>
                     <h2 class="font-headline font-bold text-3xl md:text-4xl text-on-surface mt-3">
-                        Why Join the Youth Profiling System?
+                        Why Join the <span class="grad-text">Youth Profiling System?</span>
                     </h2>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
                     <!-- Youth Benefits -->
-                    <div class="bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-outline-variant/15">
+                    <div class="tilt-card bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-outline-variant/15" data-aos="fade-right">
                         <div class="flex items-center gap-4 mb-6">
-                            <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                            <div class="w-12 h-12 rounded-full flex items-center justify-center text-primary" style="background:linear-gradient(135deg,#eef1ff,#dce1ff);">
                                 <span class="material-symbols-outlined">emoji_events</span>
                             </div>
                             <h3 class="font-headline font-bold text-2xl text-on-surface">For Youth</h3>
@@ -194,36 +321,30 @@
                                 <span class="material-symbols-outlined text-primary mt-0.5">check_circle</span>
                                 <div>
                                     <strong class="text-on-surface block font-headline">Access Verified Internships</strong>
-                                    <p class="text-on-surface-variant text-sm mt-1">
-                                        Connect with legitimate local businesses offering real‑world experience.
-                                    </p>
+                                    <p class="text-on-surface-variant text-sm mt-1">Connect with legitimate local businesses offering real‑world experience.</p>
                                 </div>
                             </li>
                             <li class="flex items-start gap-3">
                                 <span class="material-symbols-outlined text-primary mt-0.5">check_circle</span>
                                 <div>
                                     <strong class="text-on-surface block font-headline">Build a Professional Profile</strong>
-                                    <p class="text-on-surface-variant text-sm mt-1">
-                                        Create a digital portfolio that showcases your growing skill set.
-                                    </p>
+                                    <p class="text-on-surface-variant text-sm mt-1">Create a digital portfolio that showcases your growing skill set.</p>
                                 </div>
                             </li>
                             <li class="flex items-start gap-3">
                                 <span class="material-symbols-outlined text-primary mt-0.5">check_circle</span>
                                 <div>
                                     <strong class="text-on-surface block font-headline">Get Matched with Free Training</strong>
-                                    <p class="text-on-surface-variant text-sm mt-1">
-                                        Discover skill‑building programs tailored to your interests.
-                                    </p>
+                                    <p class="text-on-surface-variant text-sm mt-1">Discover skill‑building programs tailored to your interests.</p>
                                 </div>
                             </li>
                         </ul>
                     </div>
 
                     <!-- Provider Benefits -->
-                    <div class="bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-outline-variant/15">
+                    <div class="tilt-card bg-surface-container-lowest p-8 rounded-xl shadow-sm border border-outline-variant/15" data-aos="fade-left">
                         <div class="flex items-center gap-4 mb-6">
-                            <div class="w-12 h-12 rounded-full bg-tertiary/10 flex items-center justify-center text-tertiary">
+                            <div class="w-12 h-12 rounded-full flex items-center justify-center text-tertiary" style="background:linear-gradient(135deg,#f3eeff,#e9d8ff);">
                                 <span class="material-symbols-outlined">trending_up</span>
                             </div>
                             <h3 class="font-headline font-bold text-2xl text-on-surface">For Providers</h3>
@@ -233,27 +354,21 @@
                                 <span class="material-symbols-outlined text-tertiary mt-0.5">check_circle</span>
                                 <div>
                                     <strong class="text-on-surface block font-headline">Direct Access to Local Talent</strong>
-                                    <p class="text-on-surface-variant text-sm mt-1">
-                                        Reach motivated youth eager to contribute to your mission.
-                                    </p>
+                                    <p class="text-on-surface-variant text-sm mt-1">Reach motivated youth eager to contribute to your mission.</p>
                                 </div>
                             </li>
                             <li class="flex items-start gap-3">
                                 <span class="material-symbols-outlined text-tertiary mt-0.5">check_circle</span>
                                 <div>
                                     <strong class="text-on-surface block font-headline">Verified Skills Inventory</strong>
-                                    <p class="text-on-surface-variant text-sm mt-1">
-                                        Find candidates with the exact competencies you need.
-                                    </p>
+                                    <p class="text-on-surface-variant text-sm mt-1">Find candidates with the exact competencies you need.</p>
                                 </div>
                             </li>
                             <li class="flex items-start gap-3">
                                 <span class="material-symbols-outlined text-tertiary mt-0.5">check_circle</span>
                                 <div>
                                     <strong class="text-on-surface block font-headline">Streamlined Recruitment</strong>
-                                    <p class="text-on-surface-variant text-sm mt-1">
-                                        Manage postings, applications, and communications from a single dashboard.
-                                    </p>
+                                    <p class="text-on-surface-variant text-sm mt-1">Manage postings, applications, and communications from a single dashboard.</p>
                                 </div>
                             </li>
                         </ul>
@@ -263,27 +378,30 @@
         </section>
 
         <!-- ROLE‑SPECIFIC CARD SECTION -->
-        <section class="w-full py-24 bg-surface relative">
-            <div class="max-w-7xl mx-auto px-6 lg:px-12">
-                <div class="text-center mb-16">
-                    <span class="text-primary font-label font-bold uppercase tracking-[0.2em] text-sm">Join the Network</span>
+        <section id="paths-section" class="w-full py-24 grad-section-purple relative overflow-hidden">
+            <!-- Background decoration -->
+            <div class="absolute top-0 right-0 w-full h-full pointer-events-none opacity-30" style="background: radial-gradient(circle at 80% 20%, rgba(107,83,140,0.15) 0%, transparent 50%);"></div>
+
+            <div class="max-w-7xl mx-auto px-6 lg:px-12 relative z-10">
+                <div class="text-center mb-16" data-aos="fade-up">
+                    <span class="text-tertiary font-label font-bold uppercase tracking-[0.2em] text-sm">Join the Network</span>
                     <h2 class="font-headline font-bold text-3xl md:text-4xl text-on-surface mt-3">
-                        Paths to Engagement
+                        Paths to <span class="grad-text">Engagement</span>
                     </h2>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
                     <!-- Youth Card -->
-                    <div class="group flex flex-col bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-500 border border-outline-variant/15">
+                    <div class="tilt-card group flex flex-col bg-surface-container-lowest rounded-xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 border border-outline-variant/15" data-aos="fade-up" data-aos-delay="100">
                         <div class="w-full h-64 overflow-hidden relative">
-                            <div class="absolute inset-0 bg-primary/10 group-hover:bg-transparent transition-colors duration-500 z-10"></div>
-                            <img alt="Youth collaborating"
-                                class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 ease-in-out"
-                                src="https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=800&q=80" />
+                            <div class="absolute inset-0 bg-primary/20 group-hover:bg-primary/0 transition-colors duration-500 z-10"></div>
+                            <img alt="Youth collaborating in a barangay community"
+                                class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700 ease-in-out"
+                                src="assets/images/youth_card.jpg" />
                         </div>
                         <div class="p-8 lg:p-10 flex flex-col flex-grow">
-                            <div class="w-12 h-12 rounded-full bg-primary-fixed flex items-center justify-center mb-6 text-primary">
-                                <span class="material-symbols-outlined">rocket_launch</span>
+                            <div class="w-14 h-14 rounded-full flex items-center justify-center mb-6 text-primary shadow-sm" style="background:linear-gradient(135deg,#eef1ff,#dce1ff);">
+                                <span class="material-symbols-outlined text-2xl">rocket_launch</span>
                             </div>
                             <h3 class="font-headline font-bold text-2xl text-on-surface mb-3">Join as a Youth</h3>
                             <p class="font-body text-on-surface-variant leading-relaxed mb-8 flex-grow">
@@ -293,7 +411,7 @@
                             <a href="pages/youth-signup.php"
                                 class="inline-flex items-center gap-2 text-primary font-label font-bold hover:text-primary-container transition-colors group/link w-max">
                                 Start Your Journey
-                                <span class="material-symbols-outlined text-sm group-hover/link:translate-x-1 transition-transform">
+                                <span class="material-symbols-outlined text-sm group-hover/link:translate-x-2 transition-transform">
                                     arrow_forward
                                 </span>
                             </a>
@@ -301,16 +419,16 @@
                     </div>
 
                     <!-- Provider Card -->
-                    <div class="group flex flex-col bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-500 border border-outline-variant/15">
+                    <div class="tilt-card group flex flex-col bg-surface-container-lowest rounded-xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500 border border-outline-variant/15" data-aos="fade-up" data-aos-delay="200">
                         <div class="w-full h-64 overflow-hidden relative">
-                            <div class="absolute inset-0 bg-tertiary/10 group-hover:bg-transparent transition-colors duration-500 z-10"></div>
-                            <img alt="Provider networking"
-                                class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 ease-in-out"
-                                src="assets/provider-networking.svg" />
+                            <div class="absolute inset-0 bg-tertiary/20 group-hover:bg-tertiary/0 transition-colors duration-500 z-10"></div>
+                            <img alt="Provider networking event"
+                                class="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700 ease-in-out"
+                                src="assets/images/provider_card.jpg" />
                         </div>
                         <div class="p-8 lg:p-10 flex flex-col flex-grow">
-                            <div class="w-12 h-12 rounded-full bg-tertiary-fixed flex items-center justify-center mb-6 text-tertiary">
-                                <span class="material-symbols-outlined">handshake</span>
+                            <div class="w-14 h-14 rounded-full flex items-center justify-center mb-6 text-tertiary shadow-sm" style="background:linear-gradient(135deg,#f3eeff,#e9d8ff);">
+                                <span class="material-symbols-outlined text-2xl">handshake</span>
                             </div>
                             <h3 class="font-headline font-bold text-2xl text-on-surface mb-3">Register as a Provider</h3>
                             <p class="font-body text-on-surface-variant leading-relaxed mb-8 flex-grow">
@@ -320,7 +438,7 @@
                             <a href="pages/provider-registration.php"
                                 class="inline-flex items-center gap-2 text-tertiary font-label font-bold hover:text-tertiary-container transition-colors group/link w-max">
                                 Find Local Talent
-                                <span class="material-symbols-outlined text-sm group-hover/link:translate-x-1 transition-transform">
+                                <span class="material-symbols-outlined text-sm group-hover/link:translate-x-2 transition-transform">
                                     arrow_forward
                                 </span>
                             </a>
@@ -330,46 +448,61 @@
             </div>
         </section>
 
-        <!-- COMMUNITY PULSE / STATISTICS -->
-        <section class="w-full pb-24 bg-surface">
+        <!-- HOW IT WORKS -->
+        <section class="w-full pb-32 pt-24 bg-surface relative">
             <div class="max-w-7xl mx-auto px-6 lg:px-12">
-                <div class="bg-surface-container-lowest rounded-xl p-8 lg:p-12 shadow-sm border border-outline-variant/15 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8">
-                    <div class="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/4"></div>
+                <div class="text-center mb-20" data-aos="fade-up">
+                    <span class="text-primary font-label font-bold uppercase tracking-[0.2em] text-sm">Simple Process</span>
+                    <h2 class="font-headline font-bold text-3xl md:text-4xl text-on-surface mt-3">How It Works</h2>
+                    <p class="text-on-surface-variant font-body leading-relaxed text-lg mt-4 max-w-2xl mx-auto">
+                        Getting started is easy. Follow these steps to connect with opportunities across the Philippines.
+                    </p>
+                </div>
 
-                    <div class="max-w-xl relative z-10">
-                        <h3 class="font-headline font-bold text-2xl md:text-3xl text-on-surface mb-4">
-                            Community Pulse
-                        </h3>
-                        <p class="text-on-surface-variant font-body leading-relaxed text-lg">
-                            Join a thriving network of ambitious youth and dedicated organisations working together
-                            to build a stronger, more transparent local economy.
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-12 relative">
+                    <!-- Connector line (desktop only) -->
+                    <div class="hidden md:block absolute top-12 left-[16.66%] right-[16.66%] h-1 bg-gradient-to-r from-primary via-tertiary to-secondary opacity-30 rounded-full"></div>
+
+                    <!-- Step 1 -->
+                    <div class="step-card flex flex-col items-center text-center p-8 bg-surface-container-lowest rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-outline-variant/15 relative z-10" data-aos="fade-up" data-aos-delay="100">
+                        <div class="step-icon w-20 h-20 rounded-2xl bg-primary flex items-center justify-center mb-6 shadow-lg transform rotate-3 transition-transform">
+                            <span class="material-symbols-outlined text-on-primary text-4xl">person_add</span>
+                        </div>
+                        <span class="absolute top-6 right-8 font-display font-black text-6xl text-primary/5 leading-none select-none pointer-events-none">01</span>
+                        <h3 class="font-headline font-bold text-xl text-on-surface mb-3">Create Your Profile</h3>
+                        <p class="text-on-surface-variant text-sm leading-relaxed">
+                            Register as a youth or provider. Fill in your skills, interests, and goals to get matched with the right opportunities.
                         </p>
                     </div>
 
-                    <div class="flex gap-8 relative z-10">
-                        <div class="flex flex-col">
-                            <div class="flex items-center gap-2 mb-1">
-                                <span class="material-symbols-outlined text-primary text-3xl">groups</span>
-                                <span class="font-display font-black text-4xl text-primary tracking-tighter">2,400+</span>
-                            </div>
-                            <span class="font-label text-xs uppercase tracking-widest text-on-surface-variant">
-                                Active Youth
-                            </span>
+                    <!-- Step 2 -->
+                    <div class="step-card flex flex-col items-center text-center p-8 bg-surface-container-lowest rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-outline-variant/15 relative z-10" data-aos="fade-up" data-aos-delay="200">
+                        <div class="step-icon w-20 h-20 rounded-2xl bg-tertiary flex items-center justify-center mb-6 shadow-lg transform -rotate-3 transition-transform">
+                            <span class="material-symbols-outlined text-on-primary text-4xl">search</span>
                         </div>
-                        <div class="w-px bg-outline-variant/30 hidden md:block"></div>
-                        <div class="flex flex-col">
-                            <div class="flex items-center gap-2 mb-1">
-                                <span class="material-symbols-outlined text-tertiary text-3xl">domain</span>
-                                <span class="font-display font-black text-4xl text-tertiary tracking-tighter">150+</span>
-                            </div>
-                            <span class="font-label text-xs uppercase tracking-widest text-on-surface-variant">
-                                Providers
-                            </span>
+                        <span class="absolute top-6 right-8 font-display font-black text-6xl text-tertiary/5 leading-none select-none pointer-events-none">02</span>
+                        <h3 class="font-headline font-bold text-xl text-on-surface mb-3">Discover Opportunities</h3>
+                        <p class="text-on-surface-variant text-sm leading-relaxed">
+                            Browse verified training programs, internships, and livelihood projects available in your local community.
+                        </p>
+                    </div>
+
+                    <!-- Step 3 -->
+                    <div class="step-card flex flex-col items-center text-center p-8 bg-surface-container-lowest rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-outline-variant/15 relative z-10" data-aos="fade-up" data-aos-delay="300">
+                        <div class="step-icon w-20 h-20 rounded-2xl bg-secondary flex items-center justify-center mb-6 shadow-lg transform rotate-3 transition-transform">
+                            <span class="material-symbols-outlined text-on-primary text-4xl">handshake</span>
                         </div>
+                        <span class="absolute top-6 right-8 font-display font-black text-6xl text-secondary/5 leading-none select-none pointer-events-none">03</span>
+                        <h3 class="font-headline font-bold text-xl text-on-surface mb-3">Connect &amp; Grow</h3>
+                        <p class="text-on-surface-variant text-sm leading-relaxed">
+                            Apply directly, communicate with providers, and build your future — all through one transparent platform.
+                        </p>
                     </div>
                 </div>
             </div>
         </section>
+
+        
     </main>
 
     <footer class="w-full bg-surface-container-low pt-16 pb-12 mt-20">
@@ -416,6 +549,23 @@
         </div>
     </footer>
 
+    <script>
+        // Initialize AOS animations
+        if (typeof AOS !== 'undefined') {
+            AOS.init({ once: true });
+        }
+        // Smooth scroll to Paths to Engagement section when profile icon is clicked
+        const profileIcon = document.getElementById('profile-icon');
+        const pathsSection = document.getElementById('paths-section');
+        if (profileIcon && pathsSection) {
+            profileIcon.addEventListener('click', function(e) {
+                e.preventDefault();
+                pathsSection.scrollIntoView({ behavior: 'smooth' });
+                pathsSection.classList.add('highlight');
+                setTimeout(() => pathsSection.classList.remove('highlight'), 2000);
+            });
+        }
+    </script>
 </body>
 
 </html>

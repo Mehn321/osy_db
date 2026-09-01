@@ -90,29 +90,51 @@ function validateCsrfToken($token)
     return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
 }
 
-// FORM NONCE: Prevent duplicate form submissions server-side
-if (empty($_SESSION['form_nonce'])) {
-    try {
-        $_SESSION['form_nonce'] = bin2hex(random_bytes(16));
-    } catch (Exception $e) {
-        $_SESSION['form_nonce'] = bin2hex(openssl_random_pseudo_bytes(16));
-    }
-}
-
+// FORM NONCE: keep a single nonce per page render, but store it in a pool so the same page
+// can render header/meta values and hidden form values without accidentally invalidating the
+// submission token on unrelated page renders. This prevents duplicate submissions without false
+// "invalid form submission" failures caused by a shared global token.
 function getFormNonce()
 {
-    return $_SESSION['form_nonce'] ?? '';
+    if (!isset($_SESSION['form_nonce_pool']) || !is_array($_SESSION['form_nonce_pool'])) {
+        $_SESSION['form_nonce_pool'] = [];
+    }
+
+    if (empty($_SESSION['form_nonce_page'])) {
+        try {
+            $_SESSION['form_nonce_page'] = bin2hex(random_bytes(16));
+        } catch (Exception $e) {
+            $_SESSION['form_nonce_page'] = bin2hex(openssl_random_pseudo_bytes(16));
+        }
+    }
+
+    $nonce = (string) $_SESSION['form_nonce_page'];
+    $_SESSION['form_nonce_pool'][$nonce] = time();
+    $_SESSION['form_nonce'] = $nonce;
+
+    return $nonce;
 }
 
-// Consume the form nonce: return true if valid and prevent reuse
+// Consume the form nonce: return true if valid and prevent reuse.
 function consumeFormNonce($nonce)
 {
-    if (empty($nonce)) return false;
-    if (isset($_SESSION['form_nonce']) && hash_equals($_SESSION['form_nonce'], $nonce)) {
-        // Invalidate current nonce so re-submission with same token is blocked
+    if (empty($nonce)) {
+        return false;
+    }
+
+    if (isset($_SESSION['form_nonce_pool']) && is_array($_SESSION['form_nonce_pool']) && isset($_SESSION['form_nonce_pool'][(string) $nonce])) {
+        unset($_SESSION['form_nonce_pool'][(string) $nonce]);
+        unset($_SESSION['form_nonce_page']);
         unset($_SESSION['form_nonce']);
         return true;
     }
+
+    if (isset($_SESSION['form_nonce']) && hash_equals((string) $_SESSION['form_nonce'], (string) $nonce)) {
+        unset($_SESSION['form_nonce']);
+        unset($_SESSION['form_nonce_page']);
+        return true;
+    }
+
     return false;
 }
 
