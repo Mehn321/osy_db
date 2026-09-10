@@ -20,10 +20,24 @@ class User
     private $fullname;
 
     private $commonWeakPasswords = [
-        'password', 'password123', '123456', '12345678', '123456789',
-        'qwerty', 'qwerty123', 'admin', 'admin123', 'letmein',
-        'welcome', 'iloveyou', 'abc123', '000000', '111111',
-        '123123', 'passw0rd', 'p@ssw0rd'
+        'password',
+        'password123',
+        '123456',
+        '12345678',
+        '123456789',
+        'qwerty',
+        'qwerty123',
+        'admin',
+        'admin123',
+        'letmein',
+        'welcome',
+        'iloveyou',
+        'abc123',
+        '000000',
+        '111111',
+        '123123',
+        'passw0rd',
+        'p@ssw0rd'
     ];
 
     public function __construct($database)
@@ -108,11 +122,13 @@ class User
                 $code = (string) random_int(100000, 999999);
                 $this->db->execute(
                     "UPDATE user_2fa_codes SET consumed_at = NOW() WHERE user_id = ? AND purpose = 'signup' AND channel = ? AND consumed_at IS NULL",
-                    [$userId, $channel], 'is'
+                    [$userId, $channel],
+                    'is'
                 );
                 $this->db->execute(
                     "INSERT INTO user_2fa_codes (user_id, channel, purpose, otp_hash, expires_at, attempts, created_at) VALUES (?, ?, 'signup', ?, DATE_ADD(NOW(), INTERVAL ? SECOND), 0, NOW())",
-                    [$userId, $channel, password_hash($code, PASSWORD_BCRYPT), self::OTP_EXPIRY_SECONDS], 'issi'
+                    [$userId, $channel, password_hash($code, PASSWORD_BCRYPT), self::OTP_EXPIRY_SECONDS],
+                    'issi'
                 );
 
                 if ($channel === 'email') {
@@ -153,7 +169,8 @@ class User
             }
             $row = $this->db->fetchOne(
                 "SELECT id, otp_hash, expires_at, attempts FROM user_2fa_codes WHERE user_id = ? AND purpose = 'signup' AND channel = ? AND consumed_at IS NULL ORDER BY id DESC LIMIT 1",
-                [$userId, $channel], 'is'
+                [$userId, $channel],
+                'is'
             );
             if (!$row || strtotime($row['expires_at']) < time()) {
                 throw new Exception('That verification code has expired. Please register again.');
@@ -1161,24 +1178,27 @@ class User
         $emailService->send($email, $subject, $body);
     }
 
-    public function initiatePasswordReset($usernameOrEmail) {
+    public function initiatePasswordReset($usernameOrEmail)
+    {
         $user = $this->db->fetchOne("SELECT id, email, username FROM users WHERE username = ? OR email = ? LIMIT 1", [$usernameOrEmail, $usernameOrEmail], "ss");
         if (!$user) {
             return ['success' => true];
         }
-        
+
         $otpCode = (string) random_int(100000, 999999);
         $otpHash = password_hash($otpCode, PASSWORD_BCRYPT);
-        
+
         $this->db->execute(
             "UPDATE user_2fa_codes SET consumed_at = NOW() WHERE user_id = ? AND consumed_at IS NULL",
-            [$user['id']], 'i'
+            [$user['id']],
+            'i'
         );
         $this->db->execute(
             "INSERT INTO user_2fa_codes (user_id, otp_hash, expires_at, attempts, created_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND), 0, NOW())",
-            [$user['id'], $otpHash, self::OTP_EXPIRY_SECONDS], 'isi'
+            [$user['id'], $otpHash, self::OTP_EXPIRY_SECONDS],
+            'isi'
         );
-        
+
         require_once __DIR__ . '/EmailService.php';
         $emailService = new EmailService($this->db);
         $subject = 'Password Reset Verification Code';
@@ -1186,36 +1206,38 @@ class User
             'Password Reset Verification',
             '<p>Hello,</p><p>You requested a password reset. Your verification code is:</p><p style="font-size:30px;font-weight:800;letter-spacing:4px;margin:16px 0;color:#1d4ed8;">' . htmlspecialchars($otpCode) . '</p><p>This code expires in 10 minutes. If you did not request this, please ignore this email.</p>'
         );
-        
+
         $emailService->send($user['email'], $subject, $body);
-        
+
         $_SESSION['pwd_reset'] = [
             'user_id' => $user['id'],
             'email' => $user['email'],
             'verified' => false,
             'resend_available_at' => time() + self::OTP_RESEND_COOLDOWN_SECONDS,
         ];
-        
+
         return ['success' => true];
     }
-    
-    public function verifyPasswordResetOtp($otp) {
+
+    public function verifyPasswordResetOtp($otp)
+    {
         try {
             if (empty($_SESSION['pwd_reset']['user_id'])) {
                 throw new Exception('Session expired. Please request a new password reset.');
             }
-            
+
             $userId = (int) $_SESSION['pwd_reset']['user_id'];
             $otp = trim($otp);
             if (!preg_match('/^\d{6}$/', $otp)) {
                 throw new Exception('Enter a valid 6-digit verification code.');
             }
-            
+
             $otpRow = $this->db->fetchOne(
                 "SELECT id, otp_hash, expires_at, attempts FROM user_2fa_codes WHERE user_id = ? AND consumed_at IS NULL ORDER BY id DESC LIMIT 1",
-                [$userId], 'i'
+                [$userId],
+                'i'
             );
-            
+
             if (!$otpRow) {
                 throw new Exception('Verification code not found. Please request a new code.');
             }
@@ -1223,40 +1245,40 @@ class User
                 unset($_SESSION['pwd_reset']);
                 throw new Exception('Too many verification attempts. Please try again later.');
             }
-            
+
             $expiresAt = strtotime((string) $otpRow['expires_at']);
             if ($expiresAt !== false && $expiresAt < time()) {
                 throw new Exception('Verification code expired. Please request a new code.');
             }
-            
+
             if (!password_verify($otp, $otpRow['otp_hash'])) {
                 $this->db->execute("UPDATE user_2fa_codes SET attempts = attempts + 1 WHERE id = ?", [(int) $otpRow['id']], 'i');
                 throw new Exception('Invalid verification code.');
             }
-            
+
             $this->db->execute("UPDATE user_2fa_codes SET consumed_at = NOW() WHERE id = ?", [(int) $otpRow['id']], 'i');
-            
+
             $_SESSION['pwd_reset']['verified'] = true;
             return ['success' => true, 'message' => 'Verification successful.'];
-            
         } catch (Exception $e) {
             return ['success' => false, 'message' => $e->getMessage()];
         }
     }
-    
-    public function completePasswordReset($newPassword) {
+
+    public function completePasswordReset($newPassword)
+    {
         try {
             if (empty($_SESSION['pwd_reset']['user_id']) || empty($_SESSION['pwd_reset']['verified'])) {
                 throw new Exception('Session expired or not verified. Please start over.');
             }
-            
+
             $userId = (int) $_SESSION['pwd_reset']['user_id'];
-            
+
             $userRow = $this->db->fetchOne("SELECT username, email, fullname FROM users WHERE id = ? LIMIT 1", [$userId], "i");
             if (!$userRow) {
                 throw new Exception("User not found.");
             }
-            
+
             $passwordValidation = $this->validateStrongPassword($newPassword, [
                 'username' => $userRow['username'] ?? '',
                 'email' => $userRow['email'] ?? '',
@@ -1268,13 +1290,13 @@ class User
             if ($this->isPasswordReused($userId, $newPassword)) {
                 throw new Exception('You cannot reuse any of your last 5 passwords.');
             }
-            
+
             $hashed = password_hash($newPassword, PASSWORD_BCRYPT);
             $this->db->execute("UPDATE users SET password = ?, temp_password_required = 0 WHERE id = ?", [$hashed, $userId], "si");
             $this->rememberPassword($userId, $hashed);
-            
+
             unset($_SESSION['pwd_reset']);
-            
+
             return ['success' => true, 'message' => 'Password reset successfully. You can now log in.'];
         } catch (Exception $e) {
             return ['success' => false, 'message' => $e->getMessage()];

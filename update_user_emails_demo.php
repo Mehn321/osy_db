@@ -1,4 +1,5 @@
 <?php
+
 /**
  * Update test and LYDO accounts to the shared test email.
  */
@@ -44,7 +45,7 @@ foreach ($credentials as $user) {
     $alias = preg_replace('/[^a-z0-9]+/i', '', strtolower($user['username'])) . $user['id'];
     $accountEmail = str_replace('{alias}', $alias, $emailAliasTemplate);
     $db->execute($updateQuery, [$accountEmail, $user['id']], "si");
-    
+
     echo "Updated {$user['username']} (ID: {$user['id']}) email to {$accountEmail}\n";
 }
 
@@ -54,7 +55,7 @@ echo "\n=== VERIFICATION: UPDATED USERS ===\n\n";
 foreach ($credentials as $user) {
     $verifyQuery = "SELECT id, username, email, role FROM users WHERE id = ?";
     $updated = $db->fetchOne($verifyQuery, [$user['id']], "i");
-    
+
     if ($updated) {
         echo $updated['username'] . ": " . $updated['email'] . "\n";
     }
@@ -66,5 +67,3 @@ echo "You have the following options:\n";
 echo "1. Use password reset functionality if available in the system\n";
 echo "2. Set temporary passwords manually via admin panel\n";
 echo "3. Generate new temporary passwords via the system\n";
-
-?>

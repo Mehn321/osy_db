@@ -17,7 +17,7 @@ $phone = '';
 $address = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_provider'])) {
-    
+
     // Unconditionally capture POST data to retain inputs
     $providerType = $_POST['provider_type'] ?? 'employer';
     $fullname = trim($_POST['fullname'] ?? '');

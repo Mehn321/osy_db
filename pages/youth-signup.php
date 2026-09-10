@@ -583,21 +583,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
                                     </div>
 
                                     <div class="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label class="block text-sm font-semibold text-slate-700 mb-2">Phone Number
-                                            *</label>
-                                        <input type="tel" name="phone"
-                                            value="<?php echo htmlspecialchars($phone); ?>" required
-                                            class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            placeholder="09XXXXXXXXX">
-                                    </div>
-                                    <div>
-                                        <label class="block text-sm font-semibold text-slate-700 mb-2">Occupation</label>
-                                        <input type="text" name="occupation"
-                                            value="<?php echo htmlspecialchars($occupation); ?>"
-                                            class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            placeholder="e.g., Farmer, Student, Vendor">
-                                    </div>
+                                        <div>
+                                            <label class="block text-sm font-semibold text-slate-700 mb-2">Phone Number
+                                                *</label>
+                                            <input type="tel" name="phone"
+                                                value="<?php echo htmlspecialchars($phone); ?>" required
+                                                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                placeholder="09XXXXXXXXX">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-semibold text-slate-700 mb-2">Occupation</label>
+                                            <input type="text" name="occupation"
+                                                value="<?php echo htmlspecialchars($occupation); ?>"
+                                                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                placeholder="e.g., Farmer, Student, Vendor">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
