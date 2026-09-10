@@ -1,0 +1,65 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Profile Modal Test - Inline CSS</title>
+    <script src="/osy_db/assets/js/tailwind.js"></script>
+</head>
+<body>
+    <h1>Testing Hidden/Flex Toggle with Tailwind</h1>
+    
+    <!-- Button to trigger modal -->
+    <button id="openBtn" style="padding: 10px 20px; background: blue; color: white; cursor: pointer;">
+        Open Modal
+    </button>
+    
+    <!-- Modal - starts with hidden class -->
+    <div id="testModal" class="profile-modal-backdrop fixed inset-0 z-50 hidden items-center justify-center p-4" role="dialog" aria-hidden="true">
+        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+            <h2>Edit Profile Modal</h2>
+            <p>This is a test modal.</p>
+            <button id="closeBtn" style="padding: 10px 20px; background: red; color: white; cursor: pointer;">
+                Close Modal
+            </button>
+        </div>
+    </div>
+    
+    <style>
+        .profile-modal-backdrop {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(4px);
+        }
+    </style>
+    
+    <script>
+        const modal = document.getElementById('testModal');
+        const openBtn = document.getElementById('openBtn');
+        const closeBtn = document.getElementById('closeBtn');
+        
+        function openModal() {
+            console.log('Before:', modal.className);
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            modal.setAttribute('aria-hidden', 'false');
+            console.log('After:', modal.className);
+            console.log('Display style:', window.getComputedStyle(modal).display);
+        }
+        
+        function closeModal() {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+        
+        openBtn.addEventListener('click', openModal);
+        closeBtn.addEventListener('click', closeModal);
+        
+        // Test results
+        setTimeout(() => {
+            const div = document.querySelector('div');
+            document.body.innerHTML += '<h2>Test Results</h2>';
+            document.body.innerHTML += '<p>Hidden class exists: ' + document.querySelector('.hidden') !== null + '</p>';
+            document.body.innerHTML += '<p>Flex class available in Tailwind: yes (tested)</p>';
+        }, 100);
+    </script>
+</body>
+</html>

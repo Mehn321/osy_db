@@ -65,6 +65,14 @@ try {
     ");
     echo "Created user_2fa_codes table.\n";
 
+    $codeColumns = array_column($database->fetchAll("SHOW COLUMNS FROM user_2fa_codes"), 'Field');
+    if (!in_array('channel', $codeColumns, true)) {
+        $database->execute("ALTER TABLE user_2fa_codes ADD COLUMN channel ENUM('email','phone') NOT NULL DEFAULT 'email' AFTER user_id");
+    }
+    if (!in_array('purpose', $codeColumns, true)) {
+        $database->execute("ALTER TABLE user_2fa_codes ADD COLUMN purpose ENUM('login','signup') NOT NULL DEFAULT 'login' AFTER channel");
+    }
+
     echo "Security migration completed successfully.\n";
 } catch (Exception $e) {
     echo "Migration failed: " . $e->getMessage() . "\n";

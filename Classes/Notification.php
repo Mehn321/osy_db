@@ -228,17 +228,23 @@ class Notification
     public function getUserNotifications($user_id, $limit = 20)
     {
         $role = $this->getUserRole($user_id);
-        $query = "SELECT n.*, u.fullname as sender_name, IF(nr.read_at IS NOT NULL, 'Read', n.status) as status
+        $query = "SELECT n.*, 
+                        CASE 
+                            WHEN n.recipient_type IN ('All', 'OSY') THEN NULL
+                            ELSE u.fullname
+                        END AS sender_name,
+                        IF(nr.read_at IS NOT NULL, 'Read', n.status) as status
                  FROM {$this->table} n
                  LEFT JOIN users u ON n.created_by = u.id
                  LEFT JOIN notification_reads nr ON n.id = nr.notification_id AND nr.user_id = ?
-                 WHERE (n.recipient_type = 'All'
-                        OR (n.recipient_type = 'Specific' AND n.recipient_id = ?)";
+                 WHERE ((n.recipient_type = 'Specific' AND n.recipient_id = ?)";
         $params = [$user_id, $user_id];
         $types = 'ii';
 
         if ($role === 'youth') {
             $query .= " OR n.recipient_type = 'OSY'";
+        } else {
+            $query .= " OR n.recipient_type = 'All'";
         }
 
         $query .= ") ORDER BY n.created_at DESC LIMIT ?";
@@ -262,7 +268,7 @@ class Notification
             $role = $this->getUserRole($user_id);
             $canAccess = false;
 
-            if ($notification['recipient_type'] === 'All') {
+            if ($notification['recipient_type'] === 'All' && $role !== 'youth') {
                 $canAccess = true;
             } elseif ($notification['recipient_type'] === 'Specific' && $notification['recipient_id'] == $user_id) {
                 $canAccess = true;
@@ -301,13 +307,14 @@ class Notification
                  FROM {$this->table} n
                  LEFT JOIN notification_reads nr ON n.id = nr.notification_id AND nr.user_id = ?
                  WHERE nr.id IS NULL
-                   AND (n.recipient_type = 'All'
-                        OR (n.recipient_type = 'Specific' AND n.recipient_id = ?)";
+                   AND ((n.recipient_type = 'Specific' AND n.recipient_id = ?)";
         $params = [$user_id, $user_id];
         $types = 'ii';
 
         if ($role === 'youth') {
             $query .= " OR n.recipient_type = 'OSY'";
+        } else {
+            $query .= " OR n.recipient_type = 'All'";
         }
 
         $query .= ")";

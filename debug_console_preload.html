@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Profile Page Debug - Catches All Logs</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        #console-output {
+            background: #1e1e1e; 
+            color: #00ff00; 
+            padding: 20px; 
+            border-radius: 8px; 
+            max-height: 400px; 
+            overflow-y: auto; 
+            margin-bottom: 20px;
+            font-size: 12px;
+        }
+        .log {padding: 2px 0;}
+        .warn {color: #ffaa00;}
+        .error {color: #ff4444;}
+        button {padding: 10px 20px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; margin-bottom: 10px; margin-right: 10px;}
+        #iframe-container {border: 1px solid #ccc; margin-top: 20px;}
+    </style>
+</head>
+<body>
+    <h1>My Profile Debug Console</h1>
+    <button onclick="clearOutput()">Clear Console Output</button>
+    <button onclick="testDirectCall()">Test Direct Call to openProfileEditModal()</button>
+    <div id="console-output"></div>
+    
+    <div id="iframe-container">
+        <iframe id="profile-frame" src="about:blank" style="width:100%; height:600px; border:none;"></iframe>
+    </div>
+    
+    <script>
+        const output = document.getElementById('console-output');
+        const frame = document.getElementById('profile-frame');
+        
+        function log(type, msg) {
+            const line = document.createElement('div');
+            line.className = `log ${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            line.textContent = `[${timestamp}] [${type.toUpperCase()}] ${msg}`;
+            output.appendChild(line);
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        function clearOutput() {
+            output.innerHTML = '';
+        }
+        
+        function testDirectCall() {
+            if (frame.contentWindow && frame.contentWindow.openProfileEditModal) {
+                log('log', 'Calling openProfileEditModal() directly...');
+                frame.contentWindow.openProfileEditModal();
+            } else {
+                log('error', 'openProfileEditModal() function not found!');
+            }
+        }
+        
+        // Setup console capture BEFORE loading the page
+        frame.onload = function() {
+            log('log', '=== IFRAME LOADED ===');
+            try {
+                const iframeConsole = frame.contentWindow.console;
+                const originalLog = iframeConsole.log;
+                const originalWarn = iframeConsole.warn;
+                const originalError = iframeConsole.error;
+                
+                iframeConsole.log = function(...args) {
+                    log('log', args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' '));
+                    return originalLog.apply(iframeConsole, args);
+                };
+                
+                iframeConsole.warn = function(...args) {
+                    log('warn', args.join(' '));
+                    return originalWarn.apply(iframeConsole, args);
+                };
+                
+                iframeConsole.error = function(...args) {
+                    log('error', args.join(' '));
+                    return originalError.apply(iframeConsole, args);
+                };
+                
+                log('log', 'Console capture installed successfully');
+                
+                // Also capture any error events
+                frame.contentWindow.onerror = function(msg, url, lineNo, colNo, error) {
+                    log('error', `JavaScript Error: ${msg} (${url}:${lineNo}:${colNo})`);
+                    if (error) {
+                        log('error', `Stack: ${error.stack}`);
+                    }
+                    return false;
+                };
+                log('log', 'Error handler installed');
+            } catch (e) {
+                log('error', 'Could not capture iframe console: ' + e.message);
+            }
+        };
+        
+        // Now load the profile page
+        frame.src = 'http://localhost:8080/pages/my-profile.php';
+        log('log', 'Loading profile page...');
+    </script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>View Source</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        #source { background: #1e1e1e; color: #00ff00; padding: 20px; border-radius: 8px; max-height: 600px; overflow-y: auto; font-size: 11px; white-space: pre-wrap; word-break: break-all; }
+        button { padding: 10px 20px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <h1>My Profile HTML Source</h1>
+    <button onclick="loadSource()">Load Source</button>
+    <div id="source">Loading...</div>
+    
+    <script>
+        async function loadSource() {
+            try {
+                const response = await fetch('http://localhost:8080/pages/my-profile.php');
+                const html = await response.text();
+                
+                // Find the script section
+                const scriptStart = html.indexOf('<script>');
+                const scriptEnd = html.indexOf('</script>', scriptStart) + '</script>'.length;
+                const scriptSection = html.substring(scriptStart, scriptEnd);
+                
+                document.getElementById('source').textContent = scriptSection;
+            } catch (e) {
+                document.getElementById('source').textContent = 'Error: ' + e.message;
+            }
+        }
+        
+        loadSource();
+    </script>
+</body>
+</html>

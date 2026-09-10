@@ -18,6 +18,8 @@ require_once __DIR__ . '/Classes/Matching.php';
 require_once __DIR__ . '/Classes/Notification.php';
 require_once __DIR__ . '/Classes/AuditLog.php';
 require_once __DIR__ . '/Classes/Report.php';
+require_once __DIR__ . '/Classes/PanaonYouthProfilingExport.php';
+require_once __DIR__ . '/Classes/Location.php';
 require_once __DIR__ . '/Classes/Dashboard.php';
 
 function renderDatabaseStartupError($message, $context = [])
@@ -140,7 +142,7 @@ function consumeFormNonce($nonce)
 
 // Global CSRF Verification for POST requests
 // Exclude public pages from CSRF validation
-$publicPages = ['youth-login.php', 'lydo-login.php', 'sk-login.php', 'provider-login.php', 'youth-signup.php', 'provider-registration.php', 'password-reset.php', 'verify-otp.php'];
+$publicPages = ['youth-login.php', 'lydo-login.php', 'sk-login.php', 'provider-login.php', 'youth-signup.php', 'provider-registration.php', 'password-reset.php', 'verify-otp.php', 'verify-signup.php'];
 $serverPhpSelf = $_SERVER['PHP_SELF'] ?? '';
 $serverRequestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $serverRequestUri = $_SERVER['REQUEST_URI'] ?? '';

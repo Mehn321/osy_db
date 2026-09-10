@@ -96,6 +96,86 @@ class User
         }
     }
 
+    public function beginSignupVerification($userId, $email, $phone)
+    {
+        try {
+            $userId = (int) $userId;
+            if ($userId <= 0 || !filter_var($email, FILTER_VALIDATE_EMAIL) || trim($phone) === '') {
+                throw new Exception('A valid email address and phone number are required.');
+            }
+
+            foreach (['email', 'phone'] as $channel) {
+                $code = (string) random_int(100000, 999999);
+                $this->db->execute(
+                    "UPDATE user_2fa_codes SET consumed_at = NOW() WHERE user_id = ? AND purpose = 'signup' AND channel = ? AND consumed_at IS NULL",
+                    [$userId, $channel], 'is'
+                );
+                $this->db->execute(
+                    "INSERT INTO user_2fa_codes (user_id, channel, purpose, otp_hash, expires_at, attempts, created_at) VALUES (?, ?, 'signup', ?, DATE_ADD(NOW(), INTERVAL ? SECOND), 0, NOW())",
+                    [$userId, $channel, password_hash($code, PASSWORD_BCRYPT), self::OTP_EXPIRY_SECONDS], 'issi'
+                );
+
+                if ($channel === 'email') {
+                    require_once __DIR__ . '/EmailService.php';
+                    $emailService = new EmailService($this->db);
+                    $body = $emailService->buildStyledEmail(
+                        'Complete Your Registration',
+                        '<p>Your email verification code is:</p><p style="font-size:30px;font-weight:800;letter-spacing:4px;color:#1d4ed8;">' . htmlspecialchars($code) . '</p><p>This code expires in 10 minutes.</p>'
+                    );
+                    $result = $emailService->send($email, 'Your Registration Verification Code', $body);
+                } else {
+                    require_once __DIR__ . '/SmsService.php';
+                    $sms = new SmsService($this->db);
+                    $result = $sms->send($phone, 'Your registration verification code is ' . $code . '. It expires in 10 minutes.');
+                }
+                if (empty($result['success'])) {
+                    throw new Exception('Unable to send the ' . $channel . ' verification code. Please try again later.');
+                }
+            }
+
+            $_SESSION['pending_signup_verification'] = ['user_id' => $userId, 'created_at' => time()];
+            return ['success' => true];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function verifySignupOtp($channel, $otp)
+    {
+        try {
+            $pending = $_SESSION['pending_signup_verification'] ?? [];
+            $userId = (int) ($pending['user_id'] ?? 0);
+            if ($userId <= 0 || !in_array($channel, ['email', 'phone'], true)) {
+                throw new Exception('Your signup verification session has expired. Please register again.');
+            }
+            if (!preg_match('/^\d{6}$/', trim($otp))) {
+                throw new Exception('Enter a valid 6-digit verification code.');
+            }
+            $row = $this->db->fetchOne(
+                "SELECT id, otp_hash, expires_at, attempts FROM user_2fa_codes WHERE user_id = ? AND purpose = 'signup' AND channel = ? AND consumed_at IS NULL ORDER BY id DESC LIMIT 1",
+                [$userId, $channel], 'is'
+            );
+            if (!$row || strtotime($row['expires_at']) < time()) {
+                throw new Exception('That verification code has expired. Please register again.');
+            }
+            if ((int) $row['attempts'] >= self::OTP_MAX_ATTEMPTS || !password_verify(trim($otp), $row['otp_hash'])) {
+                $this->db->execute("UPDATE user_2fa_codes SET attempts = attempts + 1 WHERE id = ?", [(int) $row['id']], 'i');
+                throw new Exception('Invalid verification code.');
+            }
+            $this->db->execute("UPDATE user_2fa_codes SET consumed_at = NOW() WHERE id = ?", [(int) $row['id']], 'i');
+            $column = $channel === 'email' ? 'email_verified_at' : 'phone_verified_at';
+            $this->db->execute("UPDATE users SET {$column} = NOW() WHERE id = ?", [$userId], 'i');
+            $verified = $this->db->fetchOne("SELECT email_verified_at, phone_verified_at FROM users WHERE id = ?", [$userId], 'i');
+            if (!empty($verified['email_verified_at']) && !empty($verified['phone_verified_at'])) {
+                unset($_SESSION['pending_signup_verification']);
+                return ['success' => true, 'complete' => true];
+            }
+            return ['success' => true, 'complete' => false];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
     /**
      * Login user
      */
@@ -479,10 +559,11 @@ class User
                 $status = 'Pending';
             }
 
-            $query = "INSERT INTO users (username, email, password, fullname, role, is_active, status, barangay, provider_type, provider_document_path, temp_password_required, approval_remark, created_by, created_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, NOW())";
+            $query = "INSERT INTO users (username, email, phone, password, fullname, role, is_active, status, barangay, provider_type, provider_document_path, temp_password_required, approval_remark, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
             $this->db->execute($query, [
                 $data['username'],
                 $data['email'],
+                $data['phone'] ?? null,
                 $hashedPassword,
                 $data['fullname'],
                 $role,
@@ -493,7 +574,7 @@ class User
                 $data['temp_password_required'] ?? 1,
                 $data['approval_remark'] ?? null,
                 $data['created_by'] ?? null
-            ], "sssssssssiss");
+            ], "ssssssssssisi");
 
             $createdId = $this->db->lastInsertId();
             $this->rememberPassword((int) $createdId, $hashedPassword);
@@ -518,9 +599,17 @@ class User
     public function approveProvider($user_id, $status = 'Active', $remark = null)
     {
         try {
-            $user = $this->db->fetchOne("SELECT role FROM users WHERE id = ? LIMIT 1", [$user_id], "i");
+            $user = $this->db->fetchOne("SELECT role, status, provider_document_path FROM users WHERE id = ? LIMIT 1", [$user_id], "i");
             if (!$user || !in_array($user['role'], ['employer', 'training_provider'], true)) {
                 throw new Exception("Provider account not found");
+            }
+
+            if ($user['status'] !== 'Pending') {
+                throw new Exception('Only pending provider registrations can be approved or declined.');
+            }
+
+            if ($status === 'Active' && empty($user['provider_document_path'])) {
+                throw new Exception('A legitimacy document is required before a provider can be approved.');
             }
 
             if (!in_array($status, ['Active', 'Pending', 'Declined', 'Suspended'], true)) {

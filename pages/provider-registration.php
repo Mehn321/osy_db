@@ -13,6 +13,7 @@ $providerType = 'employer';
 $fullname = '';
 $username = '';
 $email = '';
+$phone = '';
 $address = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_provider'])) {
@@ -22,13 +23,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_provider']))
     $fullname = trim($_POST['fullname'] ?? '');
     $username = trim($_POST['username'] ?? '');
     $email = trim($_POST['email'] ?? '');
+    $phone = trim($_POST['phone'] ?? '');
     $address = trim($_POST['address'] ?? '');
 
     // Prevent duplicate submissions using server-side form nonce
-    if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
+    if (!validateCsrfToken($_POST['csrf_token'] ?? '')) {
+        $errors[] = 'Your session security token has expired. Please refresh the page and try again.';
+    } elseif (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
         $errors[] = 'This form has already been submitted or the session expired. Please refresh the page and try again.';
     } else {
         try {
+            if (!in_array($providerType, ['employer', 'training_provider'], true)) {
+                throw new Exception('Please select a valid provider type.');
+            }
             // Validate password fields
             $password = $_POST['password'] ?? '';
             $confirmPassword = $_POST['confirm_password'] ?? '';
@@ -42,6 +49,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_provider']))
             if ($password !== $confirmPassword) {
                 throw new Exception('Passwords do not match.');
             }
+            if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                throw new Exception('A valid email address is required.');
+            }
+            if ($phone === '') {
+                throw new Exception('Phone number is required.');
+            }
 
             $documentPath = null;
             if (!empty($_FILES['provider_document']['name'])) {
@@ -49,7 +62,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_provider']))
                 if ($_FILES['provider_document']['error'] !== UPLOAD_ERR_OK) {
                     throw new Exception('Error uploading proof of legitimacy document.');
                 }
-                if (!in_array($_FILES['provider_document']['type'], $allowedTypes, true)) {
+                $fileInfo = new finfo(FILEINFO_MIME_TYPE);
+                $detectedType = $fileInfo->file($_FILES['provider_document']['tmp_name']);
+                if (!in_array($detectedType, $allowedTypes, true)) {
                     throw new Exception('Document must be a PDF, PNG, or JPEG file.');
                 }
                 if ($_FILES['provider_document']['size'] > 5 * 1024 * 1024) {
@@ -61,7 +76,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_provider']))
                     mkdir($uploadDir, 0755, true);
                 }
 
-                $extension = pathinfo($_FILES['provider_document']['name'], PATHINFO_EXTENSION);
+                $extensions = [
+                    'image/jpeg' => 'jpg',
+                    'image/png' => 'png',
+                    'application/pdf' => 'pdf',
+                ];
+                $extension = $extensions[$detectedType];
                 $filename = 'provider_doc_' . time() . '_' . uniqid() . '.' . $extension;
                 $targetPath = $uploadDir . '/' . $filename;
 
@@ -77,10 +97,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_provider']))
             $data = [
                 'username' => $username,
                 'email' => $email,
+                'phone' => $phone,
                 'password' => $password,
                 'fullname' => $fullname,
                 'role' => $providerType,
-                'barangay' => $providerType === 'employer' ? null : $address,
+                'barangay' => $address,
                 'provider_type' => $providerType,
                 'provider_document_path' => $documentPath
             ];
@@ -88,8 +109,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['register_provider']))
             $result = $userModel->createUser($data);
 
             if ($result['success']) {
-                $message = 'Provider registration submitted successfully. Your account is pending approval by the LYDO. You will receive a notification once approved.';
-                $messageType = 'success';
+                $verificationResult = $userModel->beginSignupVerification($result['user_id'], $email, $phone);
+                if (!$verificationResult['success']) {
+                    throw new Exception($verificationResult['message']);
+                }
+                header('Location: verify-signup.php');
+                exit;
             } else {
                 $message = $result['message'];
                 $messageType = 'error';
@@ -116,7 +141,7 @@ if ($user->isLoggedIn()) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Provider Registration - Youth Profiling System</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="<?php echo (isset($basePath) ? $basePath : ""); ?>/assets/js/tailwind.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
     <style>
@@ -229,6 +254,12 @@ if ($user->isLoggedIn()) {
                     <div class="space-y-2">
                         <label class="block text-sm font-bold text-slate-700">Email Address</label>
                         <input type="email" name="email" value="<?php echo htmlspecialchars($email); ?>" required class="w-full bg-slate-100 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900" placeholder="your@email.com">
+                    </div>
+
+                    <!-- Phone -->
+                    <div class="space-y-2">
+                        <label class="block text-sm font-bold text-slate-700">Mobile Number</label>
+                        <input type="tel" name="phone" value="<?php echo htmlspecialchars($phone); ?>" required class="w-full bg-slate-100 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900" placeholder="09XXXXXXXXX">
                     </div>
 
                     <!-- Password -->

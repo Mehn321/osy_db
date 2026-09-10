@@ -25,7 +25,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $opp_id = intval($_POST['opportunity_id']);
             $opp = $opportunity->getById($opp_id);
 
-            if ($opp) {
+            if (!$opp) {
+                $message = 'Training opportunity not found.';
+            } elseif ($_SESSION['role'] !== 'lydo' && (int) $opp['provider_id'] !== (int) $_SESSION['user_id']) {
+                $message = 'You can only send broadcasts for your own training programs.';
+            } elseif (!in_array($opp['type'], ['Vocational Training', 'Scholarship'], true)) {
+                $message = 'Broadcasts can only be sent for training programs or scholarships.';
+            } else {
                 $message_text = $_POST['custom_message'];
                 $target_group = $_POST['target_group'];
                 $send_sms = isset($_POST['send_sms']);
@@ -344,6 +350,7 @@ $templates = $notification->getAllTemplates();
                 <h3 id="modalTitle" class="text-xl font-bold text-slate-900 dark:text-white">Create New Opportunity</h3>
             </div>
             <form id="opportunityForm" method="POST" class="p-6 space-y-4">
+                <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(getCsrfToken()); ?>">
                 <input type="hidden" id="opportunityId" name="opportunity_id">
                 <input type="hidden" id="isUpdate" name="update_opportunity" value="0">
 
@@ -478,6 +485,7 @@ $templates = $notification->getAllTemplates();
                     <p class="text-slate-600 dark:text-slate-300 text-center text-sm mb-6">Are you sure? This action
                         cannot be undone.</p>
                     <form method="POST" class="flex gap-3">
+                        <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(getCsrfToken()); ?>">
                         <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
                         <input type="hidden" id="deleteOpportunityId" name="opportunity_id">
                         <input type="hidden" name="delete_opportunity" value="1">

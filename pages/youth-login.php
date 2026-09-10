@@ -3,6 +3,20 @@ error_reporting(E_ALL);
 ini_set('display_errors', 0);
 require_once __DIR__ . '/../init.php';
 
+// Bug 2 fix: check already-logged-in BEFORE processing POST
+if ($user->isLoggedIn()) {
+    if (isset($_SESSION['role']) && $_SESSION['role'] === 'youth') {
+        header('Location: dashboard.php');
+        exit;
+    } else {
+        $user->logout();
+    }
+}
+
+// Bug 1 fix: compute $basePath for standalone pages (not included via header.php)
+$basePath = str_replace('\\', '/', dirname(dirname($_SERVER['SCRIPT_NAME'])));
+$basePath = $basePath === '/' ? '' : $basePath;
+
 $login_error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -23,17 +37,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $login_error = $result['message'] ?? 'Login failed.';
     }
 }
-
-// Redirect if already logged in as youth
-if ($user->isLoggedIn()) {
-    if (isset($_SESSION['role']) && $_SESSION['role'] === 'youth') {
-        header('Location: dashboard.php');
-        exit;
-    } else {
-        $user->logout();
-        session_start(); // Restart session for CSRF token etc
-    }
-}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -42,7 +45,7 @@ if ($user->isLoggedIn()) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Youth Profiling System</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="<?php echo (isset($basePath) ? $basePath : ""); ?>/assets/js/tailwind.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
@@ -104,7 +107,7 @@ if ($user->isLoggedIn()) {
             <div class="p-8 md:p-16 flex flex-col justify-center">
                 <div class="mb-10">
                     <h2 class="text-3xl font-bold text-slate-900 mb-2">Welcome Back</h2>
-                    <p class="text-slate-600 font-medium">Enter your youth credentials to access the portal.</p>
+                    <p class="text-slate-600 font-medium">Enter your account credentials to access the portal.</p>
                 </div>
 
                 <?php if ($login_error): ?>
@@ -126,7 +129,7 @@ if ($user->isLoggedIn()) {
                             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                 <span class="material-symbols-outlined text-slate-400 text-xl">person</span>
                             </div>
-                            <input type="text" name="username" placeholder="admin1" required
+                            <input type="text" name="username" placeholder="Username" required
                                 class="block w-full pl-12 pr-4 py-3 bg-slate-100 border border-transparent focus:border-blue-900 focus:ring-0 rounded-lg transition-all text-slate-900 placeholder:text-slate-400 font-medium" />
                         </div>
                     </div>

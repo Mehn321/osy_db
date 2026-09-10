@@ -249,20 +249,25 @@ class Matching
                 [$osy_id],
                 "i"
             );
-
             if (!$osy) {
                 throw new Exception("OSY profile not found");
             }
 
-            // Get opportunity with all relevant fields
+            // Get opportunity with all relevant fields, including type
             $opportunity = $this->db->fetchOne(
-                "SELECT title, description, location, certification, age_min, age_max FROM opportunities WHERE id = ? LIMIT 1",
+                "SELECT title, description, location, certification, age_min, age_max, type FROM opportunities WHERE id = ? LIMIT 1",
                 [$opportunity_id],
                 "i"
             );
 
             if (!$opportunity) {
                 throw new Exception("Opportunity not found");
+            }
+
+            // Only calculate match score for Job Openings; skip for Training/Vocational etc.
+            if ($opportunity['type'] !== 'Job Opening') {
+                // Return null to indicate no score applicable
+                return null;
             }
 
             $score = 0;
@@ -366,7 +371,7 @@ class Matching
                 }
             }
 
-            // 4. Education Level Fit (up to 15 points)
+            // 4. Educational attainment fit (up to 15 points)
             $eduLevel = $osy['education_level'];
             $reqText = strtolower($opportunity['certification'] . ' ' . $opportunity['description']);
 
@@ -418,9 +423,9 @@ class Matching
     }
 
     /**
-     * Get matches for opportunity
+     * Get matches for opportunity with optional pagination
      */
-    public function getMatchesForOpportunity($opportunity_id, $min_score = 0)
+    public function getMatchesForOpportunity($opportunity_id, $min_score = 0, $limit = null, $offset = null)
     {
         $query = "SELECT m.*, 
                  p.first_name, p.last_name, p.age, p.email, p.phone, p.primary_skill,
@@ -431,8 +436,29 @@ class Matching
                  JOIN opportunities o ON m.opportunity_id = o.id
                  WHERE m.opportunity_id = ? AND m.match_score >= ?
                  ORDER BY m.match_score DESC";
+        $params = [$opportunity_id, $min_score];
+        $types = "ii";
+        if ($limit !== null) {
+            $query .= " LIMIT ?";
+            $params[] = $limit;
+            $types .= "i";
+        }
+        if ($offset !== null) {
+            $query .= " OFFSET ?";
+            $params[] = $offset;
+            $types .= "i";
+        }
+        return $this->db->fetchAll($query, $params, $types);
+    }
 
-        return $this->db->fetchAll($query, [$opportunity_id, $min_score], "ii");
+    /**
+     * Count total matches for an opportunity (used for pagination)
+     */
+    public function countMatchesForOpportunity($opportunity_id, $min_score = 0)
+    {
+        $query = "SELECT COUNT(*) as cnt FROM {$this->table} WHERE opportunity_id = ? AND match_score >= ?";
+        $result = $this->db->fetchOne($query, [$opportunity_id, $min_score], "ii");
+        return $result['cnt'] ?? 0;
     }
 
     /**
@@ -441,6 +467,26 @@ class Matching
     public function updateMatchStatus($match_id, $status)
     {
         try {
+            if (!in_array($status, ['Pending', 'Accepted', 'Rejected'], true)) {
+                throw new Exception('Invalid application status.');
+            }
+
+            $match = $this->db->fetchOne(
+                "SELECT m.id, o.provider_id FROM {$this->table} m JOIN opportunities o ON o.id = m.opportunity_id WHERE m.id = ? LIMIT 1",
+                [$match_id],
+                'i'
+            );
+            if (!$match) {
+                throw new Exception('Application not found.');
+            }
+
+            $role = $_SESSION['role'] ?? null;
+            $userId = (int) ($_SESSION['user_id'] ?? 0);
+            if ($role !== 'lydo' && !($role === 'employer' || $role === 'training_provider') ||
+                ($role !== 'lydo' && (int) $match['provider_id'] !== $userId)) {
+                throw new Exception('You do not have permission to update this application.');
+            }
+
             $query = "UPDATE {$this->table} SET status = ?, updated_at = NOW() WHERE id = ?";
             $this->db->execute($query, [$status, $match_id], "si");
 
@@ -456,6 +502,30 @@ class Matching
         }
     }
 
+
+    /**
+     * Bulk update match statuses
+     */
+    public function bulkUpdateStatus(array $matchIds, string $status)
+    {
+        if (empty($matchIds)) {
+            return ['success' => false, 'message' => 'No matches selected'];
+        }
+        $status = ucfirst(strtolower($status));
+        if (!in_array($status, ['Accepted', 'Rejected'])) {
+            return ['success' => false, 'message' => 'Invalid status'];
+        }
+        $placeholders = implode(',', array_fill(0, count($matchIds), '?'));
+        $query  = "UPDATE {$this->table} SET status = ?, updated_at = NOW() WHERE id IN ($placeholders)";
+        $params = array_merge([$status], array_map('intval', $matchIds));
+        $types  = 's' . str_repeat('i', count($matchIds));
+        try {
+            $this->db->execute($query, $params, $types);
+            return ['success' => true, 'message' => count($matchIds) . ' record(s) updated to ' . $status];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
     /**
      * Get total matches
      */
@@ -484,24 +554,25 @@ class Matching
     }
 
     /**
-     * Generate matches for all OSY against an opportunity
+     * Generate matches for all OSY against an opportunity (Job Openings only).
      */
     public function generateMatches($opportunity_id)
     {
         try {
-            // Get all verified OSY profiles
-            $osy_list = $this->db->fetchAll("SELECT id FROM osy_profiles WHERE verification_status = 'Verified'");
+            $opp = $this->db->fetchOne("SELECT id, type FROM opportunities WHERE id = ? LIMIT 1", [$opportunity_id], "i");
+            if (!$opp || $opp['type'] !== 'Job Opening') {
+                return ['success' => false, 'message' => 'Match generation only applies to Job Openings.'];
+            }
 
+            $osy_list = $this->db->fetchAll("SELECT id FROM osy_profiles WHERE verification_status = 'Verified'");
             $created = 0;
 
             foreach ($osy_list as $osy) {
-                // Check if match already exists
                 $existing = $this->db->fetchOne(
                     "SELECT id FROM {$this->table} WHERE osy_id = ? AND opportunity_id = ? LIMIT 1",
                     [$osy['id'], $opportunity_id],
                     "ii"
                 );
-
                 if (!$existing) {
                     $score = $this->calculateHybridScore($osy['id'], $opportunity_id);
                     $this->createMatch($osy['id'], $opportunity_id, $score);
@@ -515,15 +586,13 @@ class Matching
                 'created' => $created
             ];
         } catch (Exception $e) {
-            return [
-                'success' => false,
-                'message' => $e->getMessage()
-            ];
+            return ['success' => false, 'message' => $e->getMessage()];
         }
     }
+
     /**
-     * Automatically update AI match scores for all active opportunities for a specific OSY
-     * This is triggered on profile create/update to save credits on rationales
+     * Automatically update AI match scores for all active Job Opening opportunities for a specific OSY.
+     * Training/Vocational opportunities are skipped.
      */
     public function updateAllScoresForOSY($osy_id)
     {
@@ -531,7 +600,6 @@ class Matching
             require_once __DIR__ . '/GeminiService.php';
             $gemini = new GeminiService($this->db);
 
-            // 1. Get OSY data
             $osy = $this->db->fetchOne(
                 "SELECT id, primary_skill, skills, interests, education_level FROM osy_profiles WHERE id = ?",
                 [$osy_id],
@@ -539,21 +607,19 @@ class Matching
             );
             if (!$osy) return false;
 
-            // 2. Get all Open opportunities
-            $opportunities = $this->db->fetchAll("SELECT id, title, description, certification FROM opportunities WHERE status = 'Open'");
+            // Only Job Openings get match scores
+            $opportunities = $this->db->fetchAll(
+                "SELECT id, title, description, certification FROM opportunities WHERE status = 'Open' AND type = 'Job Opening'"
+            );
 
             foreach ($opportunities as $opp) {
-                // Check if match already exists
                 $existing = $this->db->fetchOne(
                     "SELECT id FROM {$this->table} WHERE osy_id = ? AND opportunity_id = ? LIMIT 1",
                     [$osy_id, $opp['id']],
                     "ii"
                 );
 
-                // Get AI Score (Lightweight call)
                 $score = $gemini->calculateScoreOnly($osy, $opp);
-
-                // Fallback to local matching algorithm if AI fails (e.g. rate limit exceeded)
                 if ($score === false) {
                     $score = $this->calculateMatchScore($osy_id, $opp['id']);
                 }
@@ -568,7 +634,6 @@ class Matching
                     $this->createMatch($osy_id, $opp['id'], $score);
                 }
 
-                // 1 second sleep to stay within free tier rate limits
                 usleep(1000000);
             }
 

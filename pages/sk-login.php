@@ -3,6 +3,20 @@ error_reporting(E_ALL);
 ini_set('display_errors', 0);
 require_once __DIR__ . '/../init.php';
 
+// Bug 2 fix: check already-logged-in BEFORE processing POST
+if ($user->isLoggedIn()) {
+    if (isset($_SESSION['role']) && $_SESSION['role'] === 'sk_chairman') {
+        header('Location: dashboard.php');
+        exit;
+    } else {
+        $user->logout();
+    }
+}
+
+// Bug 1 fix: compute $basePath for standalone pages (not included via header.php)
+$basePath = str_replace('\\', '/', dirname(dirname($_SERVER['SCRIPT_NAME'])));
+$basePath = $basePath === '/' ? '' : $basePath;
+
 $login_error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -23,17 +37,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $login_error = $result['message'] ?? 'Login failed.';
     }
 }
-
-// Redirect if already logged in
-if ($user->isLoggedIn()) {
-    if (isset($_SESSION['role']) && $_SESSION['role'] === 'sk_chairman') {
-        header('Location: dashboard.php');
-        exit;
-    } else {
-        $user->logout();
-        session_start();
-    }
-}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -42,7 +45,7 @@ if ($user->isLoggedIn()) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Youth Profiling System</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="<?php echo (isset($basePath) ? $basePath : ""); ?>/assets/js/tailwind.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
@@ -104,7 +107,7 @@ if ($user->isLoggedIn()) {
             <div class="p-8 md:p-16 flex flex-col justify-center">
                 <div class="mb-10">
                     <h2 class="text-3xl font-bold text-slate-900 mb-2">Welcome Back</h2>
-                    <p class="text-slate-600 font-medium">Enter your SK credentials to access the portal.</p>
+                    <p class="text-slate-600 font-medium">Enter your account credentials to access the portal.</p>
                 </div>
 
                 <?php if ($login_error): ?>
@@ -126,7 +129,7 @@ if ($user->isLoggedIn()) {
                             <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                 <span class="material-symbols-outlined text-slate-400 text-xl">person</span>
                             </div>
-                            <input type="text" name="username" placeholder="admin1" required
+                            <input type="text" name="username" placeholder="Username" required
                                 class="block w-full pl-12 pr-4 py-3 bg-slate-100 border border-transparent focus:border-blue-900 focus:ring-0 rounded-lg transition-all text-slate-900 placeholder:text-slate-400 font-medium" />
                         </div>
                     </div>
@@ -159,23 +162,11 @@ if ($user->isLoggedIn()) {
                 </form>
 
 
-                <div class="mt-8 space-y-3 text-center border-t border-slate-200 pt-8">
-                    <div>
-                        <p class="text-sm text-slate-600 mb-2">Are you a youth looking for opportunities?</p>
-                        <a href="youth-signup.php"
-                            class="inline-flex items-center gap-2 text-blue-900 font-semibold hover:underline">
-                            <span class="material-symbols-outlined text-base">person_add</span>
-                            Youth Sign Up
-                        </a>
-                    </div>
-                    <div>
-                        <p class="text-sm text-slate-600 mb-2">Are you an employer or training provider?</p>
-                        <a href="provider-registration.php"
-                            class="inline-flex items-center gap-2 text-blue-900 font-semibold hover:underline">
-                            <span class="material-symbols-outlined text-base">business</span>
-                            Register as Provider
-                        </a>
-                    </div>
+                <div class="mt-8 text-center border-t border-slate-200 pt-8">
+                    <p class="text-sm text-slate-500">
+                        <span class="material-symbols-outlined text-sm align-middle mr-1">info</span>
+                        SK Chairman accounts are provisioned by LYDO.<br>Contact your LYDO office if you need access.
+                    </p>
                 </div>
             </div>
         </div>

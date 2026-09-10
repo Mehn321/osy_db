@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 /*  index.php – Landing page for the Youth Profiling System
     • Shows two role‑specific entry points (Youth & Provider)
     • Uses the same Tailwind theme you already configured
@@ -39,7 +39,7 @@
         }
     </style>
     <!-- Tailwind (using the same config you already have) -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="<?php echo (isset($basePath) ? $basePath : ""); ?>/assets/js/tailwind.js"></script>
     <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",

@@ -119,6 +119,10 @@ $matches = $matching->getMatchesForOSY($profile_id);
                     <p class="text-slate-900 dark:text-white"><?php echo htmlspecialchars($profile['phone'] ?? 'N/A'); ?></p>
                 </div>
                 <div>
+                    <span class="text-slate-600 dark:text-slate-400 font-medium">Suffix:</span>
+                    <p class="text-slate-900 dark:text-white"><?php echo htmlspecialchars(($profile['suffix'] ?? '') !== '' ? $profile['suffix'] : 'None'); ?></p>
+                </div>
+                <div>
                     <span class="text-slate-600 dark:text-slate-400 font-medium">Civil Status:</span>
                     <p class="text-slate-900 dark:text-white"><?php echo htmlspecialchars($profile['civil_status'] ?? 'N/A'); ?></p>
                 </div>
@@ -148,8 +152,12 @@ $matches = $matching->getMatchesForOSY($profile_id);
             <h3 class="text-lg font-bold text-slate-900 dark:text-white mb-4">Education & Skills</h3>
             <div class="space-y-4">
                 <div>
-                    <span class="text-sm font-semibold text-slate-600 dark:text-slate-400">Education Level</span>
+                    <span class="text-sm font-semibold text-slate-600 dark:text-slate-400">Educational Attainment</span>
                     <p class="text-slate-900 dark:text-white"><?php echo htmlspecialchars($profile['education_level'] ?? 'N/A'); ?></p>
+                </div>
+                <div>
+                    <span class="text-sm font-semibold text-slate-600 dark:text-slate-400">Occupation</span>
+                    <p class="text-slate-900 dark:text-white"><?php echo htmlspecialchars($profile['occupation'] ?? 'N/A'); ?></p>
                 </div>
                 <div>
                     <span class="text-sm font-semibold text-slate-600 dark:text-slate-400">Primary Skill</span>
@@ -167,6 +175,10 @@ $matches = $matching->getMatchesForOSY($profile_id);
                         <p class="text-slate-900 dark:text-white"><?php echo htmlspecialchars($profile['interests']); ?></p>
                     </div>
                 <?php endif; ?>
+                <div>
+                    <span class="text-sm font-semibold text-slate-600 dark:text-slate-400">Purok</span>
+                    <p class="text-slate-900 dark:text-white"><?php echo htmlspecialchars($profile['purok'] ?? ($profile['address'] ?? 'N/A')); ?></p>
+                </div>
                 <div>
                     <span class="text-sm font-semibold text-slate-600 dark:text-slate-400">Barangay</span>
                     <p class="text-slate-900 dark:text-white"><?php echo htmlspecialchars($profile['barangay'] ?? 'N/A'); ?></p>

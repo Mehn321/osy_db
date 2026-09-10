@@ -245,7 +245,7 @@ $cliOut = ob_get_clean();
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Training Provider Test Suite</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<script src="<?php echo (isset($basePath) ? $basePath : ""); ?>/assets/js/tailwind.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined" rel="stylesheet">
 <style>body{font-family:'Inter',sans-serif}</style>

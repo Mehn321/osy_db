@@ -12,14 +12,16 @@ $basePath = $basePath === '/' ? '' : $basePath;
     <title><?php echo isset($pageTitle) ? $pageTitle . ' - Integrated Web Based Information System for Youth Profiling and Skills Matching' : 'Integrated Web Based Information System for Youth Profiling and Skills Matching'; ?></title>
     <meta name="csrf-token" content="<?php echo htmlspecialchars(getCsrfToken()); ?>">
     <meta name="form-nonce" content="<?php echo htmlspecialchars(getFormNonce()); ?>">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="<?php echo $basePath; ?>/assets/js/tailwind.js"></script>
     <script>
         tailwind.config = { darkMode: 'class' };
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <link href="<?php echo $basePath; ?>/assets/css/design-system.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="<?php echo $basePath; ?>/assets/js/auto-filter.js"></script>
+    <script src="<?php echo $basePath; ?>/assets/js/profile-modal.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -140,7 +142,7 @@ $basePath = $basePath === '/' ? '' : $basePath;
     </style>
 </head>
 
-<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50">
+<body class="app-shell bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50">
     <?php if ($user->isLoggedIn()): ?>
         <!-- SPA Progress Bar -->
         <div id="spa-progress" class="fixed top-0 left-0 h-1 bg-blue-600 z-[100] transition-all duration-300 shadow-[0_0_10px_rgba(37,99,235,0.5)]" style="width: 0; display: none;"></div>
@@ -166,13 +168,13 @@ $basePath = $basePath === '/' ? '' : $basePath;
         <div id="sidebarOverlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden md:hidden" onclick="toggleSidebar()"></div>
 
         <!-- Sidebar -->
-        <aside id="sidebar" class="fixed left-0 top-0 h-full flex flex-col p-4 gap-2 bg-white dark:bg-slate-900 w-64 border-r border-slate-200/50 dark:border-slate-700/50 z-50 font-inter transform -translate-x-full md:translate-x-0 transition-transform duration-300">
+        <aside id="sidebar" class="app-sidebar fixed left-0 top-0 h-full flex flex-col p-4 gap-2 bg-white dark:bg-slate-900 w-64 border-r border-slate-200/50 dark:border-slate-700/50 z-50 font-inter transform -translate-x-full md:translate-x-0 transition-transform duration-300">
             <div class="flex items-center gap-3 px-2 py-4 mb-6">
                 <div class="w-10 h-10 rounded-lg bg-blue-900 flex items-center justify-center text-white shadow-lg">
                     <span class="material-symbols-outlined">account_balance</span>
                 </div>
                 <div>
-                    <h1 class="font-bold text-blue-900 dark:text-blue-200 leading-tight text-sm">Integrated Web Based Information System for Youth Profiling and Skills Matching</h1>
+                    <h1 class="font-bold text-white leading-tight text-sm">Municipal KK</h1>
                     <p class="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-widest mt-1">Youth Registry</p>
                 </div>
             </div>
@@ -306,7 +308,7 @@ $basePath = $basePath === '/' ? '' : $basePath;
         </aside>
 
         <!-- Top Bar -->
-        <div class="fixed top-0 left-0 md:left-64 right-0 bg-white dark:bg-slate-900 border-b border-slate-200/50 dark:border-slate-700/50 h-16 flex items-center justify-between px-4 md:px-8 z-40 shadow-sm">
+        <div class="app-topbar fixed top-0 left-0 md:left-64 right-0 bg-white dark:bg-slate-900 border-b border-slate-200/50 dark:border-slate-700/50 h-16 flex items-center justify-between px-4 md:px-8 z-40 shadow-sm">
             <div class="flex items-center gap-3">
                 <!-- Mobile Menu Button (Now inside Top Bar) -->
                 <button id="mobileMenuBtn" class="md:hidden p-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition">
@@ -345,7 +347,7 @@ $basePath = $basePath === '/' ? '' : $basePath;
 
         <!-- Main Content -->
         <main class="md:ml-64 pt-24 pb-8 px-4 md:px-8 min-h-screen">
-            <div class="max-w-7xl mx-auto">
+            <div class="app-content max-w-7xl mx-auto">
             <?php endif; ?>
 
             <script>

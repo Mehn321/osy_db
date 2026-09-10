@@ -1,6 +1,7 @@
 <?php
 $pageTitle = 'Reports';
 require_once __DIR__ . '/../init.php';
+require_once __DIR__ . '/../Classes/Reference.php';
 
 if (!$user->isLoggedIn()) {
     header('Location: login.php');
@@ -8,18 +9,66 @@ if (!$user->isLoggedIn()) {
 }
 requireRole('lydo');
 
-require_once __DIR__ . '/../includes/header.php';
+$startDate = $_GET['start_date'] ?? ($_POST['start_date'] ?? '');
+$endDate = $_GET['end_date'] ?? ($_POST['end_date'] ?? '');
+$filterBarangay = $_GET['barangay'] ?? ($_POST['barangay'] ?? 'All Barangays');
+$filterGender = $_GET['gender'] ?? ($_POST['gender'] ?? 'All Genders');
+$filterProfileType = $_GET['profile_type'] ?? ($_POST['profile_type'] ?? 'All Types');
+$filterEducation = $_GET['education'] ?? ($_POST['education'] ?? 'Any Level');
+$filterStatus = $_GET['status'] ?? ($_POST['status'] ?? 'All Status');
+$filterVerification = $_GET['verification_status'] ?? ($_POST['verification_status'] ?? 'All Verification');
 
-$startDate = $_GET['start_date'] ?? '';
-$endDate = $_GET['end_date'] ?? '';
+$profilingFilters = [
+    'start_date' => $startDate,
+    'end_date' => $endDate,
+    'barangay' => $filterBarangay,
+    'gender' => $filterGender,
+    'profile_type' => $filterProfileType,
+    'education' => $filterEducation,
+    'status' => $filterStatus,
+    'verification_status' => $filterVerification,
+];
 
 $report = new Report($database);
 $stats = $report->generateMatchingStats(['start_date' => $startDate, 'end_date' => $endDate]);
 $message = '';
 $messageType = '';
 
-// Handle report generation
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['export_panaon_profiling'])) {
+    if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
+        $message = 'Duplicate or invalid form submission detected.';
+        $messageType = 'error';
+    } else {
+        $result = $report->exportPanaonYouthProfiling($profilingFilters);
+        if (!empty($result['success']) && !empty($result['filepath']) && is_file($result['filepath'])) {
+            while (ob_get_level() > 0) {
+                ob_end_clean();
+            }
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Disposition: attachment; filename="' . $result['filename'] . '"');
+            header('Content-Length: ' . filesize($result['filepath']));
+            header('Cache-Control: no-cache, no-store, must-revalidate');
+            header('Pragma: no-cache');
+            header('Expires: 0');
+            header('X-Content-Type-Options: nosniff');
+            readfile($result['filepath']);
+            unlink($result['filepath']);
+            exit;
+        }
+        $message = $result['message'] ?? 'Unable to generate the Panaon Youth Profiling report.';
+        $messageType = 'error';
+    }
+}
+
+require_once __DIR__ . '/../includes/header.php';
+
+$reference = new Reference($database);
+$barangays = $reference->getByCategory('barangay');
+$eduLevels = $reference->getByCategory('education_level');
+$profilingCount = count($report->getYouthProfilingProfiles($profilingFilters));
+
+// Handle CSV report generation
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['export_panaon_profiling'])) {
     if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
         $message = 'Duplicate or invalid form submission detected.';
         $messageType = 'error';
@@ -98,26 +147,112 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <!-- Date Filter Card -->
 <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-8">
-    <form method="GET" class="flex flex-wrap items-end gap-4">
-        <div>
-            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Start Date</label>
-            <input type="date" name="start_date" id="filter-start-date" value="<?php echo htmlspecialchars($startDate); ?>" class="px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900" />
+    <form method="GET" class="space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Start Date</label>
+                <input type="date" name="start_date" id="filter-start-date" value="<?php echo htmlspecialchars($startDate); ?>" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900" />
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">End Date</label>
+                <input type="date" name="end_date" id="filter-end-date" value="<?php echo htmlspecialchars($endDate); ?>" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900" />
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Barangay</label>
+                <select name="barangay" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900">
+                    <option value="All Barangays" <?php echo $filterBarangay === 'All Barangays' ? 'selected' : ''; ?>>All Barangays</option>
+                    <?php foreach ($barangays as $b): ?>
+                        <option value="<?php echo htmlspecialchars($b); ?>" <?php echo $filterBarangay === $b ? 'selected' : ''; ?>><?php echo htmlspecialchars($b); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Gender</label>
+                <select name="gender" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900">
+                    <option value="All Genders" <?php echo $filterGender === 'All Genders' ? 'selected' : ''; ?>>All Genders</option>
+                    <option value="Male" <?php echo $filterGender === 'Male' ? 'selected' : ''; ?>>Male</option>
+                    <option value="Female" <?php echo $filterGender === 'Female' ? 'selected' : ''; ?>>Female</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Classification</label>
+                <select name="profile_type" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900">
+                    <option value="All Types" <?php echo $filterProfileType === 'All Types' ? 'selected' : ''; ?>>All Types</option>
+                    <option value="OSY" <?php echo $filterProfileType === 'OSY' ? 'selected' : ''; ?>>OSY</option>
+                    <option value="Regular" <?php echo $filterProfileType === 'Regular' ? 'selected' : ''; ?>>Regular</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Educational Attainment</label>
+                <select name="education" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900">
+                    <option value="Any Level" <?php echo $filterEducation === 'Any Level' ? 'selected' : ''; ?>>Any Level</option>
+                    <?php foreach ($eduLevels as $e): ?>
+                        <option value="<?php echo htmlspecialchars($e); ?>" <?php echo $filterEducation === $e ? 'selected' : ''; ?>><?php echo htmlspecialchars($e); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Status</label>
+                <select name="status" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900">
+                    <option value="All Status" <?php echo $filterStatus === 'All Status' ? 'selected' : ''; ?>>All Status</option>
+                    <option value="Active" <?php echo $filterStatus === 'Active' ? 'selected' : ''; ?>>Active</option>
+                    <option value="Employed" <?php echo $filterStatus === 'Employed' ? 'selected' : ''; ?>>Employed</option>
+                    <option value="In Training" <?php echo $filterStatus === 'In Training' ? 'selected' : ''; ?>>In Training</option>
+                    <option value="Inactive" <?php echo $filterStatus === 'Inactive' ? 'selected' : ''; ?>>Inactive</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Verification</label>
+                <select name="verification_status" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900">
+                    <option value="All Verification" <?php echo $filterVerification === 'All Verification' ? 'selected' : ''; ?>>All Verification</option>
+                    <option value="Verified" <?php echo $filterVerification === 'Verified' ? 'selected' : ''; ?>>Verified</option>
+                    <option value="Pending" <?php echo $filterVerification === 'Pending' ? 'selected' : ''; ?>>Pending</option>
+                    <option value="Action Required" <?php echo $filterVerification === 'Action Required' ? 'selected' : ''; ?>>Action Required</option>
+                    <option value="Drafting" <?php echo $filterVerification === 'Drafting' ? 'selected' : ''; ?>>Drafting</option>
+                </select>
+            </div>
         </div>
-        <div>
-            <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">End Date</label>
-            <input type="date" name="end_date" id="filter-end-date" value="<?php echo htmlspecialchars($endDate); ?>" class="px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900" />
-        </div>
-        <div class="flex gap-2">
+        <div class="flex flex-wrap gap-2">
             <button type="submit" class="px-6 py-2 bg-blue-900 text-white rounded-lg text-sm font-semibold hover:bg-blue-800 transition-colors">
                 Apply Filter
             </button>
-            <?php if (!empty($startDate) || !empty($endDate)): ?>
+            <?php if (!empty($startDate) || !empty($endDate) || $filterBarangay !== 'All Barangays' || $filterGender !== 'All Genders' || $filterProfileType !== 'All Types' || $filterEducation !== 'Any Level' || $filterStatus !== 'All Status' || $filterVerification !== 'All Verification'): ?>
                 <a href="reports.php" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
                     Clear
                 </a>
             <?php endif; ?>
         </div>
     </form>
+</div>
+
+<div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-8 mb-8">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+        <div class="flex items-start gap-4">
+            <div class="w-12 h-12 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-800 dark:text-amber-300">
+                <span class="material-symbols-outlined">table_view</span>
+            </div>
+            <div>
+                <h3 class="font-bold text-slate-900 dark:text-white">Panaon Youth Profiling</h3>
+                <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Download the official municipal spreadsheet template filled with youth profiles matching the filters above.</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-2"><?php echo (int) $profilingCount; ?> profile<?php echo $profilingCount === 1 ? '' : 's'; ?> will be included.</p>
+            </div>
+        </div>
+        <form method="POST" class="w-full lg:w-auto">
+            <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
+            <input type="hidden" name="start_date" value="<?php echo htmlspecialchars($startDate); ?>">
+            <input type="hidden" name="end_date" value="<?php echo htmlspecialchars($endDate); ?>">
+            <input type="hidden" name="barangay" value="<?php echo htmlspecialchars($filterBarangay); ?>">
+            <input type="hidden" name="gender" value="<?php echo htmlspecialchars($filterGender); ?>">
+            <input type="hidden" name="profile_type" value="<?php echo htmlspecialchars($filterProfileType); ?>">
+            <input type="hidden" name="education" value="<?php echo htmlspecialchars($filterEducation); ?>">
+            <input type="hidden" name="status" value="<?php echo htmlspecialchars($filterStatus); ?>">
+            <input type="hidden" name="verification_status" value="<?php echo htmlspecialchars($filterVerification); ?>">
+            <button type="submit" name="export_panaon_profiling" value="1" class="w-full lg:w-auto py-3 px-6 bg-amber-700 text-white rounded-lg font-semibold hover:bg-amber-600 transition-colors flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined">download</span>
+                Download Excel Report
+            </button>
+        </form>
+    </div>
 </div>
 
 <!-- Statistics Cards -->

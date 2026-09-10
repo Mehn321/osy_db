@@ -121,7 +121,7 @@ header("X-XSS-Protection: 1; mode=block");
 header("Referrer-Policy: strict-origin-when-cross-origin");
 header("Strict-Transport-Security: max-age=31536000; includeSubDomains");
 // Content-Security-Policy can be tricky depending on inline scripts, so we start with a permissive but solid base
-header("Content-Security-Policy: default-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://fonts.gstatic.com https://cdn.tailwindcss.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net data: blob:; img-src 'self' data: blob: https: http:;");
+header("Content-Security-Policy: default-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net data: blob:; img-src 'self' data: blob: https: http:;");
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();

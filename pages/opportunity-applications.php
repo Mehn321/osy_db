@@ -7,8 +7,8 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-// Ensure only providers, LYDO, or SK Chairman can access this page
-requireRole(['training_provider', 'employer', 'lydo', 'sk_chairman']);
+// Only the listing owner or LYDO may view applicants or make decisions.
+requireRole(['training_provider', 'employer', 'lydo']);
 
 // Get opportunity ID from query string
 $opportunityId = isset($_GET['opportunity_id']) && ctype_digit($_GET['opportunity_id'])
@@ -40,6 +40,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $opportunity = $database->fetchOne('SELECT * FROM opportunities WHERE id = ?', [$opportunityId], 'i');
 if (!$opportunity) {
     die('Opportunity not found');
+}
+if ($_SESSION['role'] !== 'lydo' && (int) $opportunity['provider_id'] !== (int) $_SESSION['user_id']) {
+    http_response_code(403);
+    exit('Access denied. You can only view applications for your own opportunities.');
 }
 
 // Retrieve all applications (matches) for this opportunity
@@ -129,12 +133,14 @@ require_once __DIR__ . '/../includes/header.php';
                             <td class="px-4 py-2 text-center">
                                 <?php if ($app['status'] === 'Pending'): ?>
                                     <form method="POST" class="inline" style="margin:0;">
+                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(getCsrfToken()) ?>">
                                         <input type="hidden" name="form_nonce" value="<?= htmlspecialchars(getFormNonce()) ?>">
                                         <input type="hidden" name="match_id" value="<?= $app['id'] ?>">
                                         <input type="hidden" name="new_status" value="Accepted">
                                         <button type="submit" class="px-2 py-1 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-xs">Accept</button>
                                     </form>
                                     <form method="POST" class="inline" style="margin:0;">
+                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(getCsrfToken()) ?>">
                                         <input type="hidden" name="form_nonce" value="<?= htmlspecialchars(getFormNonce()) ?>">
                                         <input type="hidden" name="match_id" value="<?= $app['id'] ?>">
                                         <input type="hidden" name="new_status" value="Rejected">

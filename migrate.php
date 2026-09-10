@@ -29,6 +29,28 @@ try {
                       VALUES ('" . $database->escape($k) . "', '" . $database->escape($val) . "')");
     }
 
+    $conn->query("CREATE TABLE IF NOT EXISTS `user_2fa_codes` (
+        `id` int(11) NOT NULL AUTO_INCREMENT,
+        `user_id` int(11) NOT NULL,
+        `channel` enum('email','phone') NOT NULL DEFAULT 'email',
+        `purpose` enum('login','signup') NOT NULL DEFAULT 'login',
+        `otp_hash` varchar(255) NOT NULL,
+        `expires_at` datetime NOT NULL,
+        `attempts` int(11) NOT NULL DEFAULT 0,
+        `consumed_at` datetime DEFAULT NULL,
+        `created_at` datetime DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (`id`),
+        KEY `idx_user_2fa_codes` (`user_id`, `purpose`, `channel`),
+        CONSTRAINT `fk_user_2fa_codes_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+    $otpColumns = array_column($database->fetchAll("SHOW COLUMNS FROM `user_2fa_codes`"), 'Field');
+    if (!in_array('channel', $otpColumns, true)) {
+        $conn->query("ALTER TABLE `user_2fa_codes` ADD COLUMN `channel` enum('email','phone') NOT NULL DEFAULT 'email' AFTER `user_id`");
+    }
+    if (!in_array('purpose', $otpColumns, true)) {
+        $conn->query("ALTER TABLE `user_2fa_codes` ADD COLUMN `purpose` enum('login','signup') NOT NULL DEFAULT 'login' AFTER `channel`");
+    }
+
     // ── 2. messages table ─────────────────────────────────────────────────────
     $conn->query("CREATE TABLE IF NOT EXISTS `messages` (
         `id` int(11) NOT NULL AUTO_INCREMENT,
@@ -89,6 +111,18 @@ try {
         $conn->query("ALTER TABLE `users` ADD COLUMN `provider_document_path` varchar(255) DEFAULT NULL AFTER `provider_type`");
     }
 
+    if (!in_array('phone', $existingUserCols)) {
+        $conn->query("ALTER TABLE `users` ADD COLUMN `phone` varchar(20) DEFAULT NULL AFTER `email`");
+    }
+
+    if (!in_array('email_verified_at', $existingUserCols)) {
+        $conn->query("ALTER TABLE `users` ADD COLUMN `email_verified_at` datetime DEFAULT NULL AFTER `phone`");
+    }
+
+    if (!in_array('phone_verified_at', $existingUserCols)) {
+        $conn->query("ALTER TABLE `users` ADD COLUMN `phone_verified_at` datetime DEFAULT NULL AFTER `email_verified_at`");
+    }
+
     if (!in_array('temp_password_required', $existingUserCols)) {
         $conn->query("ALTER TABLE `users` ADD COLUMN `temp_password_required` TINYINT(1) DEFAULT 0 AFTER `provider_document_path`");
     }
@@ -108,8 +142,29 @@ try {
     // ── 3. osy_profiles table – add youth verification workflow fields ─────────
     $existingProfileCols = array_column($database->fetchAll("SHOW COLUMNS FROM `osy_profiles`"), 'Field');
 
+    // Keep the official youth profiling fields available on older databases.
+    $profileColMigrations = [
+        'suffix' => "ALTER TABLE `osy_profiles` ADD COLUMN `suffix` varchar(20) DEFAULT NULL AFTER `last_name`",
+        'province' => "ALTER TABLE `osy_profiles` ADD COLUMN `province` varchar(100) DEFAULT NULL AFTER `barangay`",
+        'municipality' => "ALTER TABLE `osy_profiles` ADD COLUMN `municipality` varchar(100) DEFAULT NULL AFTER `province`",
+        'purok' => "ALTER TABLE `osy_profiles` ADD COLUMN `purok` varchar(255) DEFAULT NULL AFTER `municipality`",
+        'occupation' => "ALTER TABLE `osy_profiles` ADD COLUMN `occupation` varchar(255) DEFAULT NULL AFTER `education_level`",
+    ];
+    foreach ($profileColMigrations as $col => $sql) {
+        if (!in_array($col, $existingProfileCols, true)) {
+            $conn->query($sql);
+        }
+    }
+
     if (!in_array('verification_status', $existingProfileCols)) {
-        $conn->query("ALTER TABLE `osy_profiles` ADD COLUMN `verification_status` ENUM('Drafting','Pending','Verified','Action Required') DEFAULT 'Drafting' AFTER `registration_status`");
+        $conn->query("ALTER TABLE `osy_profiles` ADD COLUMN `verification_status` ENUM('Drafting','Pending','Verified','Rejected','Action Required','Declined') DEFAULT 'Drafting' AFTER `registration_status`");
+    }
+
+    // Keep the database enum aligned with the verification states used by the
+    // review screens, including older installations created before these states.
+    $verificationStatusColumn = $database->fetchOne("SHOW COLUMNS FROM `osy_profiles` LIKE 'verification_status'");
+    if ($verificationStatusColumn && (stripos($verificationStatusColumn['Type'], 'rejected') === false || stripos($verificationStatusColumn['Type'], 'declined') === false)) {
+        $conn->query("ALTER TABLE `osy_profiles` MODIFY `verification_status` ENUM('Drafting','Pending','Verified','Rejected','Action Required','Declined') DEFAULT 'Drafting'");
     }
 
     if (!in_array('verification_remark', $existingProfileCols)) {
@@ -330,6 +385,59 @@ try {
         KEY `idx_user_login_events_result` (`login_result`),
         CONSTRAINT `fk_user_login_events_user` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    // ── 14. youth_barangay_transfers ──────────────────────────────────────
+    // A transfer is kept separate from the youth profile until the receiving
+    // barangay's SK Chairman has reviewed it. This prevents a youth from
+    // disappearing from the old registry before the destination accepts them.
+    $conn->query("CREATE TABLE IF NOT EXISTS `youth_barangay_transfers` (
+        `id` int(11) NOT NULL AUTO_INCREMENT,
+        `profile_id` int(11) NOT NULL,
+        `from_barangay` varchar(100) NOT NULL,
+        `to_barangay` varchar(100) NOT NULL,
+        `status` enum('Pending','Approved','Rejected','Cancelled') NOT NULL DEFAULT 'Pending',
+        `request_remark` text DEFAULT NULL,
+        `review_remark` text DEFAULT NULL,
+        `requested_by` int(11) NOT NULL,
+        `reviewed_by` int(11) DEFAULT NULL,
+        `requested_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        `reviewed_at` datetime DEFAULT NULL,
+        PRIMARY KEY (`id`),
+        KEY `idx_transfer_destination` (`to_barangay`, `status`),
+        KEY `idx_transfer_profile` (`profile_id`, `status`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
+    // Keep the detailed street/purok address entered during youth registration.
+    $profileColumns = array_column($database->fetchAll("SHOW COLUMNS FROM `osy_profiles`"), 'Field');
+    if (!in_array('address', $profileColumns, true)) {
+        $conn->query("ALTER TABLE `osy_profiles` ADD COLUMN `address` varchar(255) DEFAULT NULL AFTER `barangay`");
+        $profileColumns[] = 'address';
+    }
+    if (!in_array('suffix', $profileColumns, true)) {
+        $conn->query("ALTER TABLE `osy_profiles` ADD COLUMN `suffix` varchar(20) DEFAULT NULL AFTER `last_name`");
+        $profileColumns[] = 'suffix';
+    }
+    if (!in_array('province', $profileColumns, true)) {
+        $conn->query("ALTER TABLE `osy_profiles` ADD COLUMN `province` varchar(100) DEFAULT NULL AFTER `barangay`");
+        $profileColumns[] = 'province';
+    }
+    if (!in_array('municipality', $profileColumns, true)) {
+        $conn->query("ALTER TABLE `osy_profiles` ADD COLUMN `municipality` varchar(100) DEFAULT NULL AFTER `province`");
+        $profileColumns[] = 'municipality';
+    }
+    if (!in_array('purok', $profileColumns, true)) {
+        $conn->query("ALTER TABLE `osy_profiles` ADD COLUMN `purok` varchar(255) DEFAULT NULL AFTER `municipality`");
+        $profileColumns[] = 'purok';
+    }
+    if (!in_array('occupation', $profileColumns, true)) {
+        $conn->query("ALTER TABLE `osy_profiles` ADD COLUMN `occupation` varchar(150) DEFAULT NULL AFTER `engagement_status`");
+        $profileColumns[] = 'occupation';
+    }
+    $conn->query("UPDATE `osy_profiles` SET `province` = 'Misamis Occidental' WHERE `province` IS NULL OR `province` = ''");
+    $conn->query("UPDATE `osy_profiles` SET `municipality` = 'Panaon' WHERE `municipality` IS NULL OR `municipality` = ''");
+    if (in_array('address', $profileColumns, true)) {
+        $conn->query("UPDATE `osy_profiles` SET `purok` = `address` WHERE (`purok` IS NULL OR `purok` = '') AND `address` IS NOT NULL AND `address` != ''");
+    }
 } catch (Exception $e) {
     // Silent – migrations must never interrupt page loads
     error_log('OSY Migration Error: ' . $e->getMessage());

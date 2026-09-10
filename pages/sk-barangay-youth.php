@@ -50,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_youth'])) {
                         [$userStatus, $checkProfile['created_by']],
                         "si"
                     );
-                    
+
                     // Verify the update succeeded
                     if ($updateResult === 1 || $updateResult > 0) {
                         $updateSuccess = true;
@@ -95,12 +95,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_youth'])) {
     }
 }
 
+// ── Handle receiving-barangay transfer review ──────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['review_transfer'])) {
+    if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
+        $message = 'Duplicate or expired form submission. Please try again.';
+        $messageType = 'error';
+    } else {
+        $approved = ($_POST['action'] ?? '') === 'approve';
+        $result = $osyProfile->reviewBarangayTransfer(
+            (int) ($_POST['transfer_id'] ?? 0), $userBarangay, $approved, $_SESSION['user_id'], trim($_POST['remark'] ?? '')
+        );
+        $message = $result['message'];
+        $messageType = $result['success'] ? 'success' : 'error';
+        if ($result['success'] && !empty($result['transfer']['requested_by'])) {
+            $auditLog->logAction(
+                $_SESSION['user_id'],
+                $_SESSION['role'],
+                $approved ? 'Approved youth barangay transfer' : 'Declined youth barangay transfer',
+                'OSYProfile',
+                $result['transfer']['profile_id'],
+                json_encode([
+                    'transfer_id' => (int) ($_POST['transfer_id'] ?? 0),
+                    'from_barangay' => $result['transfer']['from_barangay'],
+                    'to_barangay' => $userBarangay,
+                    'remark' => trim($_POST['remark'] ?? '')
+                ])
+            );
+            $notif->sendToUser(
+                $result['transfer']['requested_by'],
+                $approved ? 'Barangay Transfer Approved' : 'Barangay Transfer Declined',
+                $approved ? "Your profile has been verified and transferred to Barangay {$userBarangay}." : "Your transfer request to Barangay {$userBarangay} was declined. " . (trim($_POST['remark'] ?? '') ?: ''),
+                'SK Chairman'
+            );
+        }
+    }
+}
+
 // ── Fetch pending youth awaiting SK approval ───────────────────────────────
 $pendingYouth = $database->fetchAll(
     "SELECT * FROM osy_profiles WHERE barangay = ? AND verification_status IN ('Pending', 'Drafting', 'Action Required') ORDER BY created_at ASC",
     [$userBarangay],
     "s"
 );
+$pendingTransfers = $osyProfile->getPendingTransfersToBarangay($userBarangay);
 
 // ── Fetch all (approved + others) for the full registry ───────────────────
 $page   = max(1, (int)($_GET['page'] ?? 1));
@@ -144,6 +181,12 @@ require_once __DIR__ . '/../includes/header.php';
                     <?= count($pendingYouth) ?> Awaiting Approval
                 </span>
             <?php endif; ?>
+            <?php if (!empty($pendingTransfers)): ?>
+                <span class="bg-violet-100 dark:bg-violet-900/40 text-violet-800 dark:text-violet-200 px-4 py-2 rounded-xl flex items-center gap-2 text-sm font-bold border border-violet-200 dark:border-violet-800">
+                    <span class="material-symbols-outlined text-base">swap_horiz</span>
+                    <?= count($pendingTransfers) ?> Transfer <?= count($pendingTransfers) === 1 ? 'Request' : 'Requests' ?>
+                </span>
+            <?php endif; ?>
             <div class="bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-200 px-4 py-2 rounded-xl flex items-center gap-2 border border-blue-200 dark:border-blue-800">
                 <span class="material-symbols-outlined text-base">groups</span>
                 <span class="font-black text-xl"><?= $totalYouth ?></span>
@@ -157,6 +200,40 @@ require_once __DIR__ . '/../includes/header.php';
     <div class="mb-6 p-4 rounded-xl flex items-center gap-3 <?= $messageType === 'error' ? 'bg-red-50 border border-red-200 text-red-800' : 'bg-green-50 border border-green-200 text-green-800' ?>">
         <span class="material-symbols-outlined"><?= $messageType === 'error' ? 'error' : 'check_circle' ?></span>
         <?= htmlspecialchars($message) ?>
+    </div>
+<?php endif; ?>
+
+<?php if (!empty($pendingTransfers)): ?>
+    <div class="mb-10 rounded-2xl border border-violet-200 dark:border-violet-800 bg-violet-50/60 dark:bg-violet-900/10 p-6">
+        <div class="flex items-center gap-3 mb-2">
+            <span class="material-symbols-outlined text-violet-700 dark:text-violet-300 text-2xl">swap_horiz</span>
+            <h2 class="text-xl font-extrabold text-slate-900 dark:text-white">Incoming Barangay Transfers</h2>
+        </div>
+        <p class="text-sm text-slate-600 dark:text-slate-300 mb-5">Review these youth before accepting them into <?= htmlspecialchars($userBarangay) ?>. Until you approve, each youth remains in their old barangay registry.</p>
+        <div class="space-y-4">
+            <?php foreach ($pendingTransfers as $transfer): ?>
+                <div class="rounded-xl bg-white dark:bg-slate-800 border border-violet-100 dark:border-violet-900 p-5">
+                    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                        <div>
+                            <p class="font-extrabold text-slate-900 dark:text-white text-lg"><?= htmlspecialchars(trim($transfer['first_name'] . ' ' . ($transfer['middle_name'] ?? '') . ' ' . $transfer['last_name'])) ?></p>
+                            <p class="text-sm text-slate-600 dark:text-slate-300 mt-1">From <strong><?= htmlspecialchars($transfer['from_barangay']) ?></strong> · Requested <?= htmlspecialchars(date('M d, Y', strtotime($transfer['requested_at']))) ?></p>
+                            <?php if (!empty($transfer['email']) || !empty($transfer['phone'])): ?><p class="text-xs text-slate-500 mt-2"><?= htmlspecialchars($transfer['email'] ?: $transfer['phone']) ?></p><?php endif; ?>
+                            <?php if (!empty($transfer['request_remark'])): ?><p class="mt-3 text-sm text-slate-700 dark:text-slate-200"><strong>Reason:</strong> <?= htmlspecialchars($transfer['request_remark']) ?></p><?php endif; ?>
+                        </div>
+                        <form method="POST" class="w-full lg:w-96 space-y-3">
+                            <input type="hidden" name="review_transfer" value="1">
+                            <input type="hidden" name="transfer_id" value="<?= (int) $transfer['id'] ?>">
+                            <input type="hidden" name="form_nonce" value="<?= htmlspecialchars(getFormNonce()) ?>">
+                            <textarea name="remark" rows="2" class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 px-3 py-2 text-sm" placeholder="Review note (optional)"></textarea>
+                            <div class="flex gap-2">
+                                <button name="action" value="approve" class="flex-1 rounded-xl bg-violet-700 hover:bg-violet-800 text-white px-3 py-2 text-sm font-bold">Verify &amp; Transfer</button>
+                                <button name="action" value="reject" class="flex-1 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 px-3 py-2 text-sm font-bold">Decline</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        </div>
     </div>
 <?php endif; ?>
 
@@ -196,7 +273,7 @@ require_once __DIR__ . '/../includes/header.php';
                     <!-- Profile Details Grid -->
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-px bg-slate-100 dark:bg-slate-700">
                         <div class="bg-white dark:bg-slate-800 p-4">
-                            <p class="text-[10px] font-bold uppercase text-slate-400 tracking-widest mb-1">Education</p>
+                            <p class="text-[10px] font-bold uppercase text-slate-400 tracking-widest mb-1">Educational Attainment</p>
                             <p class="text-sm font-semibold text-slate-800 dark:text-slate-200"><?= htmlspecialchars($p['education_level'] ?? '—') ?></p>
                         </div>
                         <div class="bg-white dark:bg-slate-800 p-4">
@@ -219,18 +296,43 @@ require_once __DIR__ . '/../includes/header.php';
                         </div>
                     <?php endif; ?>
 
-                    <!-- Government ID info -->
-                    <?php if (!empty($p['govt_id_type']) || !empty($p['govt_id_number'])): ?>
-                        <div class="px-6 py-3 bg-slate-50 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-700 flex items-center gap-2">
-                            <span class="material-symbols-outlined text-slate-400 text-base">badge</span>
-                            <p class="text-xs text-slate-600 dark:text-slate-400">
-                                <strong><?= htmlspecialchars($p['govt_id_type'] ?? 'ID') ?>:</strong> <?= htmlspecialchars($p['govt_id_number'] ?? 'N/A') ?>
-                            </p>
-                            <?php if (!empty($p['identity_document_path'])): ?>
-                                <a href="../<?= htmlspecialchars($p['identity_document_path']) ?>" target="_blank"
-                                    class="ml-auto text-xs text-blue-700 dark:text-blue-400 font-bold flex items-center gap-1 hover:underline">
-                                    <span class="material-symbols-outlined text-xs">open_in_new</span> View ID Document
-                                </a>
+                    <?php
+                    $pendingProfileImage = !empty($p['image_path']) ? '../' . ltrim($p['image_path'], '/') : '';
+                    $pendingGovtIdImage = !empty($p['govt_id_image']) ? '../' . ltrim($p['govt_id_image'], '/') : '';
+                    $pendingCertDoc = !empty($p['identity_document_path']) ? '../' . ltrim($p['identity_document_path'], '/') : '';
+                    $pendingDocs = array_filter([
+                        ['label' => 'Profile Photo', 'path' => $pendingProfileImage],
+                        ['label' => 'Government ID', 'path' => $pendingGovtIdImage],
+                        ['label' => 'Certification / Document', 'path' => $pendingCertDoc],
+                    ], fn($doc) => !empty($doc['path']));
+                    ?>
+                    <?php if (!empty($pendingDocs) || !empty($p['govt_id_type']) || !empty($p['govt_id_number'])): ?>
+                        <div class="px-6 py-4 bg-slate-50 dark:bg-slate-900/30 border-t border-slate-100 dark:border-slate-700">
+                            <?php if (!empty($p['govt_id_type']) || !empty($p['govt_id_number'])): ?>
+                                <div class="mb-4 flex flex-wrap items-center gap-2">
+                                    <span class="material-symbols-outlined text-slate-400 text-base">badge</span>
+                                    <p class="text-xs text-slate-600 dark:text-slate-400">
+                                        <strong><?= htmlspecialchars($p['govt_id_type'] ?? 'ID') ?>:</strong> <?= htmlspecialchars($p['govt_id_number'] ?? 'N/A') ?>
+                                    </p>
+                                </div>
+                            <?php endif; ?>
+                            <?php if (!empty($pendingDocs)): ?>
+                                <p class="text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3">Submitted documents</p>
+                                <div class="grid gap-4 sm:grid-cols-3">
+                                    <?php foreach ($pendingDocs as $doc): ?>
+                                        <div class="rounded-xl border border-slate-200 bg-white dark:bg-slate-800 p-3">
+                                            <p class="mb-2 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400"><?= htmlspecialchars($doc['label']) ?></p>
+                                            <?php if (preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $doc['path'])): ?>
+                                                <img src="<?= htmlspecialchars($doc['path']) ?>" alt="<?= htmlspecialchars($doc['label']) ?>" class="h-28 w-full rounded-lg object-cover border border-slate-200 dark:border-slate-700">
+                                            <?php else: ?>
+                                                <a href="<?= htmlspecialchars($doc['path']) ?>" target="_blank" class="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 dark:text-blue-400 hover:underline">
+                                                    <span class="material-symbols-outlined text-base">description</span>
+                                                    Open file
+                                                </a>
+                                            <?php endif; ?>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
                             <?php endif; ?>
                         </div>
                     <?php endif; ?>
@@ -335,10 +437,17 @@ require_once __DIR__ . '/../includes/header.php';
                                 </span>
                             </td>
                             <td class="px-6 py-4 text-right">
-                                <a href="profile-detail.php?id=<?= $person['id'] ?>"
-                                    class="text-blue-700 dark:text-blue-400 text-sm font-bold hover:underline inline-flex items-center gap-1">
-                                    View <span class="material-symbols-outlined text-xs">open_in_new</span>
-                                </a>
+                                <div class="flex items-center justify-end gap-2">
+                                    <a href="profile-detail.php?id=<?= $person['id'] ?>"
+                                        class="text-blue-700 dark:text-blue-400 text-sm font-bold hover:underline inline-flex items-center gap-1">
+                                        View <span class="material-symbols-outlined text-xs">open_in_new</span>
+                                    </a>
+                                    <a href="edit-profile.php?id=<?= $person['id'] ?>"
+                                        class="inline-flex items-center gap-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white px-3 py-2 text-xs font-bold shadow-sm transition-colors">
+                                        <span class="material-symbols-outlined text-xs">edit</span>
+                                        Edit
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>

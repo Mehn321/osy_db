@@ -93,7 +93,8 @@ $pendingProviders = $userModel->getUsersByRole('training_provider', ['status' =>
                             <tr>
                                 <th class="px-4 py-3 font-semibold uppercase">Company / Name</th>
                                 <th class="px-4 py-3 font-semibold uppercase">Email</th>
-                                <th class="px-4 py-3 font-semibold uppercase">Barangay</th>
+                                <th class="px-4 py-3 font-semibold uppercase">Address</th>
+                                <th class="px-4 py-3 font-semibold uppercase">Proof</th>
                                 <th class="px-4 py-3 font-semibold uppercase">Submitted</th>
                                 <th class="px-4 py-3 font-semibold uppercase">Action</th>
                             </tr>
@@ -103,11 +104,19 @@ $pendingProviders = $userModel->getUsersByRole('training_provider', ['status' =>
                                 <tr class="border-t border-slate-200 dark:border-slate-700">
                                     <td class="px-4 py-4"><?php echo htmlspecialchars($provider['fullname']); ?></td>
                                     <td class="px-4 py-4"><?php echo htmlspecialchars($provider['email']); ?></td>
-                                    <td class="px-4 py-4">All Barangays</td>
+                                    <td class="px-4 py-4"><?php echo htmlspecialchars($provider['barangay'] ?? 'N/A'); ?></td>
+                                    <td class="px-4 py-4">
+                                        <?php if (!empty($provider['provider_document_path'])): ?>
+                                            <a href="provider-document.php?provider_id=<?php echo intval($provider['id']); ?>" target="_blank" rel="noopener noreferrer" class="text-blue-700 hover:underline">View document</a>
+                                        <?php else: ?>
+                                            <span class="text-red-600">Missing</span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td class="px-4 py-4"><?php echo htmlspecialchars($provider['created_at']); ?></td>
                                     <td class="px-4 py-4">
                                         <form method="POST" class="flex flex-wrap gap-2">
                                             <input type="hidden" name="provider_id" value="<?php echo intval($provider['id']); ?>">
+                                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(getCsrfToken()); ?>">
                                             <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
                                             <textarea name="remark" rows="1" placeholder="Optional remark" class="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 py-2 px-3 text-sm text-slate-900 dark:text-white"></textarea>
                                             <button type="submit" name="provider_action" value="approve" class="rounded-2xl bg-green-700 text-white px-4 py-2 text-xs font-semibold hover:bg-green-600 transition">Approve</button>
@@ -131,7 +140,8 @@ $pendingProviders = $userModel->getUsersByRole('training_provider', ['status' =>
                             <tr>
                                 <th class="px-4 py-3 font-semibold uppercase">Provider Name</th>
                                 <th class="px-4 py-3 font-semibold uppercase">Email</th>
-                                <th class="px-4 py-3 font-semibold uppercase">Barangay</th>
+                                <th class="px-4 py-3 font-semibold uppercase">Address</th>
+                                <th class="px-4 py-3 font-semibold uppercase">Proof</th>
                                 <th class="px-4 py-3 font-semibold uppercase">Submitted</th>
                                 <th class="px-4 py-3 font-semibold uppercase">Action</th>
                             </tr>
@@ -142,10 +152,19 @@ $pendingProviders = $userModel->getUsersByRole('training_provider', ['status' =>
                                     <td class="px-4 py-4"><?php echo htmlspecialchars($provider['fullname']); ?></td>
                                     <td class="px-4 py-4"><?php echo htmlspecialchars($provider['email']); ?></td>
                                     <td class="px-4 py-4"><?php echo htmlspecialchars($provider['barangay'] ?? 'N/A'); ?></td>
+                                    <td class="px-4 py-4">
+                                        <?php if (!empty($provider['provider_document_path'])): ?>
+                                            <a href="provider-document.php?provider_id=<?php echo intval($provider['id']); ?>" target="_blank" rel="noopener noreferrer" class="text-blue-700 hover:underline">View document</a>
+                                        <?php else: ?>
+                                            <span class="text-red-600">Missing</span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td class="px-4 py-4"><?php echo htmlspecialchars($provider['created_at']); ?></td>
                                     <td class="px-4 py-4">
                                         <form method="POST" class="flex flex-wrap gap-2">
                                             <input type="hidden" name="provider_id" value="<?php echo intval($provider['id']); ?>">
+                                            <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(getCsrfToken()); ?>">
+                                            <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
                                             <textarea name="remark" rows="1" placeholder="Optional remark" class="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 py-2 px-3 text-sm text-slate-900 dark:text-white"></textarea>
                                             <button type="submit" name="provider_action" value="approve" class="rounded-2xl bg-green-700 text-white px-4 py-2 text-xs font-semibold hover:bg-green-600 transition">Approve</button>
                                             <button type="submit" name="provider_action" value="decline" class="rounded-2xl bg-red-700 text-white px-4 py-2 text-xs font-semibold hover:bg-red-600 transition">Decline</button>

@@ -1,0 +1,100 @@
+:root {
+    --brand-950: #082552;
+    --brand-900: #0b3473;
+    --brand-800: #124a98;
+    --brand-700: #2563c7;
+    --brand-100: #e8f1ff;
+    --ink: #14213d;
+    --muted: #64748b;
+    --canvas: #f5f8fc;
+    --line: #e3eaf4;
+    --surface: #ffffff;
+    --radius-lg: 1.25rem;
+    --shadow-card: 0 12px 30px rgba(15, 46, 94, .08);
+}
+
+html { scroll-behavior: smooth; }
+body {
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+    background: var(--canvas);
+    color: var(--ink);
+}
+
+/* Shared application shell */
+.app-shell {
+    background:
+        radial-gradient(circle at 100% -10%, rgba(96, 165, 250, .15), transparent 26rem),
+        radial-gradient(circle at -5% 20%, rgba(147, 197, 253, .11), transparent 24rem),
+        var(--canvas);
+}
+.app-sidebar {
+    background: linear-gradient(180deg, #082552 0%, #0c3775 55%, #082552 100%) !important;
+    border-color: rgba(255,255,255,.1) !important;
+    box-shadow: 16px 0 42px rgba(8, 37, 82, .12);
+}
+.app-sidebar .sidebar-inactive { color: rgba(219, 234, 254, .74); }
+.app-sidebar .sidebar-inactive:hover { background: rgba(255,255,255,.10); color: #fff; }
+.app-sidebar .sidebar-active {
+    background: linear-gradient(90deg, #fff 0%, #eff6ff 100%);
+    color: var(--brand-800);
+    border-left: 3px solid #60a5fa;
+    box-shadow: 0 8px 16px rgba(1, 25, 68, .18);
+}
+.app-sidebar .text-slate-500 { color: rgba(219, 234, 254, .65) !important; }
+.app-topbar {
+    background: rgba(255, 255, 255, .82) !important;
+    backdrop-filter: blur(16px);
+    border-color: rgba(203, 213, 225, .72) !important;
+    box-shadow: 0 4px 18px rgba(15, 46, 94, .05);
+}
+.dark .app-topbar { background: rgba(15, 23, 42, .88) !important; }
+.app-content { max-width: 84rem !important; }
+
+/* Reusable surface language for all existing pages */
+main .bg-white.rounded-xl,
+main .bg-white.rounded-2xl,
+main .bg-white.rounded-3xl,
+main .bg-white.rounded-lg {
+    border-color: var(--line);
+    box-shadow: var(--shadow-card);
+}
+.dark main .bg-white.rounded-xl,
+.dark main .bg-white.rounded-2xl,
+.dark main .bg-white.rounded-3xl,
+.dark main .bg-white.rounded-lg { border-color: rgba(71,85,105,.7); }
+
+main input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+main select,
+main textarea {
+    border: 1px solid #d9e3f0 !important;
+    border-radius: .8rem !important;
+    box-shadow: 0 1px 2px rgba(15, 46, 94, .025);
+    transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+}
+main input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
+main select:focus,
+main textarea:focus {
+    border-color: #60a5fa !important;
+    box-shadow: 0 0 0 4px rgba(59,130,246,.13) !important;
+}
+main button, main a { transition: transform .18s ease, box-shadow .18s ease, background-color .18s ease, color .18s ease; }
+main button:not(:disabled):active, main a[class*="bg-"]:active { transform: translateY(1px); }
+main table thead { background: linear-gradient(90deg, #f8fbff, #eef5ff); }
+main table th { color: #47617f; letter-spacing: .045em; font-size: .69rem; }
+main table tbody tr { transition: background-color .16s ease; }
+main table tbody tr:hover { background-color: #f8fbff; }
+.dark main table thead { background: rgba(30, 41, 59, .8); }
+.dark main table tbody tr:hover { background-color: rgba(30, 41, 59, .65); }
+
+/* Consistent accessible focus and reduced motion */
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+    outline: 3px solid rgba(96, 165, 250, .55);
+    outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
+@media (max-width: 767px) {
+    .app-content { padding-bottom: 1.5rem; }
+    main .overflow-x-auto table { min-width: 40rem; }
+}

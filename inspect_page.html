@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Inspect My Profile Page</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #f0f0f0; }
+        .section { background: white; padding: 20px; margin-bottom: 20px; border-radius: 8px; }
+        h2 { color: #333; border-bottom: 2px solid #0066cc; padding-bottom: 10px; }
+        .code { background: #222; color: #0f0; padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 12px; }
+        button { padding: 10px 20px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>My Profile Page Analysis</h1>
+    
+    <button onclick="analyzePage()">Check if Script Exists in Loaded Page</button>
+    
+    <div class="section">
+        <h2>Results</h2>
+        <div id="results">Loading...</div>
+    </div>
+    
+    <script>
+        async function analyzePage() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>Analyzing...</p>';
+            
+            try {
+                // Fetch the page
+                const response = await fetch('http://localhost:8080/pages/my-profile.php');
+                const html = await response.text();
+                
+                // Check for script tags
+                const scriptMatches = html.match(/<script[^>]*>([\s\S]*?)<\/script>/gi);
+                const openProfileMatches = html.match(/function\s+openProfileEditModal|window\.openProfileEditModal/gi);
+                
+                let output = `<p><strong>Total script tags found:</strong> ${scriptMatches ? scriptMatches.length : 0}</p>`;
+                output += `<p><strong>References to openProfileEditModal:</strong> ${openProfileMatches ? openProfileMatches.length : 0}</p>`;
+                
+                if (openProfileMatches) {
+                    output += '<p><strong>Found function definition:</strong> YES ✓</p>';
+                } else {
+                    output += '<p><strong>Found function definition:</strong> NO ✗</p>';
+                }
+                
+                // Show the actual script that contains openProfileEditModal
+                if (scriptMatches) {
+                    for (let i = 0; i < scriptMatches.length; i++) {
+                        if (scriptMatches[i].includes('openProfileEditModal')) {
+                            output += `<p><strong>Script ${i} contains openProfileEditModal:</strong></p>`;
+                            const scriptContent = scriptMatches[i].substring(0, 500);  // First 500 chars
+                            output += `<div class="code">${escapeHtml(scriptContent)}...</div>`;
+                        }
+                    }
+                }
+                
+                results.innerHTML = output;
+            } catch (e) {
+                results.innerHTML = `<p style="color: red;">Error: ${e.message}</p>`;
+            }
+        }
+        
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+        
+        // Run on page load
+        analyzePage();
+    </script>
+</body>
+</html>

@@ -35,6 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
             'first_name' => $_POST['first_name'],
             'middle_name' => $_POST['middle_name'] ?? null,
             'last_name' => $_POST['last_name'],
+            'suffix' => trim($_POST['suffix'] ?? ''),
             'email' => $_POST['email'] ?? null,
             'phone' => $_POST['phone'] ?? null,
             'age' => $_POST['age'],
@@ -42,7 +43,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
             'gender' => $_POST['gender'],
             'civil_status' => $_POST['civil_status'],
             'barangay' => $_POST['barangay'],
+            'province' => Location::isValidProvince(trim($_POST['province'] ?? '')) ? trim($_POST['province']) : Location::DEFAULT_PROVINCE,
+            'municipality' => Location::isValidMunicipality(trim($_POST['province'] ?? Location::DEFAULT_PROVINCE), trim($_POST['municipality'] ?? '')) ? trim($_POST['municipality']) : Location::DEFAULT_MUNICIPALITY,
+            'purok' => trim($_POST['purok'] ?? ''),
+            'address' => trim($_POST['purok'] ?? ''),
             'education_level' => $_POST['education_level'],
+            'occupation' => trim($_POST['occupation'] ?? ''),
             'primary_skill' => $_POST['primary_skill'],
             'skills' => $_POST['skills'] ?? null,
             'interests' => $_POST['interests'] ?? null,
@@ -106,7 +112,7 @@ require_once __DIR__ . '/../includes/header.php';
             <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
             <input type="hidden" name="update_profile" value="1">
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div>
                     <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">First Name</label>
                     <input type="text" name="first_name" value="<?php echo htmlspecialchars($profile['first_name']); ?>" required class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white">
@@ -118,6 +124,15 @@ require_once __DIR__ . '/../includes/header.php';
                 <div>
                     <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Last Name</label>
                     <input type="text" name="last_name" value="<?php echo htmlspecialchars($profile['last_name']); ?>" required class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Suffix</label>
+                    <select name="suffix" class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white">
+                        <option value="">None</option>
+                        <?php foreach (Location::suffixes() as $suffixOption): ?>
+                            <option value="<?php echo htmlspecialchars($suffixOption); ?>" <?php echo (($profile['suffix'] ?? '') === $suffixOption) ? 'selected' : ''; ?>><?php echo htmlspecialchars($suffixOption); ?></option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
             </div>
 
@@ -162,21 +177,26 @@ require_once __DIR__ . '/../includes/header.php';
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Barangay</label>
-                    <select name="barangay" required class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white" <?php echo ($_SESSION['role'] === 'sk_chairman') ? 'disabled' : ''; ?>>
-                        <?php foreach ($barangays as $b): ?>
-                            <option value="<?php echo htmlspecialchars($b); ?>" <?php echo ($profile['barangay'] === $b) ? 'selected' : ''; ?>><?php echo htmlspecialchars($b); ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                    <?php if ($_SESSION['role'] === 'sk_chairman'): ?>
-                        <input type="hidden" name="barangay" value="<?php echo htmlspecialchars($profile['barangay']); ?>">
-                    <?php endif; ?>
+                    <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Occupation</label>
+                    <input type="text" name="occupation" value="<?php echo htmlspecialchars($profile['occupation'] ?? ''); ?>" class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white" placeholder="e.g., Farmer, Student, Vendor">
                 </div>
             </div>
 
+            <?php
+            $selectedProvince = $profile['province'] ?? Location::DEFAULT_PROVINCE;
+            $selectedMunicipality = $profile['municipality'] ?? Location::DEFAULT_MUNICIPALITY;
+            $selectedBarangay = $profile['barangay'] ?? '';
+            $selectedPurok = $profile['purok'] ?? ($profile['address'] ?? '');
+            $lockBarangay = ($_SESSION['role'] === 'sk_chairman') ? ($profile['barangay'] ?? '') : null;
+            $inputClass = 'w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white';
+            $labelClass = 'block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2';
+            $purokRequired = true;
+            require __DIR__ . '/../includes/location-fields.php';
+            ?>
+
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Education Level</label>
+                    <label class="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">Educational Attainment</label>
                     <select name="education_level" required class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white">
                         <?php foreach ($eduLevels as $lvl): ?>
                             <option value="<?php echo htmlspecialchars($lvl); ?>" <?php echo ($profile['education_level'] === $lvl) ? 'selected' : ''; ?>><?php echo htmlspecialchars($lvl); ?></option>

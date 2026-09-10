@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Modal Debug Test</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        .debug-log { background: #f0f0f0; padding: 10px; margin: 10px 0; border: 1px solid #ccc; max-height: 300px; overflow-y: auto; }
+        .log-entry { font-size: 12px; margin: 2px 0; }
+        button { padding: 10px 20px; margin: 5px; font-size: 14px; cursor: pointer; }
+        .success { color: green; }
+        .error { color: red; }
+        #modal { display: none; position: fixed; inset: 0; z-50; background: rgba(0,0,0,0.5); }
+        #modal.open { display: flex; align-items: center; justify-content: center; }
+        #modal-content { background: white; padding: 20px; border-radius: 8px; min-width: 300px; }
+    </style>
+</head>
+<body>
+    <h1>Modal Debug Test</h1>
+    
+    <div class="debug-log" id="debugLog"></div>
+    
+    <div>
+        <button onclick="testModalFunctions()">Test Modal Functions</button>
+        <button onclick="testButtonClick()">Simulate Button Click</button>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+    
+    <br><hr>
+    
+    <button id="openBtn" data-modal-open>Open Modal</button>
+    <button id="closeBtn" data-modal-close style="display:none;">Close Modal</button>
+    
+    <div id="modal" data-profile-open="true" class="hidden" aria-modal="true">
+        <div id="modal-content">
+            <h2>Test Modal</h2>
+            <p>This modal should appear when the button is clicked.</p>
+            <button data-modal-close>Close</button>
+        </div>
+    </div>
+    
+    <script>
+        const log = (msg, type = 'info') => {
+            const logDiv = document.getElementById('debugLog');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type === 'error' ? 'error' : type === 'success' ? 'success' : ''}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        };
+        
+        const testModalFunctions = () => {
+            log('Testing modal functions...');
+            
+            const modal = document.getElementById('modal');
+            log(`Modal element exists: ${!!modal}`, modal ? 'success' : 'error');
+            
+            if (modal) {
+                log(`Modal has hidden class: ${modal.classList.contains('hidden')}`);
+                log(`Modal classes: ${modal.className}`);
+            }
+            
+            const btn = document.getElementById('openBtn');
+            log(`Open button exists: ${!!btn}`, btn ? 'success' : 'error');
+            
+            if (modal && btn) {
+                log('Testing open function...');
+                modal.classList.remove('hidden');
+                modal.classList.add('open');
+                log('Modal classes after toggle: ' + modal.className, 'success');
+            }
+        };
+        
+        const testButtonClick = () => {
+            log('Simulating button click...');
+            const btn = document.getElementById('openBtn');
+            if (btn) {
+                btn.click();
+                log('Button clicked', 'success');
+            }
+        };
+        
+        const clearLog = () => {
+            document.getElementById('debugLog').innerHTML = '';
+        };
+        
+        // Initial setup
+        window.addEventListener('DOMContentLoaded', () => {
+            log('DOM loaded');
+            
+            const modal = document.getElementById('modal');
+            const openBtn = document.getElementById('openBtn');
+            const closeBtn = document.querySelector('[data-modal-close]');
+            
+            log(`Modal found: ${!!modal}`, modal ? 'success' : 'error');
+            log(`Open btn found: ${!!openBtn}`, openBtn ? 'success' : 'error');
+            log(`Close btn found: ${!!closeBtn}`, closeBtn ? 'success' : 'error');
+            
+            if (openBtn && modal) {
+                openBtn.addEventListener('click', (e) => {
+                    log('Open button clicked!', 'success');
+                    e.preventDefault();
+                    modal.classList.remove('hidden');
+                    modal.classList.add('open');
+                    log('Modal opened', 'success');
+                });
+            }
+            
+            if (closeBtn && modal) {
+                closeBtn.addEventListener('click', (e) => {
+                    log('Close button clicked!', 'success');
+                    e.preventDefault();
+                    modal.classList.add('hidden');
+                    modal.classList.remove('open');
+                    log('Modal closed', 'success');
+                });
+            }
+            
+            log('Event listeners attached', 'success');
+        });
+    </script>
+</body>
+</html>

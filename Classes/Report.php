@@ -16,6 +16,88 @@ class Report
     }
 
     /**
+     * Fetch youth profiles for the official Panaon KK profiling spreadsheet.
+     */
+    public function getYouthProfilingProfiles($filters = [])
+    {
+        $columnRows = $this->db->fetchAll("SHOW COLUMNS FROM osy_profiles");
+        $columnNames = array_column($columnRows, 'Field');
+        $addressSelect = in_array('address', $columnNames, true) ? 'address' : "'' AS address";
+        $purokSelect = in_array('purok', $columnNames, true) ? 'purok' : "{$addressSelect} AS purok";
+        $suffixSelect = in_array('suffix', $columnNames, true) ? 'suffix' : "'' AS suffix";
+        $occupationSelect = in_array('occupation', $columnNames, true) ? 'occupation' : "engagement_status AS occupation";
+        $provinceSelect = in_array('province', $columnNames, true) ? 'province' : "'Misamis Occidental' AS province";
+        $municipalitySelect = in_array('municipality', $columnNames, true) ? 'municipality' : "'Panaon' AS municipality";
+
+        $query = "SELECT last_name, first_name, middle_name, {$suffixSelect}, gender, civil_status,
+                         date_of_birth, age, {$addressSelect}, {$purokSelect}, barangay,
+                         {$provinceSelect}, {$municipalitySelect}, education_level,
+                         engagement_status, {$occupationSelect}, primary_skill, profile_type
+                  FROM osy_profiles
+                  WHERE 1=1";
+        $params = [];
+        $types = '';
+
+        if (!empty($filters['start_date'])) {
+            $query .= " AND created_at >= ?";
+            $params[] = $filters['start_date'] . ' 00:00:00';
+            $types .= 's';
+        }
+        if (!empty($filters['end_date'])) {
+            $query .= " AND created_at <= ?";
+            $params[] = $filters['end_date'] . ' 23:59:59';
+            $types .= 's';
+        }
+        if (!empty($filters['barangay']) && !in_array($filters['barangay'], ['All Barangays', 'All'], true)) {
+            $query .= " AND barangay = ?";
+            $params[] = $filters['barangay'];
+            $types .= 's';
+        }
+        if (!empty($filters['gender']) && !in_array($filters['gender'], ['All Genders', 'All'], true)) {
+            $query .= " AND gender = ?";
+            $params[] = $filters['gender'];
+            $types .= 's';
+        }
+        if (!empty($filters['profile_type']) && !in_array($filters['profile_type'], ['All Types', 'All'], true)) {
+            $query .= " AND profile_type = ?";
+            $params[] = $filters['profile_type'];
+            $types .= 's';
+        }
+        if (!empty($filters['education']) && !in_array($filters['education'], ['Any Level', 'All'], true)) {
+            $query .= " AND education_level = ?";
+            $params[] = $filters['education'];
+            $types .= 's';
+        }
+        if (!empty($filters['status']) && !in_array($filters['status'], ['All Status', 'All'], true)) {
+            $query .= " AND status = ?";
+            $params[] = $filters['status'];
+            $types .= 's';
+        }
+        if (!empty($filters['verification_status']) && !in_array($filters['verification_status'], ['All Verification', 'All'], true)) {
+            $query .= " AND verification_status = ?";
+            $params[] = $filters['verification_status'];
+            $types .= 's';
+        }
+
+        $query .= " ORDER BY barangay ASC, last_name ASC, first_name ASC";
+
+        return $this->db->fetchAll($query, $params, $types);
+    }
+
+    /**
+     * Export filtered youth profiles using the official Panaon Excel template.
+     */
+    public function exportPanaonYouthProfiling($filters = [])
+    {
+        require_once __DIR__ . '/PanaonYouthProfilingExport.php';
+        $profiles = $this->getYouthProfilingProfiles($filters);
+        $exporter = new PanaonYouthProfilingExport();
+        $result = $exporter->export($profiles);
+        $result['count'] = count($profiles);
+        return $result;
+    }
+
+    /**
      * Generate OSY profile report
      */
     public function generateOSYReport($filters = [])

@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 $pageTitle = 'About Us';
 ?>
 <!DOCTYPE html>
@@ -38,7 +38,7 @@ $pageTitle = 'About Us';
         footer .border-outline-variant\/15 { border-color: rgba(255,255,255,.08) !important; }
     </style>
 
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="<?php echo (isset($basePath) ? $basePath : ""); ?>/assets/js/tailwind.js"></script>
     <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",

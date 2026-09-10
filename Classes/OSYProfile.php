@@ -6,7 +6,7 @@
  * Handles OSY (Out-of-School Youth) profile management
  */
 
-class OSYProfile 
+class OSYProfile
 {
     private $db;
     private $table = 'osy_profiles';
@@ -244,7 +244,7 @@ class OSYProfile
     /**
      * Update profile
      */
-    public function update($id, $data, $profileImageFile = null, $govtIdImageFile = null)
+    public function update($id, $data, $profileImageFile = null, $govtIdImageFile = null, $certificationFile = null)
     {
         try {
             $currentProfile = $this->getById($id);
@@ -261,14 +261,20 @@ class OSYProfile
                 'first_name',
                 'middle_name',
                 'last_name',
+                'suffix',
                 'email',
                 'phone',
                 'age',
                 'gender',
                 'civil_status',
                 'education_level',
+                'address',
+                'purok',
+                'province',
+                'municipality',
                 'reason_for_not_in_school',
                 'engagement_status',
+                'occupation',
                 'barangay',
                 'govt_id_type',
                 'govt_id_number',
@@ -305,6 +311,14 @@ class OSYProfile
                 $types .= 's';
             }
 
+            // Handle certification document upload if provided
+            if ($certificationFile) {
+                $certificationPath = $this->uploadImage($certificationFile, 'certification');
+                $updates[] = "identity_document_path = ?";
+                $params[] = $certificationPath;
+                $types .= 's';
+            }
+
             if (empty($updates)) {
                 throw new Exception("No valid fields to update");
             }
@@ -314,6 +328,9 @@ class OSYProfile
             $newLastName = trim((string) ($data['last_name'] ?? $currentProfile['last_name'] ?? ''));
             $newFullname = trim($newFirstName . ' ' . $newLastName);
             $newEmail = trim((string) ($data['email'] ?? $currentProfile['email'] ?? ''));
+
+            $conn = $this->db->getConnection();
+            $conn->begin_transaction();
 
             if ($linkedUserId > 0) {
                 if ($newFullname !== '') {
@@ -352,6 +369,7 @@ class OSYProfile
 
             $query = "UPDATE {$this->table} SET " . implode(', ', $updates) . ", updated_at = NOW() WHERE id = ?";
             $this->db->execute($query, $params, $types);
+            $conn->commit();
 
             // Trigger automated AI scoring in the background
             $scriptPath = realpath(__DIR__ . '/../api/background_recalculate_scores.php');
@@ -370,6 +388,9 @@ class OSYProfile
                 'message' => 'Profile updated successfully'
             ];
         } catch (Exception $e) {
+            if (isset($conn)) {
+                $conn->rollback();
+            }
             return [
                 'success' => false,
                 'message' => $e->getMessage()
@@ -434,6 +455,86 @@ class OSYProfile
     {
         $query = "SELECT * FROM {$this->table} WHERE barangay = ? AND verification_status IN ('Pending', 'Drafting', 'Action Required') ORDER BY created_at DESC";
         return $this->db->fetchAll($query, [$barangay], 's');
+    }
+
+    /** Request a move without changing the profile's current barangay yet. */
+    public function requestBarangayTransfer($profileId, $toBarangay, $requestedBy, $remark = null)
+    {
+        try {
+            $profile = $this->getById($profileId);
+            $toBarangay = trim((string) $toBarangay);
+            if (!$profile || (int) $profile['created_by'] !== (int) $requestedBy) {
+                throw new Exception('You can only request a transfer for your own profile.');
+            }
+            if ($toBarangay === '' || $toBarangay === $profile['barangay']) {
+                throw new Exception('Please choose a different barangay.');
+            }
+
+            $existing = $this->db->fetchOne(
+                "SELECT id FROM youth_barangay_transfers WHERE profile_id = ? AND status = 'Pending' LIMIT 1",
+                [$profileId],
+                'i'
+            );
+            if ($existing) {
+                throw new Exception('A barangay transfer request is already awaiting review.');
+            }
+
+            $this->db->execute(
+                "INSERT INTO youth_barangay_transfers (profile_id, from_barangay, to_barangay, request_remark, requested_by) VALUES (?, ?, ?, ?, ?)",
+                [$profileId, $profile['barangay'], $toBarangay, trim((string) $remark), $requestedBy],
+                'isssi'
+            );
+            return ['success' => true, 'message' => 'Transfer request sent to the new barangay for verification.'];
+        } catch (Exception $e) {
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    public function getPendingTransfersToBarangay($barangay)
+    {
+        return $this->db->fetchAll(
+            "SELECT t.*, p.first_name, p.middle_name, p.last_name, p.email, p.phone, p.image_path
+             FROM youth_barangay_transfers t
+             INNER JOIN osy_profiles p ON p.id = t.profile_id
+             WHERE t.to_barangay = ? AND t.status = 'Pending'
+             ORDER BY t.requested_at ASC",
+            [$barangay],
+            's'
+        );
+    }
+
+    /** Approving performs the actual ownership change atomically. */
+    public function reviewBarangayTransfer($transferId, $destinationBarangay, $approve, $reviewedBy, $remark = null)
+    {
+        $conn = $this->db->getConnection();
+        try {
+            $conn->begin_transaction();
+            $transfer = $this->db->fetchOne(
+                "SELECT * FROM youth_barangay_transfers WHERE id = ? AND to_barangay = ? AND status = 'Pending' FOR UPDATE",
+                [$transferId, $destinationBarangay],
+                'is'
+            );
+            if (!$transfer) {
+                throw new Exception('This transfer request is no longer available for review.');
+            }
+
+            $status = $approve ? 'Approved' : 'Rejected';
+            $this->db->execute(
+                "UPDATE youth_barangay_transfers SET status = ?, review_remark = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ?",
+                [$status, trim((string) $remark), $reviewedBy, $transferId],
+                'ssii'
+            );
+
+            if ($approve) {
+                $this->db->execute("UPDATE osy_profiles SET barangay = ?, updated_at = NOW() WHERE id = ?", [$destinationBarangay, $transfer['profile_id']], 'si');
+                $this->db->execute("UPDATE users SET barangay = ? WHERE id = ?", [$destinationBarangay, $transfer['requested_by']], 'si');
+            }
+            $conn->commit();
+            return ['success' => true, 'transfer' => $transfer, 'message' => $approve ? 'Youth transferred to your barangay.' : 'Transfer request declined; the youth remains in the old barangay.'];
+        } catch (Exception $e) {
+            $conn->rollback();
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
     }
 
     /**

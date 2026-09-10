@@ -1,0 +1,83 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Profile Modal Test - With Debug</title>
+    <script src="/osy_db/assets/js/tailwind.js"></script>
+</head>
+<body>
+    <h1>Testing Hidden/Flex Toggle - DEBUG VERSION</h1>
+    
+    <div id="debug"></div>
+    
+    <!-- Button to trigger modal -->
+    <button id="openBtn" style="padding: 10px 20px; background: blue; color: white; cursor: pointer; margin-bottom: 20px;">
+        Open Modal
+    </button>
+    
+    <!-- Modal - starts with hidden class -->
+    <div id="testModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4" role="dialog" aria-hidden="true" style="background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(4px);">
+        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+            <h2>Edit Profile Modal - NOW VISIBLE!</h2>
+            <p>This is a test modal. If you see this, the modal opened successfully!</p>
+            <button id="closeBtn" style="padding: 10px 20px; background: red; color: white; cursor: pointer;">
+                Close Modal
+            </button>
+        </div>
+    </div>
+    
+    <script>
+        const debug = document.getElementById('debug');
+        const modal = document.getElementById('testModal');
+        const openBtn = document.getElementById('openBtn');
+        const closeBtn = document.getElementById('closeBtn');
+        
+        function log(msg) {
+            debug.innerHTML += '<p>' + msg + '</p>';
+            console.log(msg);
+        }
+        
+        function openModal() {
+            log('✓ openModal() called');
+            log('  Before: classList=' + modal.className);
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            modal.setAttribute('aria-hidden', 'false');
+            log('  After: classList=' + modal.className);
+            log('  Display CSS: ' + window.getComputedStyle(modal).display);
+        }
+        
+        function closeModal() {
+            log('✓ closeModal() called');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+        
+        log('Script starting...');
+        log('Button found: ' + !!openBtn);
+        log('Modal found: ' + !!modal);
+        
+        openBtn.addEventListener('click', function(e) {
+            log('>>> CLICK EVENT FIRED! <<<');
+            openModal();
+        });
+        
+        closeBtn.addEventListener('click', closeModal);
+        
+        log('Event listeners attached');
+        
+        // Also attach via onclick for testing
+        openBtn.onclick = function() {
+            log('>>> ONCLICK handler fired! <<<');
+            openModal();
+        };
+        
+        // Try calling directly after a delay to test
+        setTimeout(() => {
+            log('');
+            log('=== DIRECT FUNCTION TEST ===');
+            openModal();
+        }, 1000);
+    </script>
+</body>
+</html>

@@ -16,19 +16,35 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $opportunity_id = $_POST['opportunity_id'] ?? null;
 $action = $_POST['action'] ?? null;
 
-if (!$opportunity_id || $action !== 'apply') {
+if (!$opportunity_id || ($action !== 'apply' && $action !== 'cancel')) {
     echo json_encode(['success' => false, 'message' => 'Invalid parameters']);
     exit;
 }
 
-// Only verified youth can apply
+// Only verified youth can apply or cancel
 if ($_SESSION['role'] !== 'youth' || $_SESSION['status'] !== 'Active') {
-    echo json_encode(['success' => false, 'message' => 'Only verified youth can apply to opportunities']);
+    echo json_encode(['success' => false, 'message' => 'Only verified youth can apply or cancel opportunities']);
     exit;
 }
 
 require_once __DIR__ . '/../Classes/Matching.php';
 $matching = new Matching($database);
+
+// A youth may apply only to a currently open listing from an active provider.
+// Cancellation remains available for an existing pending application even after closure.
+if ($action === 'apply') {
+    $opportunity = $database->fetchOne(
+        "SELECT o.id FROM opportunities o JOIN users u ON u.id = o.provider_id
+         WHERE o.id = ? AND o.status = 'Open' AND (o.deadline IS NULL OR o.deadline >= CURDATE())
+           AND u.status = 'Active' AND u.is_active = 1 AND o.type <> 'Scholarship' LIMIT 1",
+        [(int) $opportunity_id],
+        'i'
+    );
+    if (!$opportunity) {
+        echo json_encode(['success' => false, 'message' => 'This opportunity is no longer available for applications.']);
+        exit;
+    }
+}
 
 // Get OSY profile for the logged-in youth
 $osyProfileClass = new OSYProfile($database);
@@ -40,6 +56,26 @@ if (!$profile) {
 
 // Check if youth already applied
 $existingMatch = $matching->getMatchByYouthAndOpportunity($profile['id'], $opportunity_id);
+
+if ($action === 'cancel') {
+    if (!$existingMatch) {
+        echo json_encode(['success' => false, 'message' => 'No application found to cancel']);
+        exit;
+    }
+    if ($existingMatch['status'] !== 'Pending') {
+        echo json_encode(['success' => false, 'message' => 'Only pending applications can be cancelled']);
+        exit;
+    }
+    $database->execute("DELETE FROM osy_matches WHERE id = ?", [$existingMatch['id']], 'i');
+    
+    // Log cancellation
+    $auditLog = new AuditLog($database);
+    $auditLog->logAction($_SESSION['user_id'], $_SESSION['role'], 'cancelled_application', 'opportunity', $opportunity_id, ['action' => 'youth_cancellation']);
+    
+    echo json_encode(['success' => true, 'message' => 'Application cancelled successfully']);
+    exit;
+}
+
 if ($existingMatch) {
     echo json_encode(['success' => false, 'message' => 'You have already applied to this opportunity']);
     exit;

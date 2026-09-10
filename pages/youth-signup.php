@@ -37,14 +37,18 @@ $confirmPassword = '';
 $firstName = '';
 $middleName = '';
 $lastName = '';
+$suffix = '';
 $gender = '';
 $dateOfBirth = '';
-$address = '';
+$province = Location::DEFAULT_PROVINCE;
+$municipality = Location::DEFAULT_MUNICIPALITY;
 $barangay = '';
+$purok = '';
 $phone = '';
 $age = '';
 $educationLevel = '';
 $civilStatus = '';
+$occupation = '';
 $primarySkill = '';
 $certifications = '';
 $interests = '';
@@ -66,14 +70,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
     $firstName = trim($_POST['first_name'] ?? '');
     $middleName = trim($_POST['middle_name'] ?? '');
     $lastName = trim($_POST['last_name'] ?? '');
+    $suffix = trim($_POST['suffix'] ?? '');
     $gender = $_POST['gender'] ?? '';
     $dateOfBirth = $_POST['date_of_birth'] ?? '';
-    $address = trim($_POST['address'] ?? '');
+    $province = trim($_POST['province'] ?? '');
+    $municipality = trim($_POST['municipality'] ?? '');
     $barangay = trim($_POST['barangay'] ?? '');
+    $purok = trim($_POST['purok'] ?? '');
     $phone = trim($_POST['phone'] ?? '');
     $age = trim($_POST['age'] ?? '');
     $educationLevel = trim($_POST['education_level'] ?? '');
     $civilStatus = $_POST['civil_status'] ?? '';
+    $occupation = trim($_POST['occupation'] ?? '');
     $primarySkill = trim($_POST['primary_skill'] ?? '');
     $certifications = trim($_POST['certifications'] ?? '');
     $interests = trim($_POST['interests'] ?? '');
@@ -132,8 +140,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
             }
         }
 
-        if (empty($address)) {
-            $errors[] = 'Address is required.';
+        if ($suffix !== '' && !Location::isValidSuffix($suffix)) {
+            $errors[] = 'Please choose a valid name suffix or leave it blank.';
+        }
+
+        if (!Location::isValidProvince($province)) {
+            $errors[] = 'Province is required.';
+        }
+
+        if (!Location::isValidMunicipality($province, $municipality)) {
+            $errors[] = 'Municipality is required.';
+        }
+
+        if (empty($purok)) {
+            $errors[] = 'Purok is required.';
         }
 
         if (empty($barangay)) {
@@ -146,7 +166,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
 
         // Step 2: Profile Information Validation
         if (empty($educationLevel)) {
-            $errors[] = 'Education level is required.';
+            $errors[] = 'Educational attainment is required.';
         }
 
         if (empty($civilStatus)) {
@@ -220,9 +240,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
 
                 // 1b. Also save the barangay on the users table for SK lookup
                 $database->execute(
-                    "UPDATE users SET barangay = ? WHERE id = ?",
-                    [$barangay, $userId],
-                    "si"
+                    "UPDATE users SET barangay = ?, phone = ? WHERE id = ?",
+                    [$barangay, $phone, $userId],
+                    "ssi"
                 );
 
                 // 2. Create osy_profile with verification_status=Pending
@@ -230,6 +250,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
                     'first_name' => $firstName,
                     'middle_name' => $middleName,
                     'last_name' => $lastName,
+                    'suffix' => $suffix !== '' ? $suffix : null,
                     'email' => $email,
                     'phone' => $phone,
                     'age' => !empty($age) ? (int) $age : null,
@@ -237,12 +258,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
                     'date_of_birth' => $dateOfBirth,
                     'education_level' => $educationLevel,
                     'civil_status' => $civilStatus,
+                    'province' => $province,
+                    'municipality' => $municipality,
                     'barangay' => $barangay,
+                    'purok' => $purok,
+                    'address' => $purok,
                     'primary_skill' => $primarySkill,
                     'skills' => $certifications,
                     'interests' => $interests,
                     'reason_for_not_in_school' => $reasonNotInSchool,
                     'engagement_status' => $engagementStatus,
+                    'occupation' => $occupation !== '' ? $occupation : null,
                     'govt_id_type' => $govtIdType,
                     'govt_id_number' => $govtIdNumber,
                     'profile_type' => 'OSY',
@@ -273,6 +299,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
 
                 $database->commit();
 
+                $verificationResult = $user->beginSignupVerification($userId, $email, $phone);
+                if (!$verificationResult['success']) {
+                    $errors[] = $verificationResult['message'];
+                } else {
+                    header('Location: verify-signup.php');
+                    exit;
+                }
+
                 // 4. Send notification to the active SK Chairman of this barangay
                 $skChairman = $database->fetchOne(
                     "SELECT id FROM users WHERE role = 'sk_chairman' AND barangay = ? AND status = 'Active' LIMIT 1",
@@ -284,7 +318,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
                     $notifObj->sendToUser(
                         $skChairman['id'],
                         'New Youth Registration awaiting review',
-                        "A new youth member ($firstName $lastName) has self-registered in barangay $address and is awaiting verification.",
+                        "A new youth member ($firstName $lastName) has self-registered in barangay $barangay and is awaiting verification.",
                         'System',
                         $userId
                     );
@@ -295,8 +329,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
                 $messageType = 'success';
 
                 // Clear form
-                $username = $email = $password = $confirmPassword = $firstName = $middleName = $lastName = '';
-                $gender = $dateOfBirth = $address = $phone = $educationLevel = $civilStatus = '';
+                $username = $email = $password = $confirmPassword = $firstName = $middleName = $lastName = $suffix = '';
+                $gender = $dateOfBirth = $purok = $phone = $educationLevel = $civilStatus = $occupation = '';
+                $province = Location::DEFAULT_PROVINCE;
+                $municipality = Location::DEFAULT_MUNICIPALITY;
+                $barangay = '';
                 $primarySkill = $certifications = $interests = $reasonNotInSchool = $engagementStatus = $age = '';
                 $govtIdType = $govtIdNumber = '';
                 $consentAccepted = $dataPrivacyAccepted = 0;
@@ -442,7 +479,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
                                     Personal Information
                                 </h3>
                                 <div class="space-y-4">
-                                    <div class="grid grid-cols-3 gap-4">
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                                         <div>
                                             <label class="block text-sm font-semibold text-slate-700 mb-2">First Name
                                                 *</label>
@@ -463,6 +500,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
                                             <input type="text" name="last_name"
                                                 value="<?php echo htmlspecialchars($lastName); ?>" required
                                                 class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-semibold text-slate-700 mb-2">Suffix</label>
+                                            <select name="suffix"
+                                                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                                <option value="">None</option>
+                                                <?php foreach (Location::suffixes() as $suffixOption): ?>
+                                                    <option value="<?php echo htmlspecialchars($suffixOption); ?>" <?php echo $suffix === $suffixOption ? 'selected' : ''; ?>><?php echo htmlspecialchars($suffixOption); ?></option>
+                                                <?php endforeach; ?>
+                                            </select>
                                         </div>
                                     </div>
 
@@ -520,70 +567,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
                                             </select>
                                         </div>
                                         <div>
-                                            <label class="block text-sm font-semibold text-slate-700 mb-2">Highest
-                                                Educational Attainment *</label>
+                                            <label class="block text-sm font-semibold text-slate-700 mb-2">Educational
+                                                Attainment *</label>
+                                            <?php $educationLevels = $ref->getByCategory('education_level'); ?>
                                             <select name="education_level" required
                                                 class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                                                 <option value="">Select attainment</option>
-                                                <option value="Elementary"
-                                                    <?php echo $educationLevel === 'Elementary' ? 'selected' : ''; ?>>
-                                                    Elementary</option>
-                                                <option value="High School"
-                                                    <?php echo $educationLevel === 'High School' ? 'selected' : ''; ?>>
-                                                    High School</option>
-                                                <option value="Vocational"
-                                                    <?php echo $educationLevel === 'Vocational' ? 'selected' : ''; ?>>
-                                                    Vocational</option>
-                                                <option value="College"
-                                                    <?php echo $educationLevel === 'College' ? 'selected' : ''; ?>>
-                                                    College</option>
-                                                <option value="Other"
-                                                    <?php echo $educationLevel === 'Other' ? 'selected' : ''; ?>>Other
-                                                </option>
+                                                <?php foreach ($educationLevels as $educationOption): ?>
+                                                    <option value="<?php echo htmlspecialchars($educationOption); ?>" <?php echo $educationLevel === $educationOption ? 'selected' : ''; ?>>
+                                                        <?php echo htmlspecialchars($educationOption); ?>
+                                                    </option>
+                                                <?php endforeach; ?>
                                             </select>
                                         </div>
                                     </div>
 
                                     <div class="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label class="block text-sm font-semibold text-slate-700 mb-2">Phone Number
-                                                *</label>
-                                            <input type="tel" name="phone"
-                                                value="<?php echo htmlspecialchars($phone); ?>" required
-                                                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                placeholder="09XXXXXXXXX">
-                                        </div>
-                                        <div>
-                                            <label class="block text-sm font-semibold text-slate-700 mb-2">Address
-                                                *</label>
-                                            <input type="text" name="address" required
-                                                class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                placeholder="Enter your street/purok (detailed address)" value="<?php echo htmlspecialchars($address); ?>">
-                                        </div>
+                                    <div>
+                                        <label class="block text-sm font-semibold text-slate-700 mb-2">Phone Number
+                                            *</label>
+                                        <input type="tel" name="phone"
+                                            value="<?php echo htmlspecialchars($phone); ?>" required
+                                            class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            placeholder="09XXXXXXXXX">
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-semibold text-slate-700 mb-2">Occupation</label>
+                                        <input type="text" name="occupation"
+                                            value="<?php echo htmlspecialchars($occupation); ?>"
+                                            class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            placeholder="e.g., Farmer, Student, Vendor">
+                                    </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Barangay Selection -->
                             <div class="border-t border-slate-200 pt-6">
                                 <h3 class="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
                                     <span class="material-symbols-outlined text-blue-700">location_on</span>
-                                    Barangay Selection
+                                    Address
                                 </h3>
-                                <div>
-                                    <?php
-                                    $ref = new Reference($database);
-                                    $barangays = $ref->getByCategory('barangay');
-                                    ?>
-                                    <label class="block text-sm font-semibold text-slate-700 mb-2">Barangay *</label>
-                                    <select name="barangay" required
-                                        class="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                        <option value="">Select Barangay</option>
-                                        <?php foreach ($barangays as $b): ?>
-                                            <option value="<?php echo htmlspecialchars($b); ?>" <?php echo ($barangay === $b) ? 'selected' : ''; ?>><?php echo htmlspecialchars($b); ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
+                                <?php
+                                $barangays = $ref->getByCategory('barangay');
+                                $selectedProvince = $province;
+                                $selectedMunicipality = $municipality;
+                                $selectedBarangay = $barangay;
+                                $selectedPurok = $purok;
+                                $inputClass = 'w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500';
+                                $labelClass = 'block text-sm font-semibold text-slate-700 mb-2';
+                                $purokRequired = true;
+                                require __DIR__ . '/../includes/location-fields.php';
+                                ?>
                             </div>
 
                             <!-- STEP 3: Skills & Interests -->

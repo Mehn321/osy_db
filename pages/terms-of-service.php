@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 $pageTitle = 'Terms of Service';
 ?>
 <!DOCTYPE html>
@@ -7,7 +7,7 @@ $pageTitle = 'Terms of Service';
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="<?php echo (isset($basePath) ? $basePath : ""); ?>/assets/js/tailwind.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <title><?= htmlspecialchars($pageTitle); ?> - Youth Profiling System</title>
 </head>

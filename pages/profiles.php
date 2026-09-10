@@ -25,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'first_name' => $_POST['first_name'],
                 'middle_name' => $_POST['middle_name'] ?? null,
                 'last_name' => $_POST['last_name'],
+                'suffix' => trim($_POST['suffix'] ?? ''),
                 'email' => $_POST['email'] ?? null,
                 'phone' => $_POST['phone'] ?? null,
                 'age' => $_POST['age'],
@@ -32,6 +33,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'civil_status' => $_POST['civil_status'] ?? 'Single',
                 'education_level' => $_POST['education_level'],
                 'barangay' => $_POST['barangay'],
+                'province' => Location::DEFAULT_PROVINCE,
+                'municipality' => Location::DEFAULT_MUNICIPALITY,
+                'purok' => trim($_POST['purok'] ?? ''),
+                'address' => trim($_POST['purok'] ?? ''),
+                'occupation' => trim($_POST['occupation'] ?? ''),
                 'primary_skill' => $_POST['primary_skill'],
                 'skills' => $_POST['primary_skill'],
                 'interests' => null,
@@ -53,6 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'first_name' => $_POST['first_name'],
                 'middle_name' => $_POST['middle_name'] ?? null,
                 'last_name' => $_POST['last_name'],
+                'suffix' => trim($_POST['suffix'] ?? ''),
                 'email' => $_POST['email'] ?? null,
                 'phone' => $_POST['phone'] ?? null,
                 'age' => $_POST['age'],
@@ -60,6 +67,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'civil_status' => $_POST['civil_status'] ?? 'Single',
                 'education_level' => $_POST['education_level'],
                 'barangay' => $_POST['barangay'],
+                'province' => Location::DEFAULT_PROVINCE,
+                'municipality' => Location::DEFAULT_MUNICIPALITY,
+                'purok' => trim($_POST['purok'] ?? ''),
+                'address' => trim($_POST['purok'] ?? ''),
+                'occupation' => trim($_POST['occupation'] ?? ''),
                 'primary_skill' => $_POST['primary_skill'],
                 'skills' => $_POST['skills'] ?? '',
                 'interests' => $_POST['interests'] ?? '',
@@ -170,7 +182,7 @@ require_once __DIR__ . '/../includes/header.php';
             </select>
         </div>
         <div>
-            <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase pl-1">Education</label>
+            <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase pl-1">Educational Attainment</label>
             <select name="education" id="filter_education" class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-2.5 pl-4 pr-4 text-sm mt-1.5 text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900" onchange="this.form.submit()">
                 <option value="Any Level" <?php echo $filters['education'] === 'Any Level' ? 'selected' : ''; ?>>Any Level</option>
                 <?php foreach ($eduLevels as $e): ?>
@@ -296,7 +308,7 @@ require_once __DIR__ . '/../includes/header.php';
                 <input type="hidden" id="profileId" name="profile_id">
                 <input type="hidden" id="isUpdate" name="update_profile" value="0">
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <div>
                         <label class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block">First Name</label>
                         <input type="text" name="first_name" id="first_name" required class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white">
@@ -308,6 +320,15 @@ require_once __DIR__ . '/../includes/header.php';
                     <div>
                         <label class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block">Last Name</label>
                         <input type="text" name="last_name" id="last_name" required class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block">Suffix</label>
+                        <select name="suffix" id="suffix" class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white">
+                            <option value="">None</option>
+                            <?php foreach (Location::suffixes() as $suffixOption): ?>
+                                <option value="<?php echo htmlspecialchars($suffixOption); ?>"><?php echo htmlspecialchars($suffixOption); ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                 </div>
 
@@ -342,25 +363,29 @@ require_once __DIR__ . '/../includes/header.php';
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block">Civil Status</label>
-                        <select name="civil_status" id="civil_status" required class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white">
-                            <option value="Single">Single</option>
-                            <option value="Married">Married</option>
-                            <option value="Widowed">Widowed</option>
-                            <option value="Solo Parent">Solo Parent</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block">Barangay</label>
-                        <select name="barangay" id="barangay" required class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white">
-                            <option value="">Select Barangay</option>
-                            <?php foreach ($barangays as $b): ?>
-                                <option value="<?php echo htmlspecialchars($b); ?>"><?php echo htmlspecialchars($b); ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
+                <div>
+                    <label class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block">Civil Status</label>
+                    <select name="civil_status" id="civil_status" required class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white">
+                        <option value="Single">Single</option>
+                        <option value="Married">Married</option>
+                        <option value="Widowed">Widowed</option>
+                        <option value="Solo Parent">Solo Parent</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-1 gap-4">
+                    <?php
+                    $selectedProvince = Location::DEFAULT_PROVINCE;
+                    $selectedMunicipality = Location::DEFAULT_MUNICIPALITY;
+                    $selectedBarangay = '';
+                    $selectedPurok = '';
+                    $inputClass = 'w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white';
+                    $labelClass = 'text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block';
+                    $fieldPrefix = 'modal_';
+                    $purokRequired = true;
+                    $lockBarangay = null;
+                    require __DIR__ . '/../includes/location-fields.php';
+                    ?>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
@@ -381,13 +406,17 @@ require_once __DIR__ . '/../includes/header.php';
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block">Education Level</label>
+                        <label class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block">Educational Attainment</label>
                         <select name="education_level" id="education_level" required class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white">
-                            <option value="">Select Education</option>
+                            <option value="">Select educational attainment</option>
                             <?php foreach ($eduLevels as $lvl): ?>
                                 <option value="<?php echo htmlspecialchars($lvl); ?>"><?php echo htmlspecialchars($lvl); ?></option>
                             <?php endforeach; ?>
                         </select>
+                    </div>
+                    <div>
+                        <label class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block">Occupation</label>
+                        <input type="text" name="occupation" id="occupation" class="w-full bg-slate-100 dark:bg-slate-700 border-none rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-blue-900 text-slate-900 dark:text-white" placeholder="e.g., Farmer, Student, Vendor">
                     </div>
                     <div>
                         <label class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2 block">Primary Skill</label>
@@ -504,16 +533,27 @@ require_once __DIR__ . '/../includes/header.php';
             document.getElementById('first_name').value = profile.first_name || '';
             document.getElementById('middle_name').value = profile.middle_name || '';
             document.getElementById('last_name').value = profile.last_name || '';
+            const suffixEl = document.getElementById('suffix');
+            if (suffixEl) suffixEl.value = profile.suffix || '';
             document.getElementById('email').value = profile.email || '';
             document.getElementById('phone').value = profile.phone || '';
             document.getElementById('age').value = profile.age || '';
             document.getElementById('date_of_birth').value = profile.date_of_birth || '';
             document.getElementById('gender').value = profile.gender || '';
             document.getElementById('civil_status').value = profile.civil_status || 'Single';
-            document.getElementById('barangay').value = profile.barangay || '';
+            const provinceEl = document.getElementById('modal_province');
+            const municipalityEl = document.getElementById('modal_municipality');
+            const barangayEl = document.getElementById('modal_barangay');
+            const purokEl = document.getElementById('modal_purok');
+            if (provinceEl) provinceEl.value = profile.province || 'Misamis Occidental';
+            if (municipalityEl) municipalityEl.value = profile.municipality || 'Panaon';
+            if (barangayEl) barangayEl.value = profile.barangay || '';
+            if (purokEl) purokEl.value = profile.purok || profile.address || '';
             document.getElementById('govt_id_type').value = profile.govt_id_type || '';
             document.getElementById('govt_id_number').value = profile.govt_id_number || '';
             document.getElementById('education_level').value = profile.education_level || '';
+            const occupationEl = document.getElementById('occupation');
+            if (occupationEl) occupationEl.value = profile.occupation || '';
             document.getElementById('primary_skill').value = profile.primary_skill || '';
             document.getElementById('skills').value = profile.skills || '';
             document.getElementById('interests').value = profile.interests || '';

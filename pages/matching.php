@@ -16,6 +16,16 @@ $notification = new Notification($database);
 $message = '';
 $messageType = '';
 
+function canManageMatchingOpportunity($opportunity): bool
+{
+    if (!$opportunity) {
+        return false;
+    }
+
+    return ($_SESSION['role'] ?? '') === 'lydo'
+        || ((int) ($opportunity['provider_id'] ?? 0) === (int) ($_SESSION['user_id'] ?? 0));
+}
+
 // Handle POST actions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
@@ -31,13 +41,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $message = $result['message'];
         $messageType = $result['success'] ? 'success' : 'error';
     } elseif (isset($_POST['generate_matches'])) {
-        $result = $matching->generateMatches(intval($_POST['opportunity_id']));
+        $targetOpportunity = $opportunityObj->getById(intval($_POST['opportunity_id']));
+        $result = canManageMatchingOpportunity($targetOpportunity)
+            ? $matching->generateMatches(intval($_POST['opportunity_id']))
+            : ['success' => false, 'message' => 'You can only generate matches for your own opportunities.'];
         $message = $result['message'];
         $messageType = $result['success'] ? 'success' : 'error';
     } elseif (isset($_POST['broadcast_matches'])) {
         $opp_id = intval($_POST['opportunity_id']);
         $opp = $opportunityObj->getById($opp_id);
-        if ($opp) {
+        if ($opp && canManageMatchingOpportunity($opp)) {
             $message_text = $_POST['custom_message'] ?? 'You have been matched with the opportunity "' . $opp['title'] . '".';
             $send_sms = isset($_POST['send_sms']);
             $send_email = isset($_POST['send_email']);
@@ -72,6 +85,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ]);
             $message = "Broadcast deployed to $sentCount accepted candidates successfully!";
             $messageType = 'success';
+        } elseif (!$opp) {
+            $message = 'Opportunity not found.';
+            $messageType = 'error';
+        } else {
+            $message = 'You can only send match notifications for your own opportunities.';
+            $messageType = 'error';
         }
     }
     }
@@ -84,9 +103,15 @@ $filters = [
     'opportunity_id' => isset($_GET['opportunity_id']) ? intval($_GET['opportunity_id']) : null,
     'min_score' => isset($_GET['min_score']) ? intval($_GET['min_score']) : 75,
 ];
-$openOpportunities = $opportunityObj->getAll(['status' => 'Open']);
+$openOpportunities = $_SESSION['role'] === 'lydo'
+    ? $opportunityObj->getAll(['status' => 'Open'])
+    : array_values(array_filter($opportunityObj->getByProvider($_SESSION['user_id']), fn($opp) => $opp['status'] === 'Open'));
 $selectedOpportunityId = $filters['opportunity_id'] ?? ($openOpportunities[0]['id'] ?? null);
 $selectedOpportunity = $selectedOpportunityId ? $opportunityObj->getById($selectedOpportunityId) : null;
+if (!canManageMatchingOpportunity($selectedOpportunity)) {
+    $selectedOpportunity = null;
+    $selectedOpportunityId = null;
+}
 $minScore = $filters['min_score'];
 $matches_for_opportunity = $selectedOpportunityId ? $matching->getMatchesForOpportunity($selectedOpportunityId, $minScore) : [];
 ?>
@@ -374,7 +399,7 @@ $matches_for_opportunity = $selectedOpportunityId ? $matching->getMatchesForOppo
                 <div><span class="block text-slate-500 text-xs">Age</span> <span id="mdlAge" class="font-bold text-slate-900 dark:text-white"></span></div>
                 <div><span class="block text-slate-500 text-xs">Gender</span> <span id="mdlGender" class="font-bold text-slate-900 dark:text-white"></span></div>
                 <div><span class="block text-slate-500 text-xs">Barangay</span> <span id="mdlBarangay" class="font-bold text-slate-900 dark:text-white"></span></div>
-                <div class="col-span-2"><span class="block text-slate-500 text-xs">Education</span> <span id="mdlEdu" class="font-bold text-slate-900 dark:text-white"></span></div>
+                <div class="col-span-2"><span class="block text-slate-500 text-xs">Educational Attainment</span> <span id="mdlEdu" class="font-bold text-slate-900 dark:text-white"></span></div>
                 <div class="col-span-2"><span class="block text-slate-500 text-xs">Primary Skill</span> <span id="mdlPrimarySkill" class="font-bold text-slate-900 dark:text-white"></span></div>
                 <div class="col-span-2"><span class="block text-slate-500 text-xs">Other Skills</span> <span id="mdlSkills" class="font-bold text-slate-900 dark:text-white"></span></div>
                 <div class="col-span-2"><span class="block text-slate-500 text-xs">Interests</span> <span id="mdlInterests" class="font-bold text-slate-900 dark:text-white"></span></div>

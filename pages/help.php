@@ -104,7 +104,7 @@ require_once __DIR__ . '/../includes/header.php';
         <div class="faq-content hidden mt-4 text-slate-600 dark:text-slate-400 border-t border-slate-100 dark:border-slate-700 pt-4">
             <p>
                 Our AI-powered matching algorithm analyzes the skills of each OSY profile and compares them with available opportunities.
-                It calculates a match score (0-100%) based on skill alignment, education level, and other relevant factors.
+                It calculates a match score (0-100%) based on skill alignment, educational attainment, and other relevant factors.
                 A higher score indicates a better fit for the opportunity.
             </p>
         </div>
