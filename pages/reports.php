@@ -432,182 +432,188 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['export_panaon_profil
 </div>
 
 <script>
-(function() {
-    const filterForm = document.getElementById('report-filter-form');
-    const applyFilterButton = document.getElementById('apply-filter-button');
-    const filterButtonLabel = applyFilterButton?.querySelector('[data-filter-button-label]');
+    (function() {
+        const filterForm = document.getElementById('report-filter-form');
+        const applyFilterButton = document.getElementById('apply-filter-button');
+        const filterButtonLabel = applyFilterButton?.querySelector('[data-filter-button-label]');
 
-    filterForm?.addEventListener('submit', function() {
-        if (!applyFilterButton) return;
+        filterForm?.addEventListener('submit', function() {
+            if (!applyFilterButton) return;
 
-        applyFilterButton.disabled = true;
-        applyFilterButton.setAttribute('aria-busy', 'true');
-        applyFilterButton.querySelector('.material-symbols-outlined')?.remove();
+            applyFilterButton.disabled = true;
+            applyFilterButton.setAttribute('aria-busy', 'true');
+            applyFilterButton.querySelector('.material-symbols-outlined')?.remove();
 
-        const spinner = document.createElement('span');
-        spinner.className = 'inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white';
-        spinner.setAttribute('aria-hidden', 'true');
-        applyFilterButton.prepend(spinner);
+            const spinner = document.createElement('span');
+            spinner.className = 'inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white';
+            spinner.setAttribute('aria-hidden', 'true');
+            applyFilterButton.prepend(spinner);
 
-        if (filterButtonLabel) {
-            filterButtonLabel.textContent = 'Applying filters...';
-        }
-
-        filterForm.querySelectorAll('button, select, input').forEach(control => {
-            if (control !== applyFilterButton && control.type !== 'hidden') {
-                control.disabled = true;
+            if (filterButtonLabel) {
+                filterButtonLabel.textContent = 'Applying filters...';
             }
+
+            filterForm.querySelectorAll('button, select, input').forEach(control => {
+                if (control !== applyFilterButton && control.type !== 'hidden') {
+                    control.disabled = true;
+                }
+            });
         });
-    });
 
-    const dateMode = document.getElementById('date-mode');
-    const dateFields = [
-        document.getElementById('start-date-field'),
-        document.getElementById('end-date-field')
-    ];
-    const dateInputs = [
-        document.getElementById('filter-start-date'),
-        document.getElementById('filter-end-date')
-    ];
+        const dateMode = document.getElementById('date-mode');
+        const dateFields = [
+            document.getElementById('start-date-field'),
+            document.getElementById('end-date-field')
+        ];
+        const dateInputs = [
+            document.getElementById('filter-start-date'),
+            document.getElementById('filter-end-date')
+        ];
 
-    function updateDateFields() {
-        const useDateRange = dateMode?.value === 'date_range';
-        dateFields.forEach(field => field?.classList.toggle('opacity-50', !useDateRange));
-        dateInputs.forEach(input => {
-            if (input) input.disabled = !useDateRange;
-        });
-    }
-
-    dateMode?.addEventListener('change', updateDateFields);
-    updateDateFields();
-
-    const startDate = document.getElementById('filter-start-date')?.value || '';
-    const endDate = document.getElementById('filter-end-date')?.value || '';
-    const params = new URLSearchParams();
-    if (startDate) params.append('start_date', startDate);
-    if (endDate) params.append('end_date', endDate);
-    const filterNames = ['barangay', 'gender', 'profile_type', 'education', 'status', 'verification_status'];
-    filterNames.forEach(name => {
-        const input = document.querySelector(`[name="${name}"]`);
-        if (input?.value) params.append(name, input.value);
-    });
-
-    const statsRequest = new XMLHttpRequest();
-    statsRequest.open('GET', `../api/report_stats.php?${params.toString()}`, true);
-    statsRequest.setRequestHeader('Accept', 'application/json');
-    statsRequest.onload = function() {
-        if (statsRequest.status < 200 || statsRequest.status >= 300) {
-            console.error(`Report statistics request failed: HTTP ${statsRequest.status}`);
-            return;
+        function updateDateFields() {
+            const useDateRange = dateMode?.value === 'date_range';
+            dateFields.forEach(field => field?.classList.toggle('opacity-50', !useDateRange));
+            dateInputs.forEach(input => {
+                if (input) input.disabled = !useDateRange;
+            });
         }
 
-        try {
-            const data = JSON.parse(statsRequest.responseText);
-            if (!data.success) {
-                console.error(data.message);
+        dateMode?.addEventListener('change', updateDateFields);
+        updateDateFields();
+
+        const startDate = document.getElementById('filter-start-date')?.value || '';
+        const endDate = document.getElementById('filter-end-date')?.value || '';
+        const params = new URLSearchParams();
+        if (startDate) params.append('start_date', startDate);
+        if (endDate) params.append('end_date', endDate);
+        const filterNames = ['barangay', 'gender', 'profile_type', 'education', 'status', 'verification_status'];
+        filterNames.forEach(name => {
+            const input = document.querySelector(`[name="${name}"]`);
+            if (input?.value) params.append(name, input.value);
+        });
+
+        const statsRequest = new XMLHttpRequest();
+        statsRequest.open('GET', `../api/report_stats.php?${params.toString()}`, true);
+        statsRequest.setRequestHeader('Accept', 'application/json');
+        statsRequest.onload = function() {
+            if (statsRequest.status < 200 || statsRequest.status >= 300) {
+                console.error(`Report statistics request failed: HTTP ${statsRequest.status}`);
                 return;
             }
-            renderCharts(data);
-        } catch (error) {
-            console.error('Unable to read report statistics response.', error);
-        }
-    };
-    statsRequest.onerror = function() {
-        console.error('Report statistics request failed.');
-    };
-    statsRequest.send();
 
-    let charts = {};
+            try {
+                const data = JSON.parse(statsRequest.responseText);
+                if (!data.success) {
+                    console.error(data.message);
+                    return;
+                }
+                renderCharts(data);
+            } catch (error) {
+                console.error('Unable to read report statistics response.', error);
+            }
+        };
+        statsRequest.onerror = function() {
+            console.error('Report statistics request failed.');
+        };
+        statsRequest.send();
 
-    function renderCharts(data) {
-        // Destroy existing if any
-        Object.keys(charts).forEach(key => charts[key].destroy());
+        let charts = {};
 
-        // 1. Profile Types Chart
-        const typeLabels = data.profile_types.map(item => item.type);
-        const typeCounts = data.profile_types.map(item => item.count);
-        const ctxTypes = document.getElementById('chart-profile-types')?.getContext('2d');
-        if (ctxTypes) {
-            charts.profileTypes = new Chart(ctxTypes, {
-                type: 'bar',
-                data: {
-                    labels: typeLabels,
-                    datasets: [{
-                        label: 'Profiles',
-                        data: typeCounts,
-                        backgroundColor: '#1d4ed8',
-                        borderRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: { precision: 0 }
+        function renderCharts(data) {
+            // Destroy existing if any
+            Object.keys(charts).forEach(key => charts[key].destroy());
+
+            // 1. Profile Types Chart
+            const typeLabels = data.profile_types.map(item => item.type);
+            const typeCounts = data.profile_types.map(item => item.count);
+            const ctxTypes = document.getElementById('chart-profile-types')?.getContext('2d');
+            if (ctxTypes) {
+                charts.profileTypes = new Chart(ctxTypes, {
+                    type: 'bar',
+                    data: {
+                        labels: typeLabels,
+                        datasets: [{
+                            label: 'Profiles',
+                            data: typeCounts,
+                            backgroundColor: '#1d4ed8',
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    precision: 0
+                                }
+                            }
                         }
                     }
-                }
-            });
-        }
+                });
+            }
 
-        // 2. Employment Status Chart
-        const statusLabels = data.employment_status.map(item => item.status);
-        const statusCounts = data.employment_status.map(item => item.count);
-        const ctxStatus = document.getElementById('chart-employment-status')?.getContext('2d');
-        if (ctxStatus) {
-            charts.employmentStatus = new Chart(ctxStatus, {
-                type: 'doughnut',
-                data: {
-                    labels: statusLabels,
-                    datasets: [{
-                        data: statusCounts,
-                        backgroundColor: ['#10b981', '#f59e0b', '#3b82f6', '#ef4444', '#8b5cf6']
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom' }
-                    }
-                }
-            });
-        }
-
-        // 3. Monthly Registrations Chart
-        const monthlyLabels = data.monthly_registrations.map(item => item.month);
-        const monthlyCounts = data.monthly_registrations.map(item => item.count);
-        const ctxMonthly = document.getElementById('chart-monthly-registrations')?.getContext('2d');
-        if (ctxMonthly) {
-            charts.monthlyRegs = new Chart(ctxMonthly, {
-                type: 'line',
-                data: {
-                    labels: monthlyLabels,
-                    datasets: [{
-                        label: 'Registrations',
-                        data: monthlyCounts,
-                        borderColor: '#f97316',
-                        backgroundColor: 'rgba(249, 115, 22, 0.1)',
-                        fill: true,
-                        tension: 0.3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: { precision: 0 }
+            // 2. Employment Status Chart
+            const statusLabels = data.employment_status.map(item => item.status);
+            const statusCounts = data.employment_status.map(item => item.count);
+            const ctxStatus = document.getElementById('chart-employment-status')?.getContext('2d');
+            if (ctxStatus) {
+                charts.employmentStatus = new Chart(ctxStatus, {
+                    type: 'doughnut',
+                    data: {
+                        labels: statusLabels,
+                        datasets: [{
+                            data: statusCounts,
+                            backgroundColor: ['#10b981', '#f59e0b', '#3b82f6', '#ef4444', '#8b5cf6']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
+
+            // 3. Monthly Registrations Chart
+            const monthlyLabels = data.monthly_registrations.map(item => item.month);
+            const monthlyCounts = data.monthly_registrations.map(item => item.count);
+            const ctxMonthly = document.getElementById('chart-monthly-registrations')?.getContext('2d');
+            if (ctxMonthly) {
+                charts.monthlyRegs = new Chart(ctxMonthly, {
+                    type: 'line',
+                    data: {
+                        labels: monthlyLabels,
+                        datasets: [{
+                            label: 'Registrations',
+                            data: monthlyCounts,
+                            borderColor: '#f97316',
+                            backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                            fill: true,
+                            tension: 0.3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    precision: 0
+                                }
+                            }
+                        }
+                    }
+                });
+            }
         }
-    }
-})();
+    })();
 </script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

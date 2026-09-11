@@ -81,7 +81,6 @@ try {
         'employment_status' => $employmentStatus,
         'monthly_registrations' => $monthlyRegistrations
     ]);
-
 } catch (Exception $e) {
     echo json_encode([
         'success' => false,
