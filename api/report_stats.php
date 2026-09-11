@@ -10,6 +10,14 @@ if (!$user->isLoggedIn() || ($_SESSION['role'] ?? '') !== 'lydo') {
 
 $startDate = $_GET['start_date'] ?? '';
 $endDate = $_GET['end_date'] ?? '';
+$filters = [
+    'barangay' => $_GET['barangay'] ?? '',
+    'gender' => $_GET['gender'] ?? '',
+    'profile_type' => $_GET['profile_type'] ?? '',
+    'education' => $_GET['education'] ?? '',
+    'status' => $_GET['status'] ?? '',
+    'verification_status' => $_GET['verification_status'] ?? '',
+];
 
 $where = " WHERE 1=1";
 $params = [];
@@ -24,6 +32,22 @@ if (!empty($endDate)) {
     $where .= " AND created_at <= ?";
     $params[] = $endDate . ' 23:59:59';
     $types .= "s";
+}
+
+$filterColumns = [
+    'barangay' => ['column' => 'barangay', 'ignored' => ['', 'All', 'All Barangays']],
+    'gender' => ['column' => 'gender', 'ignored' => ['', 'All', 'All Genders']],
+    'profile_type' => ['column' => 'profile_type', 'ignored' => ['', 'All', 'All Types']],
+    'education' => ['column' => 'education_level', 'ignored' => ['', 'All', 'Any Level']],
+    'status' => ['column' => 'status', 'ignored' => ['', 'All', 'All Status']],
+    'verification_status' => ['column' => 'verification_status', 'ignored' => ['', 'All', 'All Verification']],
+];
+foreach ($filterColumns as $filter => $definition) {
+    if (!in_array($filters[$filter], $definition['ignored'], true)) {
+        $where .= " AND {$definition['column']} = ?";
+        $params[] = $filters[$filter];
+        $types .= 's';
+    }
 }
 
 try {

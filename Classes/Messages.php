@@ -64,7 +64,7 @@ class Messages
     public function getConversation($osy_id)
     {
         $admin_id = $_SESSION['user_id'];
-        
+
         $query = "SELECT * FROM {$this->table} 
                  WHERE (sender_type = 'admin' AND sender_id = ? AND recipient_type = 'osy' AND recipient_id = ?)
                  OR (sender_type = 'osy' AND sender_id = ? AND recipient_type = 'admin' AND recipient_id = ?)
@@ -78,7 +78,7 @@ class Messages
      */
     public function getChatList()
     {
-        $query = "SELECT p.id, p.first_name, p.last_name, p.image_path, p.profile_type, p.phone,
+        $query = "SELECT p.id, p.first_name, p.last_name, p.image_path, p.profile_type, u.phone,
                  (SELECT message FROM {$this->table} 
                   WHERE (sender_type = 'osy' AND sender_id = p.id) 
                   OR (recipient_type = 'osy' AND recipient_id = p.id) 
@@ -89,7 +89,7 @@ class Messages
                   ORDER BY created_at DESC LIMIT 1) as last_message_time,
                  (SELECT COUNT(*) FROM {$this->table} 
                   WHERE sender_type = 'osy' AND sender_id = p.id AND is_read = 0) as unread_count
-                 FROM osy_profiles p
+                 FROM osy_profiles p LEFT JOIN users u ON u.id = p.created_by
                  ORDER BY last_message_time DESC, p.first_name ASC";
 
         return $this->db->fetchAll($query);

@@ -156,26 +156,20 @@ class Report
      */
     public function generateMatchingStats($filters = [])
     {
-        $where = " WHERE 1=1";
-        if (!empty($filters['start_date'])) {
-            $where .= " AND created_at >= '{$this->db->escape($filters['start_date'])} 00:00:00'";
-        }
-        if (!empty($filters['end_date'])) {
-            $where .= " AND created_at <= '{$this->db->escape($filters['end_date'])} 23:59:59'";
-        }
+        $profileWhere = $this->buildProfileFilterSql($filters, 'p');
 
         return [
             'total_matches_made' => $this->getQueryResult(
-                "SELECT COUNT(*) as count FROM osy_matches " . $where . " AND status = 'Accepted'"
+                "SELECT COUNT(*) as count FROM osy_matches m JOIN osy_profiles p ON p.id = m.osy_id " . $profileWhere . " AND m.status = 'Accepted'"
             ),
             'pending_matches' => $this->getQueryResult(
-                "SELECT COUNT(*) as count FROM osy_matches " . $where . " AND status = 'Pending'"
+                "SELECT COUNT(*) as count FROM osy_matches m JOIN osy_profiles p ON p.id = m.osy_id " . $profileWhere . " AND m.status = 'Pending'"
             ),
             'average_match_score' => $this->getQueryResult(
-                "SELECT AVG(match_score) as avg FROM osy_matches " . $where
+                "SELECT AVG(m.match_score) as avg FROM osy_matches m JOIN osy_profiles p ON p.id = m.osy_id " . $profileWhere
             ),
             'highest_match_score' => $this->getQueryResult(
-                "SELECT MAX(match_score) as max FROM osy_matches " . $where
+                "SELECT MAX(m.match_score) as max FROM osy_matches m JOIN osy_profiles p ON p.id = m.osy_id " . $profileWhere
             ),
             'employment_success_rate' => $this->calculateSuccessRate($filters)
         ];
@@ -186,23 +180,55 @@ class Report
      */
     private function calculateSuccessRate($filters = [])
     {
-        $where = " WHERE 1=1";
-        if (!empty($filters['start_date'])) {
-            $where .= " AND created_at >= '{$this->db->escape($filters['start_date'])} 00:00:00'";
-        }
-        if (!empty($filters['end_date'])) {
-            $where .= " AND created_at <= '{$this->db->escape($filters['end_date'])} 23:59:59'";
-        }
+        $where = $this->buildProfileFilterSql($filters, 'p');
 
         $employed = $this->db->fetchOne(
-            "SELECT COUNT(*) as count FROM osy_profiles" . $where . " AND status = 'Employed'"
+            "SELECT COUNT(*) as count FROM osy_profiles p" . $where . " AND p.status = 'Employed'"
         );
         $total = $this->db->fetchOne(
-            "SELECT COUNT(*) as count FROM osy_profiles" . $where
+            "SELECT COUNT(*) as count FROM osy_profiles p" . $where
         );
 
         $total_count = $total['count'] > 0 ? $total['count'] : 1;
         return round(($employed['count'] / $total_count) * 100, 2);
+    }
+
+    private function buildProfileFilterSql($filters, $alias = '')
+    {
+        $prefix = $alias !== '' ? $alias . '.' : '';
+        $where = ' WHERE 1=1';
+        $conditions = [
+            'barangay' => 'barangay',
+            'gender' => 'gender',
+            'profile_type' => 'profile_type',
+            'education' => 'education_level',
+            'status' => 'status',
+            'verification_status' => 'verification_status',
+        ];
+
+        if (!empty($filters['start_date'])) {
+            $where .= " AND {$prefix}created_at >= '" . $this->db->escape($filters['start_date']) . " 00:00:00'";
+        }
+        if (!empty($filters['end_date'])) {
+            $where .= " AND {$prefix}created_at <= '" . $this->db->escape($filters['end_date']) . " 23:59:59'";
+        }
+
+        foreach ($conditions as $filter => $column) {
+            $value = $filters[$filter] ?? '';
+            $ignored = [
+                'barangay' => ['', 'All', 'All Barangays'],
+                'gender' => ['', 'All', 'All Genders'],
+                'profile_type' => ['', 'All', 'All Types'],
+                'education' => ['', 'All', 'Any Level'],
+                'status' => ['', 'All', 'All Status'],
+                'verification_status' => ['', 'All', 'All Verification'],
+            ][$filter];
+            if (!in_array($value, $ignored, true)) {
+                $where .= " AND {$prefix}{$column} = '" . $this->db->escape($value) . "'";
+            }
+        }
+
+        return $where;
     }
 
     /**

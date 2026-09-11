@@ -147,7 +147,11 @@ $serverPhpSelf = $_SERVER['PHP_SELF'] ?? '';
 $serverRequestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $serverRequestUri = $_SERVER['REQUEST_URI'] ?? '';
 $currentPage = basename($serverPhpSelf);
-$isPublicPage = in_array($currentPage, $publicPages);
+$requestPage = basename((string) parse_url($serverRequestUri, PHP_URL_PATH));
+$routePage = basename((string) ($_GET['page'] ?? $_GET['route'] ?? ''));
+$isPublicPage = in_array($currentPage, $publicPages, true)
+    || in_array($requestPage, $publicPages, true)
+    || in_array($routePage, $publicPages, true);
 
 if ($serverRequestMethod === 'POST' && !$isPublicPage) {
     $token = '';

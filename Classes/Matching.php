@@ -21,16 +21,15 @@ class Matching
             $this->matchingConfig = require $configPath;
         } else {
             // Default fallback configuration
-                $this->matchingConfig = [
-                    'demographic_weight' => 0.4,
-                    'semantic_weight'    => 0.6,
-                    'filter_age'        => true,
-                    'filter_location'   => true,
-                    'filter_education'  => true,
-                    'filter_gender'     => false,
-                ];
+            $this->matchingConfig = [
+                'demographic_weight' => 0.4,
+                'semantic_weight'    => 0.6,
+                'filter_age'        => true,
+                'filter_location'   => true,
+                'filter_education'  => true,
+                'filter_gender'     => false,
+            ];
         }
-
     }
 
     /**
@@ -68,10 +67,12 @@ class Matching
         if (!empty($this->matchingConfig['filter_location'])) {
             $barangay = strtolower($osy['barangay'] ?? '');
             $oppLoc = strtolower($opp['location'] ?? '');
-            if (strpos($oppLoc, $barangay) === false &&
+            if (
+                strpos($oppLoc, $barangay) === false &&
                 strpos($oppLoc, 'any') === false &&
                 strpos($oppLoc, 'remote') === false &&
-                !empty($opp['location'])) {
+                !empty($opp['location'])
+            ) {
                 return false;
             }
         }
@@ -428,11 +429,12 @@ class Matching
     public function getMatchesForOpportunity($opportunity_id, $min_score = 0, $limit = null, $offset = null)
     {
         $query = "SELECT m.*, 
-                 p.first_name, p.last_name, p.age, p.email, p.phone, p.primary_skill,
+                 p.first_name, p.last_name, p.age, u.email, u.phone, p.primary_skill,
                  p.gender, p.education_level, p.skills, p.interests, p.barangay,
                  o.title, o.type
                  FROM {$this->table} m
                  JOIN osy_profiles p ON m.osy_id = p.id
+                 LEFT JOIN users u ON u.id = p.created_by
                  JOIN opportunities o ON m.opportunity_id = o.id
                  WHERE m.opportunity_id = ? AND m.match_score >= ?
                  ORDER BY m.match_score DESC";
@@ -482,8 +484,10 @@ class Matching
 
             $role = $_SESSION['role'] ?? null;
             $userId = (int) ($_SESSION['user_id'] ?? 0);
-            if ($role !== 'lydo' && !($role === 'employer' || $role === 'training_provider') ||
-                ($role !== 'lydo' && (int) $match['provider_id'] !== $userId)) {
+            if (
+                $role !== 'lydo' && !($role === 'employer' || $role === 'training_provider') ||
+                ($role !== 'lydo' && (int) $match['provider_id'] !== $userId)
+            ) {
                 throw new Exception('You do not have permission to update this application.');
             }
 

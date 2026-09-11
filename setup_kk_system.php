@@ -40,10 +40,10 @@
                 echo "✓ Profile table schema copied\n";
             }
 
-            // Copy osy_profiles table with basic columns that should exist
+            // Contact fields are owned by users in the normalized schema.
             $sql = "INSERT IGNORE INTO " . DB_NEW_NAME . ".osy_profiles 
-                    (id, first_name, last_name, email, phone, age, gender, education_level, barangay, primary_skill, skills, interests, govt_id_type, reason_for_not_in_school, status, date_of_birth, image_path, registration_status, created_by, created_at, updated_at)
-                    SELECT id, first_name, last_name, email, phone, age, gender, education_level, barangay, primary_skill, skills, interests, govt_id_type, reason_for_not_in_school, status, date_of_birth, image_path, registration_status, created_by, created_at, updated_at 
+                    (id, first_name, last_name, age, gender, education_level, barangay, primary_skill, skills, interests, govt_id_type, reason_for_not_in_school, status, date_of_birth, image_path, registration_status, created_by, created_at, updated_at)
+                    SELECT id, first_name, last_name, age, gender, education_level, barangay, primary_skill, skills, interests, govt_id_type, reason_for_not_in_school, status, date_of_birth, image_path, registration_status, created_by, created_at, updated_at
                     FROM " . DB_OLD_NAME . ".osy_profiles";
             if ($conn->query($sql)) {
                 $affected = $conn->affected_rows;
@@ -52,8 +52,8 @@
                 echo "⚠️  Profile migration warning: " . $conn->error . "\n";
                 // Try with even fewer columns if this fails
                 $sql = "INSERT IGNORE INTO " . DB_NEW_NAME . ".osy_profiles 
-                        (id, first_name, last_name, email, phone, age, gender, status, created_at)
-                        SELECT id, first_name, last_name, email, phone, age, gender, status, created_at 
+                    (id, first_name, last_name, age, gender, status, created_at)
+                        SELECT id, first_name, last_name, age, gender, status, created_at
                         FROM " . DB_OLD_NAME . ".osy_profiles";
                 if ($conn->query($sql)) {
                     echo "✓ Basic profiles migrated: " . $conn->affected_rows . " rows\n";

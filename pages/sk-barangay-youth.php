@@ -103,7 +103,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['review_transfer'])) {
     } else {
         $approved = ($_POST['action'] ?? '') === 'approve';
         $result = $osyProfile->reviewBarangayTransfer(
-            (int) ($_POST['transfer_id'] ?? 0), $userBarangay, $approved, $_SESSION['user_id'], trim($_POST['remark'] ?? '')
+            (int) ($_POST['transfer_id'] ?? 0),
+            $userBarangay,
+            $approved,
+            $_SESSION['user_id'],
+            trim($_POST['remark'] ?? '')
         );
         $message = $result['message'];
         $messageType = $result['success'] ? 'success' : 'error';
@@ -133,7 +137,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['review_transfer'])) {
 
 // ── Fetch pending youth awaiting SK approval ───────────────────────────────
 $pendingYouth = $database->fetchAll(
-    "SELECT * FROM osy_profiles WHERE barangay = ? AND verification_status IN ('Pending', 'Drafting', 'Action Required') ORDER BY created_at ASC",
+    "SELECT p.*, u.email AS email, u.phone AS phone
+     FROM osy_profiles p LEFT JOIN users u ON u.id = p.created_by
+     WHERE p.barangay = ? AND p.verification_status IN ('Pending', 'Drafting', 'Action Required') ORDER BY p.created_at ASC",
     [$userBarangay],
     "s"
 );
@@ -145,7 +151,9 @@ $limit  = 10;
 $offset = ($page - 1) * $limit;
 
 $allYouth = $database->fetchAll(
-    "SELECT * FROM osy_profiles WHERE barangay = ? AND verification_status != 'Pending' ORDER BY last_name, first_name LIMIT ? OFFSET ?",
+    "SELECT p.*, u.email AS email, u.phone AS phone
+     FROM osy_profiles p LEFT JOIN users u ON u.id = p.created_by
+     WHERE p.barangay = ? AND p.verification_status != 'Pending' ORDER BY p.last_name, p.first_name LIMIT ? OFFSET ?",
     [$userBarangay, $limit, $offset],
     "sii"
 );

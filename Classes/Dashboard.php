@@ -39,16 +39,16 @@ class Dashboard
     public function getSKStats($barangay)
     {
         $stats = [];
-        
+
         $res = $this->db->fetchOne("SELECT COUNT(*) as cnt FROM osy_profiles WHERE barangay = ?", [$barangay]);
         $stats['total_kk'] = $res['cnt'] ?? 0;
-        
+
         $res = $this->db->fetchOne("SELECT COUNT(*) as cnt FROM osy_profiles WHERE barangay = ? AND verification_status IN ('Pending', 'Drafting', 'Action Required')", [$barangay]);
         $stats['pending_verification'] = $res['cnt'] ?? 0;
-        
+
         $res = $this->db->fetchOne("SELECT COUNT(*) as cnt FROM osy_profiles WHERE barangay = ? AND verification_status = 'Verified'", [$barangay]);
         $stats['verified_youth'] = $res['cnt'] ?? 0;
-        
+
         return $stats;
     }
 
@@ -58,16 +58,16 @@ class Dashboard
     public function getProviderStats($userId)
     {
         $stats = [];
-        
+
         $res = $this->db->fetchOne("SELECT COUNT(*) as cnt FROM opportunities WHERE created_by = ?", [$userId]);
         $stats['total_posted'] = $res['cnt'] ?? 0;
-        
+
         // Count matches/applications for their opportunities
         $res = $this->db->fetchOne("SELECT COUNT(*) as cnt FROM osy_matches m 
                                    JOIN opportunities o ON m.opportunity_id = o.id 
                                    WHERE o.created_by = ?", [$userId]);
         $stats['total_applications'] = $res['cnt'] ?? 0;
-        
+
         return $stats;
     }
 
@@ -181,8 +181,9 @@ class Dashboard
      */
     public function getRecentRegistrations($limit = 5)
     {
-        $query = "SELECT id, first_name, last_name, email, age, primary_skill, status, created_at 
-                 FROM osy_profiles ORDER BY created_at DESC LIMIT ?";
+        $query = "SELECT p.id, p.first_name, p.last_name, u.email, p.age, p.primary_skill, p.status, p.created_at
+             FROM osy_profiles p LEFT JOIN users u ON u.id = p.created_by
+             ORDER BY p.created_at DESC LIMIT ?";
         return $this->db->fetchAll($query, [$limit], "i");
     }
 
@@ -191,8 +192,9 @@ class Dashboard
      */
     public function getRecentRegistrationsByBarangay($barangay, $limit = 5)
     {
-        $query = "SELECT id, first_name, last_name, email, age, primary_skill, status, created_at 
-                 FROM osy_profiles WHERE barangay = ? ORDER BY created_at DESC LIMIT ?";
+        $query = "SELECT p.id, p.first_name, p.last_name, u.email, p.age, p.primary_skill, p.status, p.created_at
+             FROM osy_profiles p LEFT JOIN users u ON u.id = p.created_by
+             WHERE p.barangay = ? ORDER BY p.created_at DESC LIMIT ?";
         return $this->db->fetchAll($query, [$barangay, $limit], "si");
     }
 

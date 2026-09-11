@@ -24,6 +24,13 @@ class OSYProfile
         }
     }
 
+    private function profileSelect($where = '')
+    {
+        return "SELECT p.*, u.email AS email, u.phone AS phone
+                FROM {$this->table} p
+                LEFT JOIN users u ON u.id = p.created_by" . ($where !== '' ? " WHERE {$where}" : '');
+    }
+
     /**
      * Handle document upload
      */
@@ -111,6 +118,7 @@ class OSYProfile
     public function create($data, $profileImageFile = null, $govtIdImageFile = null, $certificationFile = null)
     {
         try {
+            unset($data['email'], $data['phone']);
             // Handle image uploads if provided
             $profileImagePath = null;
             if ($profileImageFile) {
@@ -173,7 +181,7 @@ class OSYProfile
      */
     public function getById($id)
     {
-        $query = "SELECT * FROM {$this->table} WHERE id = ? LIMIT 1";
+        $query = $this->profileSelect('p.id = ?') . " LIMIT 1";
         return $this->db->fetchOne($query, [$id], "i");
     }
 
@@ -182,35 +190,35 @@ class OSYProfile
      */
     public function getByUserId($userId)
     {
-        $query = "SELECT * FROM {$this->table} WHERE created_by = ? LIMIT 1";
+        $query = $this->profileSelect('p.created_by = ?') . " LIMIT 1";
         return $this->db->fetchOne($query, [$userId], "i");
     }
 
     private function applyFilters($filters, &$query)
     {
         if (isset($filters['profile_type']) && $filters['profile_type'] != 'All Types') {
-            $query .= " AND TRIM(profile_type) = '" . $this->db->escape(trim($filters['profile_type'])) . "'";
+            $query .= " AND TRIM(p.profile_type) = '" . $this->db->escape(trim($filters['profile_type'])) . "'";
         }
 
         if (isset($filters['barangay']) && $filters['barangay'] != 'All Barangays') {
-            $query .= " AND TRIM(barangay) = '" . $this->db->escape(trim($filters['barangay'])) . "'";
+            $query .= " AND TRIM(p.barangay) = '" . $this->db->escape(trim($filters['barangay'])) . "'";
         }
 
         if (isset($filters['gender']) && $filters['gender'] != 'All Genders') {
-            $query .= " AND TRIM(gender) = '" . $this->db->escape(trim($filters['gender'])) . "'";
+            $query .= " AND TRIM(p.gender) = '" . $this->db->escape(trim($filters['gender'])) . "'";
         }
 
         if (isset($filters['education']) && $filters['education'] != 'Any Level') {
-            $query .= " AND TRIM(education_level) = '" . $this->db->escape(trim($filters['education'])) . "'";
+            $query .= " AND TRIM(p.education_level) = '" . $this->db->escape(trim($filters['education'])) . "'";
         }
 
         if (isset($filters['status']) && $filters['status'] != 'All Status') {
-            $query .= " AND TRIM(status) = '" . $this->db->escape(trim($filters['status'])) . "'";
+            $query .= " AND TRIM(p.status) = '" . $this->db->escape(trim($filters['status'])) . "'";
         }
 
         if (isset($filters['search']) && !empty($filters['search'])) {
             $search = $this->db->escape($filters['search']);
-            $query .= " AND (first_name LIKE '%{$search}%' OR last_name LIKE '%{$search}%' OR email LIKE '%{$search}%')";
+            $query .= " AND (first_name LIKE '%{$search}%' OR last_name LIKE '%{$search}%' OR u.email LIKE '%{$search}%')";
         }
     }
 
@@ -219,7 +227,7 @@ class OSYProfile
      */
     public function getAll($filters = [], $limit = null, $offset = 0)
     {
-        $query = "SELECT * FROM {$this->table} WHERE 1=1";
+        $query = $this->profileSelect('1=1');
         $this->applyFilters($filters, $query);
         $query .= " ORDER BY created_at DESC";
 
@@ -262,8 +270,6 @@ class OSYProfile
                 'middle_name',
                 'last_name',
                 'suffix',
-                'email',
-                'phone',
                 'age',
                 'gender',
                 'civil_status',
@@ -328,6 +334,7 @@ class OSYProfile
             $newLastName = trim((string) ($data['last_name'] ?? $currentProfile['last_name'] ?? ''));
             $newFullname = trim($newFirstName . ' ' . $newLastName);
             $newEmail = trim((string) ($data['email'] ?? $currentProfile['email'] ?? ''));
+            $newPhone = trim((string) ($data['phone'] ?? $currentProfile['phone'] ?? ''));
 
             $conn = $this->db->getConnection();
             $conn->begin_transaction();
@@ -357,10 +364,12 @@ class OSYProfile
                     }
 
                     $this->db->execute(
-                        "UPDATE users SET email = ?, fullname = ? WHERE id = ?",
-                        [$newEmail, $newFullname, $linkedUserId],
-                        "ssi"
+                        "UPDATE users SET email = ?, phone = ?, fullname = ? WHERE id = ?",
+                        [$newEmail, $newPhone, $newFullname, $linkedUserId],
+                        "sssi"
                     );
+                } elseif ($newPhone !== '') {
+                    $this->db->execute("UPDATE users SET phone = ? WHERE id = ?", [$newPhone, $linkedUserId], 'si');
                 }
             }
 
@@ -453,7 +462,7 @@ class OSYProfile
      */
     public function getPendingByBarangay($barangay)
     {
-        $query = "SELECT * FROM {$this->table} WHERE barangay = ? AND verification_status IN ('Pending', 'Drafting', 'Action Required') ORDER BY created_at DESC";
+        $query = $this->profileSelect("p.barangay = ? AND p.verification_status IN ('Pending', 'Drafting', 'Action Required')") . " ORDER BY p.created_at DESC";
         return $this->db->fetchAll($query, [$barangay], 's');
     }
 
@@ -493,9 +502,10 @@ class OSYProfile
     public function getPendingTransfersToBarangay($barangay)
     {
         return $this->db->fetchAll(
-            "SELECT t.*, p.first_name, p.middle_name, p.last_name, p.email, p.phone, p.image_path
+            "SELECT t.*, p.first_name, p.middle_name, p.last_name, u.email, u.phone, p.image_path
              FROM youth_barangay_transfers t
              INNER JOIN osy_profiles p ON p.id = t.profile_id
+             LEFT JOIN users u ON u.id = p.created_by
              WHERE t.to_barangay = ? AND t.status = 'Pending'
              ORDER BY t.requested_at ASC",
             [$barangay],
@@ -582,9 +592,8 @@ class OSYProfile
      */
     public function search($term)
     {
-        $query = "SELECT * FROM {$this->table} WHERE 
-                 first_name LIKE ? OR last_name LIKE ? OR email LIKE ? OR phone LIKE ?
-                 ORDER BY created_at DESC";
+        $query = $this->profileSelect('p.first_name LIKE ? OR p.last_name LIKE ? OR u.email LIKE ? OR u.phone LIKE ?') .
+            " ORDER BY p.created_at DESC";
 
         $searchTerm = "%{$term}%";
         return $this->db->fetchAll($query, [$searchTerm, $searchTerm, $searchTerm, $searchTerm], "ssss");
@@ -610,7 +619,7 @@ class OSYProfile
      */
     public function getByType($type)
     {
-        $query = "SELECT * FROM {$this->table} WHERE profile_type = ? ORDER BY created_at DESC";
+        $query = $this->profileSelect('p.profile_type = ?') . " ORDER BY p.created_at DESC";
         return $this->db->fetchAll($query, [$type], "s");
     }
 }

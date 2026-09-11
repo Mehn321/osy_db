@@ -9,8 +9,29 @@ if (!$user->isLoggedIn()) {
 }
 requireRole('lydo');
 
-$startDate = $_GET['start_date'] ?? ($_POST['start_date'] ?? '');
-$endDate = $_GET['end_date'] ?? ($_POST['end_date'] ?? '');
+$dateMode = $_GET['date_mode'] ?? ($_POST['date_mode'] ?? 'all_time');
+$dateMode = $dateMode === 'date_range' ? 'date_range' : 'all_time';
+$startDate = trim((string) ($_GET['start_date'] ?? ($_POST['start_date'] ?? '')));
+$endDate = trim((string) ($_GET['end_date'] ?? ($_POST['end_date'] ?? '')));
+if ($dateMode === 'all_time') {
+    $startDate = '';
+    $endDate = '';
+}
+$dateError = '';
+if ($dateMode === 'date_range') {
+    $startDateObject = $startDate !== '' ? DateTime::createFromFormat('!Y-m-d', $startDate) : false;
+    $endDateObject = $endDate !== '' ? DateTime::createFromFormat('!Y-m-d', $endDate) : false;
+    $startDateValid = $startDate === '' || ($startDateObject && $startDateObject->format('Y-m-d') === $startDate);
+    $endDateValid = $endDate === '' || ($endDateObject && $endDateObject->format('Y-m-d') === $endDate);
+
+    if (!$startDateValid || !$endDateValid) {
+        $dateError = 'Please enter valid dates using the date fields.';
+        $startDate = '';
+        $endDate = '';
+    } elseif ($startDate !== '' && $endDate !== '' && $startDate > $endDate) {
+        $dateError = 'The start date cannot be later than the end date.';
+    }
+}
 $filterBarangay = $_GET['barangay'] ?? ($_POST['barangay'] ?? 'All Barangays');
 $filterGender = $_GET['gender'] ?? ($_POST['gender'] ?? 'All Genders');
 $filterProfileType = $_GET['profile_type'] ?? ($_POST['profile_type'] ?? 'All Types');
@@ -30,34 +51,29 @@ $profilingFilters = [
 ];
 
 $report = new Report($database);
-$stats = $report->generateMatchingStats(['start_date' => $startDate, 'end_date' => $endDate]);
-$message = '';
-$messageType = '';
+$stats = $report->generateMatchingStats($profilingFilters);
+$message = $dateError;
+$messageType = $dateError !== '' ? 'error' : '';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['export_panaon_profiling'])) {
-    if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
-        $message = 'Duplicate or invalid form submission detected.';
-        $messageType = 'error';
-    } else {
-        $result = $report->exportPanaonYouthProfiling($profilingFilters);
-        if (!empty($result['success']) && !empty($result['filepath']) && is_file($result['filepath'])) {
-            while (ob_get_level() > 0) {
-                ob_end_clean();
-            }
-            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-            header('Content-Disposition: attachment; filename="' . $result['filename'] . '"');
-            header('Content-Length: ' . filesize($result['filepath']));
-            header('Cache-Control: no-cache, no-store, must-revalidate');
-            header('Pragma: no-cache');
-            header('Expires: 0');
-            header('X-Content-Type-Options: nosniff');
-            readfile($result['filepath']);
-            unlink($result['filepath']);
-            exit;
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['export_panaon_profiling'])) {
+    $result = $report->exportPanaonYouthProfiling($profilingFilters);
+    if (!empty($result['success']) && !empty($result['filepath']) && is_file($result['filepath'])) {
+        while (ob_get_level() > 0) {
+            ob_end_clean();
         }
-        $message = $result['message'] ?? 'Unable to generate the Panaon Youth Profiling report.';
-        $messageType = 'error';
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment; filename="' . $result['filename'] . '"');
+        header('Content-Length: ' . filesize($result['filepath']));
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+        header('Pragma: no-cache');
+        header('Expires: 0');
+        header('X-Content-Type-Options: nosniff');
+        readfile($result['filepath']);
+        unlink($result['filepath']);
+        exit;
     }
+    $message = $result['message'] ?? 'Unable to generate the Panaon Youth Profiling report.';
+    $messageType = 'error';
 }
 
 require_once __DIR__ . '/../includes/header.php';
@@ -76,6 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['export_panaon_profil
         if (isset($_POST['generate_report'])) {
             $reportType = $_POST['report_type'];
             $data = [];
+            $filename = 'Report';
 
             switch ($reportType) {
                 case 'profiles':
@@ -147,13 +164,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['export_panaon_profil
 
 <!-- Date Filter Card -->
 <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-8">
-    <form method="GET" class="space-y-4">
+    <form method="GET" action="reports.php" id="report-filter-form" class="space-y-4">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
+                <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Date Scope</label>
+                <select name="date_mode" id="date-mode" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900">
+                    <option value="all_time" <?php echo $dateMode === 'all_time' ? 'selected' : ''; ?>>All time</option>
+                    <option value="date_range" <?php echo $dateMode === 'date_range' ? 'selected' : ''; ?>>Specific date range</option>
+                </select>
+            </div>
+            <div id="start-date-field">
                 <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Start Date</label>
                 <input type="date" name="start_date" id="filter-start-date" value="<?php echo htmlspecialchars($startDate); ?>" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900" />
             </div>
-            <div>
+            <div id="end-date-field">
                 <label class="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">End Date</label>
                 <input type="date" name="end_date" id="filter-end-date" value="<?php echo htmlspecialchars($endDate); ?>" class="w-full px-4 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900" />
             </div>
@@ -213,8 +237,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['export_panaon_profil
             </div>
         </div>
         <div class="flex flex-wrap gap-2">
-            <button type="submit" class="px-6 py-2 bg-blue-900 text-white rounded-lg text-sm font-semibold hover:bg-blue-800 transition-colors">
-                Apply Filter
+            <button type="submit" id="apply-filter-button" class="px-6 py-2 bg-blue-900 text-white rounded-lg text-sm font-semibold hover:bg-blue-800 transition-colors inline-flex items-center gap-2 disabled:opacity-70 disabled:cursor-wait">
+                <span class="material-symbols-outlined text-base" aria-hidden="true">filter_alt</span>
+                <span data-filter-button-label>Apply Filter</span>
             </button>
             <?php if (!empty($startDate) || !empty($endDate) || $filterBarangay !== 'All Barangays' || $filterGender !== 'All Genders' || $filterProfileType !== 'All Types' || $filterEducation !== 'Any Level' || $filterStatus !== 'All Status' || $filterVerification !== 'All Verification'): ?>
                 <a href="reports.php" class="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-semibold hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors">
@@ -237,8 +262,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['export_panaon_profil
                 <p class="text-xs text-slate-500 dark:text-slate-400 mt-2"><?php echo (int) $profilingCount; ?> profile<?php echo $profilingCount === 1 ? '' : 's'; ?> will be included.</p>
             </div>
         </div>
-        <form method="POST" class="w-full lg:w-auto">
-            <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
+        <form method="GET" action="reports.php" class="w-full lg:w-auto">
+            <input type="hidden" name="export_panaon_profiling" value="1">
+            <input type="hidden" name="date_mode" value="<?php echo htmlspecialchars($dateMode); ?>">
             <input type="hidden" name="start_date" value="<?php echo htmlspecialchars($startDate); ?>">
             <input type="hidden" name="end_date" value="<?php echo htmlspecialchars($endDate); ?>">
             <input type="hidden" name="barangay" value="<?php echo htmlspecialchars($filterBarangay); ?>">
@@ -247,7 +273,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['export_panaon_profil
             <input type="hidden" name="education" value="<?php echo htmlspecialchars($filterEducation); ?>">
             <input type="hidden" name="status" value="<?php echo htmlspecialchars($filterStatus); ?>">
             <input type="hidden" name="verification_status" value="<?php echo htmlspecialchars($filterVerification); ?>">
-            <button type="submit" name="export_panaon_profiling" value="1" class="w-full lg:w-auto py-3 px-6 bg-amber-700 text-white rounded-lg font-semibold hover:bg-amber-600 transition-colors flex items-center justify-center gap-2">
+            <button type="submit" class="w-full lg:w-auto py-3 px-6 bg-amber-700 text-white rounded-lg font-semibold hover:bg-amber-600 transition-colors flex items-center justify-center gap-2">
                 <span class="material-symbols-outlined">download</span>
                 Download Excel Report
             </button>
@@ -407,22 +433,89 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['export_panaon_profil
 
 <script>
 (function() {
+    const filterForm = document.getElementById('report-filter-form');
+    const applyFilterButton = document.getElementById('apply-filter-button');
+    const filterButtonLabel = applyFilterButton?.querySelector('[data-filter-button-label]');
+
+    filterForm?.addEventListener('submit', function() {
+        if (!applyFilterButton) return;
+
+        applyFilterButton.disabled = true;
+        applyFilterButton.setAttribute('aria-busy', 'true');
+        applyFilterButton.querySelector('.material-symbols-outlined')?.remove();
+
+        const spinner = document.createElement('span');
+        spinner.className = 'inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white';
+        spinner.setAttribute('aria-hidden', 'true');
+        applyFilterButton.prepend(spinner);
+
+        if (filterButtonLabel) {
+            filterButtonLabel.textContent = 'Applying filters...';
+        }
+
+        filterForm.querySelectorAll('button, select, input').forEach(control => {
+            if (control !== applyFilterButton && control.type !== 'hidden') {
+                control.disabled = true;
+            }
+        });
+    });
+
+    const dateMode = document.getElementById('date-mode');
+    const dateFields = [
+        document.getElementById('start-date-field'),
+        document.getElementById('end-date-field')
+    ];
+    const dateInputs = [
+        document.getElementById('filter-start-date'),
+        document.getElementById('filter-end-date')
+    ];
+
+    function updateDateFields() {
+        const useDateRange = dateMode?.value === 'date_range';
+        dateFields.forEach(field => field?.classList.toggle('opacity-50', !useDateRange));
+        dateInputs.forEach(input => {
+            if (input) input.disabled = !useDateRange;
+        });
+    }
+
+    dateMode?.addEventListener('change', updateDateFields);
+    updateDateFields();
+
     const startDate = document.getElementById('filter-start-date')?.value || '';
     const endDate = document.getElementById('filter-end-date')?.value || '';
     const params = new URLSearchParams();
     if (startDate) params.append('start_date', startDate);
     if (endDate) params.append('end_date', endDate);
+    const filterNames = ['barangay', 'gender', 'profile_type', 'education', 'status', 'verification_status'];
+    filterNames.forEach(name => {
+        const input = document.querySelector(`[name="${name}"]`);
+        if (input?.value) params.append(name, input.value);
+    });
 
-    fetch(`../api/report_stats.php?${params.toString()}`)
-        .then(res => res.json())
-        .then(data => {
+    const statsRequest = new XMLHttpRequest();
+    statsRequest.open('GET', `../api/report_stats.php?${params.toString()}`, true);
+    statsRequest.setRequestHeader('Accept', 'application/json');
+    statsRequest.onload = function() {
+        if (statsRequest.status < 200 || statsRequest.status >= 300) {
+            console.error(`Report statistics request failed: HTTP ${statsRequest.status}`);
+            return;
+        }
+
+        try {
+            const data = JSON.parse(statsRequest.responseText);
             if (!data.success) {
                 console.error(data.message);
                 return;
             }
             renderCharts(data);
-        })
-        .catch(console.error);
+        } catch (error) {
+            console.error('Unable to read report statistics response.', error);
+        }
+    };
+    statsRequest.onerror = function() {
+        console.error('Report statistics request failed.');
+    };
+    statsRequest.send();
 
     let charts = {};
 

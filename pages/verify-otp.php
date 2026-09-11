@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 $pageTitle = 'Email Verification';
 require_once __DIR__ . '/../init.php';
 

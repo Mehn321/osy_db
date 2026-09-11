@@ -139,8 +139,45 @@ try {
         $conn->query("ALTER TABLE `users` ADD COLUMN `updated_at` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP AFTER `created_at`");
     }
 
+    // Contact details belong to the user account. Preserve legacy profile
+    // values for rollback/audit, backfill only missing account values, then
+    // remove the duplicate profile columns.
+    $conn->query("CREATE TABLE IF NOT EXISTS `osy_profile_contact_archive` (
+        `profile_id` int(11) NOT NULL,
+        `created_by` int(11) DEFAULT NULL,
+        `email` varchar(100) DEFAULT NULL,
+        `phone` varchar(20) DEFAULT NULL,
+        `archived_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (`profile_id`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+
     // ── 3. osy_profiles table – add youth verification workflow fields ─────────
     $existingProfileCols = array_column($database->fetchAll("SHOW COLUMNS FROM `osy_profiles`"), 'Field');
+
+    if (in_array('email', $existingProfileCols, true) || in_array('phone', $existingProfileCols, true)) {
+        $profileEmailSelect = in_array('email', $existingProfileCols, true) ? 'email' : 'NULL';
+        $profilePhoneSelect = in_array('phone', $existingProfileCols, true) ? 'phone' : 'NULL';
+        $conn->query("INSERT IGNORE INTO `osy_profile_contact_archive` (`profile_id`, `created_by`, `email`, `phone`)
+                      SELECT `id`, `created_by`, {$profileEmailSelect}, {$profilePhoneSelect} FROM `osy_profiles`");
+
+        if (in_array('email', $existingProfileCols, true)) {
+            $conn->query("UPDATE `users` u INNER JOIN `osy_profiles` p ON p.created_by = u.id
+                          SET u.email = p.email
+                          WHERE (u.email IS NULL OR u.email = '') AND p.email IS NOT NULL AND p.email <> ''");
+        }
+        if (in_array('phone', $existingProfileCols, true)) {
+            $conn->query("UPDATE `users` u INNER JOIN `osy_profiles` p ON p.created_by = u.id
+                          SET u.phone = p.phone
+                          WHERE (u.phone IS NULL OR u.phone = '') AND p.phone IS NOT NULL AND p.phone <> ''");
+        }
+
+        if (in_array('email', $existingProfileCols, true)) {
+            $conn->query("ALTER TABLE `osy_profiles` DROP COLUMN `email`");
+        }
+        if (in_array('phone', $existingProfileCols, true)) {
+            $conn->query("ALTER TABLE `osy_profiles` DROP COLUMN `phone`");
+        }
+    }
 
     // Keep the official youth profiling fields available on older databases.
     $profileColMigrations = [

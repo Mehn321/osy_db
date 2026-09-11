@@ -1,4 +1,5 @@
-﻿<?php
+<?php
+
 /**
  * This generic login page has been retired.
  * Each user type has its own dedicated login page.
