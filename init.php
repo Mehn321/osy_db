@@ -143,15 +143,19 @@ function consumeFormNonce($nonce)
 // Global CSRF Verification for POST requests
 // Exclude public pages from CSRF validation
 $publicPages = ['youth-login.php', 'lydo-login.php', 'sk-login.php', 'provider-login.php', 'youth-signup.php', 'provider-registration.php', 'password-reset.php', 'verify-otp.php', 'verify-signup.php'];
+$publicPagesNoExt = array_map(function($page) { return str_replace('.php', '', $page); }, $publicPages);
+$allPublicPages = array_merge($publicPages, $publicPagesNoExt);
+
 $serverPhpSelf = $_SERVER['PHP_SELF'] ?? '';
 $serverRequestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $serverRequestUri = $_SERVER['REQUEST_URI'] ?? '';
 $currentPage = basename($serverPhpSelf);
 $requestPage = basename((string) parse_url($serverRequestUri, PHP_URL_PATH));
 $routePage = basename((string) ($_GET['page'] ?? $_GET['route'] ?? ''));
-$isPublicPage = in_array($currentPage, $publicPages, true)
-    || in_array($requestPage, $publicPages, true)
-    || in_array($routePage, $publicPages, true);
+
+$isPublicPage = in_array($currentPage, $allPublicPages, true)
+    || in_array($requestPage, $allPublicPages, true)
+    || in_array($routePage, $allPublicPages, true);
 
 if ($serverRequestMethod === 'POST' && !$isPublicPage) {
     $token = '';
