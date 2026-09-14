@@ -142,20 +142,27 @@ function consumeFormNonce($nonce)
 
 // Global CSRF Verification for POST requests
 // Exclude public pages from CSRF validation
-$publicPages = ['youth-login.php', 'lydo-login.php', 'sk-login.php', 'provider-login.php', 'youth-signup.php', 'provider-registration.php', 'password-reset.php', 'verify-otp.php', 'verify-signup.php'];
-$publicPagesNoExt = array_map(function($page) { return str_replace('.php', '', $page); }, $publicPages);
-$allPublicPages = array_merge($publicPages, $publicPagesNoExt);
+// Uses multiple strategies to detect public pages regardless of URL structure or .php extension visibility
+$publicPageSlugs = ['youth-login', 'lydo-login', 'sk-login', 'provider-login', 'youth-signup', 'provider-registration', 'password-reset', 'verify-otp', 'verify-signup'];
 
 $serverPhpSelf = $_SERVER['PHP_SELF'] ?? '';
 $serverRequestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 $serverRequestUri = $_SERVER['REQUEST_URI'] ?? '';
-$currentPage = basename($serverPhpSelf);
-$requestPage = basename((string) parse_url($serverRequestUri, PHP_URL_PATH));
-$routePage = basename((string) ($_GET['page'] ?? $_GET['route'] ?? ''));
 
-$isPublicPage = in_array($currentPage, $allPublicPages, true)
-    || in_array($requestPage, $allPublicPages, true)
-    || in_array($routePage, $allPublicPages, true);
+// Build a combined string of all server path hints to check against
+$uriPath = (string) parse_url($serverRequestUri, PHP_URL_PATH);
+$allPathHints = strtolower($serverPhpSelf . '|' . $uriPath . '|' . ($_GET['page'] ?? '') . '|' . ($_GET['route'] ?? ''));
+
+$isPublicPage = false;
+foreach ($publicPageSlugs as $slug) {
+    if (strpos($allPathHints, $slug) !== false) {
+        $isPublicPage = true;
+        break;
+    }
+}
+
+$currentPage = basename($serverPhpSelf);
+$requestPage = basename($uriPath);
 
 if ($serverRequestMethod === 'POST' && !$isPublicPage) {
     $token = '';
