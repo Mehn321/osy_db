@@ -143,7 +143,7 @@ function consumeFormNonce($nonce)
 // Global CSRF Verification for POST requests
 // Exclude public pages from CSRF validation
 // Uses multiple strategies to detect public pages regardless of URL structure or .php extension visibility
-$publicPageSlugs = ['youth-login', 'lydo-login', 'sk-login', 'provider-login', 'youth-signup', 'provider-registration', 'password-reset', 'verify-otp', 'verify-signup'];
+$publicPageSlugs = ['youth-login', 'lydo-login', 'sk-login', 'provider-login', 'login', 'youth-signup', 'provider-registration', 'password-reset', 'forgot-password', 'verify-otp', 'verify-signup'];
 
 $serverPhpSelf = $_SERVER['PHP_SELF'] ?? '';
 $serverRequestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
