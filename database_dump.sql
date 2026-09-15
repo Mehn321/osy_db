@@ -720,7 +720,7 @@ CREATE TABLE `users` (
   `fullname` varchar(100) NOT NULL,
   `role` enum('admin','lydo','sk_chairman','youth','employer','training_provider') DEFAULT 'lydo',
   `is_active` tinyint(1) DEFAULT 1,
-  `status` enum('Active','Pending','Declined','Suspended') DEFAULT 'Active',
+  `status` enum('Active','Pending','Declined','Suspended','Action Required') DEFAULT 'Active',
   `barangay` varchar(100) DEFAULT NULL,
   `provider_type` enum('employer','training_provider') DEFAULT NULL,
   `provider_document_path` varchar(255) DEFAULT NULL,

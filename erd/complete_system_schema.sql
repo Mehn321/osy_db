@@ -91,7 +91,7 @@ CREATE TABLE `users` (
   `password` varchar(255) NOT NULL,
   `fullname` varchar(100) NOT NULL,
   `role` enum('lydo','sk_chairman','youth','employer','training_provider') DEFAULT 'youth',
-  `status` enum('Active','Pending','Declined','Suspended') DEFAULT 'Active',
+  `status` enum('Active','Pending','Declined','Suspended','Action Required') DEFAULT 'Active',
   `barangay` varchar(100) DEFAULT NULL,
   `provider_type` enum('employer','training_provider') DEFAULT NULL,
   `provider_document_path` varchar(255) DEFAULT NULL,

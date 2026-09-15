@@ -96,7 +96,16 @@ try {
     }
 
     if (!in_array('status', $existingUserCols)) {
-        $conn->query("ALTER TABLE `users` ADD COLUMN `status` ENUM('Active','Pending','Declined','Suspended') DEFAULT 'Active' AFTER `is_active`");
+        $conn->query("ALTER TABLE `users` ADD COLUMN `status` ENUM('Active','Pending','Declined','Suspended','Action Required') DEFAULT 'Active' AFTER `is_active`");
+    }
+
+    // Keep the users.status enum aligned with the states the SK Chairman verification
+    // screens can write. Without 'Action Required', "Return for Correction" writes are
+    // rejected/truncated by MySQL and the youth is left unable to log back in to fix
+    // and resubmit their profile.
+    $userStatusColumn = $database->fetchOne("SHOW COLUMNS FROM `users` LIKE 'status'");
+    if ($userStatusColumn && stripos($userStatusColumn['Type'], 'action required') === false) {
+        $conn->query("ALTER TABLE `users` MODIFY `status` ENUM('Active','Pending','Declined','Suspended','Action Required') DEFAULT 'Active'");
     }
 
     if (!in_array('barangay', $existingUserCols)) {

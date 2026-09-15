@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_youth'])) {
                 } elseif ($action === 'Rejected') {
                     $newUserStatus = 'Declined'; // block login, allow re-registration with new account
                 } else {
-                    $newUserStatus = 'Pending'; // returned for correction, keep blocked
+                    $newUserStatus = 'Action Required'; // returned for correction, allow login to fix & resubmit
                 }
 
                 $updateResult = $database->execute(
@@ -172,6 +172,10 @@ $pendingProfiles = $osyProfile->getPendingByBarangay($_SESSION['barangay']);
                         <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">Submitted information</p>
                         <dl class="mt-4 space-y-3 text-sm text-slate-600 dark:text-slate-300">
                             <div class="flex justify-between gap-4">
+                                <dt class="font-medium text-slate-500">Email</dt>
+                                <dd class="text-right"><?php echo htmlspecialchars($profile['email'] ?? 'N/A'); ?></dd>
+                            </div>
+                            <div class="flex justify-between gap-4">
                                 <dt class="font-medium text-slate-500">Gender</dt>
                                 <dd class="text-right"><?php echo htmlspecialchars($profile['gender'] ?? 'N/A'); ?></dd>
                             </div>
@@ -230,13 +234,13 @@ $pendingProfiles = $osyProfile->getPendingByBarangay($_SESSION['barangay']);
                         <p class="text-sm font-semibold text-slate-700 dark:text-slate-300">Uploaded files</p>
                         <div class="mt-4 space-y-4">
                             <?php $profileImage = !empty($profile['image_path']) ? '../' . ltrim($profile['image_path'], '/') : ''; ?>
-                            <?php $govtIdImage = !empty($profile['govt_id_image']) ? '../' . ltrim($profile['govt_id_image'], '/') : ''; ?>
-                            <?php $certDocument = !empty($profile['identity_document_path']) ? '../' . ltrim($profile['identity_document_path'], '/') : ''; ?>
+                            <?php $govtIdImage = !empty($profile['govt_id_image']) ? 'youth-document.php?type=govt_id&profile_id=' . intval($profile['id']) : ''; ?>
+                            <?php $certDocument = !empty($profile['identity_document_path']) ? 'youth-document.php?type=certification&profile_id=' . intval($profile['id']) : ''; ?>
                             <?php foreach ([['label' => 'Profile Photo', 'path' => $profileImage], ['label' => 'Government ID', 'path' => $govtIdImage], ['label' => 'Certification / Document', 'path' => $certDocument]] as $document): ?>
                                 <?php if (!empty($document['path'])): ?>
                                     <div class="rounded-2xl border border-slate-200 bg-white p-3">
                                         <p class="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500"><?php echo htmlspecialchars($document['label']); ?></p>
-                                        <?php if (preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $document['path'])): ?>
+                                        <?php if ($document['label'] === 'Profile Photo' && preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $document['path'])): ?>
                                             <img src="<?php echo htmlspecialchars($document['path']); ?>" alt="<?php echo htmlspecialchars($document['label']); ?>" class="max-h-48 w-full rounded-xl object-cover border border-slate-200">
                                         <?php else: ?>
                                             <a href="<?php echo htmlspecialchars($document['path']); ?>" target="_blank" class="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 hover:underline">

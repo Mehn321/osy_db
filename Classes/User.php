@@ -281,11 +281,10 @@ class User
                 throw new Exception("Your registration has been declined. Please contact your SK Chairman for next steps.");
             }
 
-            if ($role === 'youth' && $status === 'Action Required') {
-                throw new Exception("Your registration requires action. Please review your profile or contact your SK Chairman.");
-            }
-
-            if ($status !== 'Active') {
+            // 'Action Required' youth accounts are allowed to log in (read-only intent: fix and
+            // resubmit their profile via my-profile.php). Blocking login here would make the
+            // "Return for Correction" flow impossible to complete.
+            if ($status !== 'Active' && !($role === 'youth' && $status === 'Action Required')) {
                 throw new Exception("Your account is not active. Please contact the system administrator.");
             }
 

@@ -727,7 +727,7 @@ CREATE TABLE `users` (
   `fullname` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `role` enum('admin','lydo','sk_chairman','youth','employer','training_provider') COLLATE utf8mb4_unicode_ci DEFAULT 'lydo',
   `is_active` tinyint(1) DEFAULT '1',
-  `status` enum('Active','Pending','Declined','Suspended') COLLATE utf8mb4_unicode_ci DEFAULT 'Active',
+  `status` enum('Active','Pending','Declined','Suspended','Action Required') COLLATE utf8mb4_unicode_ci DEFAULT 'Active',
   `barangay` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `provider_type` enum('employer','training_provider') COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `provider_document_path` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,

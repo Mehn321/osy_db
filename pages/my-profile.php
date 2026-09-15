@@ -544,7 +544,7 @@ $applications = $isVerified ? $matching->getMatchesForOSY($profile['id']) : [];
                         <label class="<?php echo $labelClass; ?>">Update government ID file</label>
                         <input type="file" name="govt_id_image" accept="image/jpeg,image/png,image/gif,application/pdf" class="block w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-full file:border-0 file:bg-blue-100 file:text-blue-800 file:font-semibold">
                         <?php if (!empty($profile['govt_id_image'])): ?>
-                            <a href="<?php echo htmlspecialchars('../' . ltrim($profile['govt_id_image'], '/')); ?>" target="_blank" class="inline-flex items-center gap-1 mt-2 text-sm font-semibold text-blue-700 hover:text-blue-800">
+                            <a href="youth-document.php?type=govt_id&profile_id=<?php echo intval($profile['id']); ?>" target="_blank" class="inline-flex items-center gap-1 mt-2 text-sm font-semibold text-blue-700 hover:text-blue-800">
                                 <span class="material-symbols-outlined text-base">open_in_new</span> View current ID
                             </a>
                         <?php else: ?>
@@ -555,7 +555,7 @@ $applications = $isVerified ? $matching->getMatchesForOSY($profile['id']) : [];
                         <label class="<?php echo $labelClass; ?>">Update certification / supporting document</label>
                         <input type="file" name="certification_file" accept="image/jpeg,image/png,image/gif,application/pdf" class="block w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-full file:border-0 file:bg-blue-100 file:text-blue-800 file:font-semibold">
                         <?php if (!empty($profile['identity_document_path'])): ?>
-                            <a href="<?php echo htmlspecialchars('../' . ltrim($profile['identity_document_path'], '/')); ?>" target="_blank" class="inline-flex items-center gap-1 mt-2 text-sm font-semibold text-blue-700 hover:text-blue-800">
+                            <a href="youth-document.php?type=certification&profile_id=<?php echo intval($profile['id']); ?>" target="_blank" class="inline-flex items-center gap-1 mt-2 text-sm font-semibold text-blue-700 hover:text-blue-800">
                                 <span class="material-symbols-outlined text-base">open_in_new</span> View current document
                             </a>
                         <?php else: ?>
@@ -668,13 +668,13 @@ $applications = $isVerified ? $matching->getMatchesForOSY($profile['id']) : [];
                     <p class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($profile['govt_id_type'] ?? '')); ?></p>
                     <p class="text-slate-600 dark:text-slate-300 mt-1">No. <?php echo htmlspecialchars(osy_display($profile['govt_id_number'] ?? '')); ?></p>
                     <?php if (!empty($profile['govt_id_image'])): ?>
-                        <a href="<?php echo htmlspecialchars('../' . ltrim($profile['govt_id_image'], '/')); ?>" target="_blank" class="inline-flex items-center gap-1 mt-3 text-blue-700 font-semibold">View ID file</a>
+                        <a href="youth-document.php?type=govt_id&profile_id=<?php echo intval($profile['id']); ?>" target="_blank" class="inline-flex items-center gap-1 mt-3 text-blue-700 font-semibold">View ID file</a>
                     <?php endif; ?>
                 </div>
                 <div class="rounded-xl bg-slate-50 dark:bg-slate-700/40 p-4">
                     <p class="text-slate-500">Certification / supporting document</p>
                     <?php if (!empty($profile['identity_document_path'])): ?>
-                        <a href="<?php echo htmlspecialchars('../' . ltrim($profile['identity_document_path'], '/')); ?>" target="_blank" class="inline-flex items-center gap-1 mt-3 text-blue-700 font-semibold">View file</a>
+                        <a href="youth-document.php?type=certification&profile_id=<?php echo intval($profile['id']); ?>" target="_blank" class="inline-flex items-center gap-1 mt-3 text-blue-700 font-semibold">View file</a>
                     <?php else: ?>
                         <p class="font-semibold text-slate-900 dark:text-white mt-1">Not provided</p>
                     <?php endif; ?>

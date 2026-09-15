@@ -39,11 +39,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['verify_youth'])) {
         $result    = $osyProfile->setVerificationStatus($profileId, $newStatus, $remark, $_SESSION['user_id']);
 
         if ($result['success']) {
-            // IMPORTANT: Activate or keep pending the linked user account
-            // The youth cannot login unless users.status = 'Active'
+            // IMPORTANT: Activate, or flag for correction, the linked user account.
+            // 'Active' = full access. 'Action Required' = youth CAN still log in, but only
+            // to fix and resubmit their profile (see User::login() and my-profile.php).
             $updateSuccess = false;
             if (!empty($checkProfile['created_by'])) {
-                $userStatus = ($newStatus === 'Verified') ? 'Active' : 'Pending';
+                $userStatus = ($newStatus === 'Verified') ? 'Active' : 'Action Required';
                 try {
                     $updateResult = $database->execute(
                         "UPDATE users SET status = ? WHERE id = ?",
@@ -306,12 +307,12 @@ require_once __DIR__ . '/../includes/header.php';
 
                     <?php
                     $pendingProfileImage = !empty($p['image_path']) ? '../' . ltrim($p['image_path'], '/') : '';
-                    $pendingGovtIdImage = !empty($p['govt_id_image']) ? '../' . ltrim($p['govt_id_image'], '/') : '';
-                    $pendingCertDoc = !empty($p['identity_document_path']) ? '../' . ltrim($p['identity_document_path'], '/') : '';
+                    $pendingGovtIdImage = !empty($p['govt_id_image']) ? 'youth-document.php?type=govt_id&profile_id=' . intval($p['id']) : '';
+                    $pendingCertDoc = !empty($p['identity_document_path']) ? 'youth-document.php?type=certification&profile_id=' . intval($p['id']) : '';
                     $pendingDocs = array_filter([
-                        ['label' => 'Profile Photo', 'path' => $pendingProfileImage],
-                        ['label' => 'Government ID', 'path' => $pendingGovtIdImage],
-                        ['label' => 'Certification / Document', 'path' => $pendingCertDoc],
+                        ['label' => 'Profile Photo', 'path' => $pendingProfileImage, 'isImage' => true],
+                        ['label' => 'Government ID', 'path' => $pendingGovtIdImage, 'isImage' => false],
+                        ['label' => 'Certification / Document', 'path' => $pendingCertDoc, 'isImage' => false],
                     ], fn($doc) => !empty($doc['path']));
                     ?>
                     <?php if (!empty($pendingDocs) || !empty($p['govt_id_type']) || !empty($p['govt_id_number'])): ?>
@@ -330,7 +331,7 @@ require_once __DIR__ . '/../includes/header.php';
                                     <?php foreach ($pendingDocs as $doc): ?>
                                         <div class="rounded-xl border border-slate-200 bg-white dark:bg-slate-800 p-3">
                                             <p class="mb-2 text-[10px] font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400"><?= htmlspecialchars($doc['label']) ?></p>
-                                            <?php if (preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $doc['path'])): ?>
+                                            <?php if ($doc['isImage'] && preg_match('/\.(jpg|jpeg|png|gif|webp)$/i', $doc['path'])): ?>
                                                 <img src="<?= htmlspecialchars($doc['path']) ?>" alt="<?= htmlspecialchars($doc['label']) ?>" class="h-28 w-full rounded-lg object-cover border border-slate-200 dark:border-slate-700">
                                             <?php else: ?>
                                                 <a href="<?= htmlspecialchars($doc['path']) ?>" target="_blank" class="inline-flex items-center gap-2 text-sm font-semibold text-blue-700 dark:text-blue-400 hover:underline">
