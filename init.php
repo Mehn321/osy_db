@@ -22,7 +22,7 @@ require_once __DIR__ . '/Classes/PanaonYouthProfilingExport.php';
 require_once __DIR__ . '/Classes/Location.php';
 require_once __DIR__ . '/Classes/Dashboard.php';
 
-function renderDatabaseStartupError($message, $context = [])
+function renderDatabaseStartupError(string $message, array $context = []): void
 {
     $host = htmlspecialchars($context['host'] ?? DB_HOST ?? 'unknown');
     $port = htmlspecialchars((string)($context['port'] ?? DB_PORT ?? '3306'));
@@ -87,7 +87,7 @@ function getCsrfToken()
     return $_SESSION['csrf_token'] ?? '';
 }
 
-function validateCsrfToken($token)
+function validateCsrfToken(string $token): bool
 {
     return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
 }
@@ -120,7 +120,7 @@ function getFormNonce()
 // Consume the form nonce: return true if valid and prevent reuse.
 // Also accepts a valid CSRF token as fallback for deployed environments where
 // sessions may be briefly disrupted between page load and form submit.
-function consumeFormNonce($nonce)
+function consumeFormNonce(string $nonce): bool
 {
     if (empty($nonce)) {
         // No nonce posted — check CSRF token fallback

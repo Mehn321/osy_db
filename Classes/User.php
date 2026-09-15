@@ -8,7 +8,7 @@
 
 class User
 {
-    private $db;
+    private Database $db;
     private const PASSWORD_MIN_LENGTH = 12;
     private const OTP_EXPIRY_SECONDS = 600;
     private const OTP_RESEND_COOLDOWN_SECONDS = 60;
@@ -40,7 +40,7 @@ class User
         'p@ssw0rd'
     ];
 
-    public function __construct($database)
+    public function __construct(Database $database)
     {
         $this->db = $database;
     }
@@ -48,7 +48,7 @@ class User
     /**
      * Register a new user
      */
-    public function register($username, $email, $password, $fullname, $role = 'youth')
+    public function register(string $username, string $email, string $password, string $fullname, string $role = 'youth')
     {
         try {
             $passwordValidation = $this->validateStrongPassword($password, [
@@ -110,7 +110,7 @@ class User
         }
     }
 
-    public function beginSignupVerification($userId, $email, $phone)
+    public function beginSignupVerification(int $userId, string $email, string $phone)
     {
         try {
             $userId = (int) $userId;
@@ -156,7 +156,7 @@ class User
         }
     }
 
-    public function verifySignupOtp($channel, $otp)
+    public function verifySignupOtp(string $channel, string $otp)
     {
         try {
             $pending = $_SESSION['pending_signup_verification'] ?? [];
@@ -196,7 +196,7 @@ class User
     /**
      * Login user
      */
-    public function login($username, $password, $allowedRoles = null)
+    public function login(string $username, string $password, ?array $allowedRoles = null)
     {
         try {
             $normalizedUsername = strtolower(trim($username));
@@ -416,7 +416,7 @@ class User
     /**
      * Update user profile
      */
-    public function updateProfile($user_id, $fullname, $email)
+    public function updateProfile(int $user_id, string $fullname, string $email)
     {
         try {
             $existing = $this->db->fetchOne(
@@ -464,7 +464,7 @@ class User
     /**
      * Check if user has permission
      */
-    public function hasRole($role)
+    public function hasRole(string $role)
     {
         return isset($_SESSION['role']) && $_SESSION['role'] == $role;
     }
@@ -472,7 +472,7 @@ class User
     /**
      * Change user password
      */
-    public function changePassword($user_id, $current_password, $new_password)
+    public function changePassword(int $user_id, string $current_password, string $new_password)
     {
         try {
             $user = $this->db->fetchOne(
@@ -539,7 +539,7 @@ class User
     /**
      * Create a new system user or provider account
      */
-    public function createUser($data)
+    public function createUser(array $data)
     {
         try {
             $required = ['username', 'email', 'fullname', 'role'];
@@ -613,7 +613,7 @@ class User
     /**
      * Update provider approval status
      */
-    public function approveProvider($user_id, $status = 'Active', $remark = null)
+    public function approveProvider(int $user_id, string $status = 'Active', ?string $remark = null)
     {
         try {
             $user = $this->db->fetchOne("SELECT role, status, provider_document_path FROM users WHERE id = ? LIMIT 1", [$user_id], "i");
@@ -651,7 +651,7 @@ class User
     /**
      * Mark a user record as requiring a password reset
      */
-    public function setTempPasswordRequired($user_id, $required = true)
+    public function setTempPasswordRequired(int $user_id, bool $required = true)
     {
         try {
             $query = "UPDATE users SET temp_password_required = ? WHERE id = ?";
@@ -672,7 +672,7 @@ class User
     /**
      * Get users by role
      */
-    public function getUsersByRole($role, $filters = [])
+    public function getUsersByRole(string $role, array $filters = [])
     {
         $query = "SELECT * FROM users WHERE role = ?";
         $params = [$role];
@@ -701,7 +701,7 @@ class User
         return $this->db->fetchAll($query, $params, $types);
     }
 
-    public function getSecuritySettings($userId)
+    public function getSecuritySettings(int $userId)
     {
         $userId = (int) $userId;
         $this->db->execute(
@@ -724,7 +724,7 @@ class User
         ];
     }
 
-    public function updateSecuritySettings($userId, $alertEmailEnabled)
+    public function updateSecuritySettings(int $userId, bool $alertEmailEnabled)
     {
         try {
             $userId = (int) $userId;
@@ -751,7 +751,7 @@ class User
         }
     }
 
-    public function getRecentLoginEvents($userId, $limit = 10)
+    public function getRecentLoginEvents(int $userId, int $limit = 10)
     {
         $userId = (int) $userId;
         $limit = max(1, min(50, (int) $limit));
@@ -1217,6 +1217,60 @@ class User
         ];
 
         return ['success' => true];
+    }
+
+    /**
+     * Resend the password reset OTP (respecting cooldown).
+     * Returns an array with 'success' and 'message'.
+     */
+    public function resendPasswordResetOtp()
+    {
+        // Ensure a password reset session exists
+        if (empty($_SESSION['pwd_reset']['user_id'])) {
+            return ['success' => false, 'message' => 'Session expired. Please request a new password reset.'];
+        }
+        $userId = (int) $_SESSION['pwd_reset']['user_id'];
+        $now = time();
+        $availableAt = $_SESSION['pwd_reset']['resend_available_at'] ?? 0;
+        if ($now < $availableAt) {
+            $seconds = $availableAt - $now;
+            return ['success' => false, 'message' => "Please wait $seconds seconds before resending the code."];
+        }
+        // Retrieve email from session data
+        $email = $_SESSION['pwd_reset']['email'] ?? '';
+        if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['success' => false, 'message' => 'Invalid session email.'];
+        }
+        // Generate new OTP
+        $otpCode = (string) random_int(100000, 999999);
+        $otpHash = password_hash($otpCode, PASSWORD_BCRYPT);
+        // Invalidate previous unused codes
+        $this->db->execute(
+            "UPDATE user_2fa_codes SET consumed_at = NOW() WHERE user_id = ? AND consumed_at IS NULL",
+            [$userId],
+            'i'
+        );
+        // Insert new OTP
+        $this->db->execute(
+            "INSERT INTO user_2fa_codes (user_id, otp_hash, expires_at, attempts, created_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL ? SECOND), 0, NOW())",
+            [$userId, $otpHash, self::OTP_EXPIRY_SECONDS],
+            'isi'
+        );
+        // Send email
+        require_once __DIR__ . '/EmailService.php';
+        $emailService = new EmailService($this->db);
+        $subject = 'Password Reset Verification Code (Resend)';
+        $body = $emailService->buildStyledEmail(
+            'Password Reset Verification',
+            '<p>Hello,</p>' .
+            '<p>You requested a new password reset code. Your verification code is:</p>' .
+            '<p style="font-size:30px;font-weight:800;letter-spacing:4px;margin:16px 0;color:#1d4ed8;">' . htmlspecialchars($otpCode) . '</p>' .
+            '<p>This code expires in 10 minutes. If you did not request this, please ignore this email.</p>'
+        );
+        $emailService->send($email, $subject, $body);
+        // Update cooldown timestamp
+        $_SESSION['pwd_reset']['resend_available_at'] = $now + self::OTP_RESEND_COOLDOWN_SECONDS;
+        return ['success' => true, 'message' => 'A new verification code has been sent to your email.'];
     }
 
     public function verifyPasswordResetOtp($otp)

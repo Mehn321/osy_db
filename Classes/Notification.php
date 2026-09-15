@@ -8,10 +8,10 @@
 
 class Notification
 {
-    private $db;
+    private Database $db;
     private $table = 'notifications';
 
-    public function __construct($database)
+    public function __construct(Database $database)
     {
         $this->db = $database;
     }
@@ -19,7 +19,7 @@ class Notification
     /**
      * Create notification
      */
-    public function create($data)
+    public function create(array $data)
     {
         try {
             // Enforce LYDO-only for AI credit alerts
@@ -64,7 +64,7 @@ class Notification
     /**
      * Broadcast notification to matching candidates
      */
-    public function broadcastToMatches($opportunity_id, $title, $message)
+    public function broadcastToMatches(int $opportunity_id, string $title, string $message)
     {
         try {
             // Get matched OSY for this opportunity and insert one notification per candidate
@@ -91,7 +91,7 @@ class Notification
     /**
      * Delete notification
      */
-    public function delete($id)
+    public function delete(int $id)
     {
         try {
             $query = "DELETE FROM {$this->table} WHERE id = ?";
@@ -121,7 +121,7 @@ class Notification
     /**
      * Get notification by ID
      */
-    public function getById($id)
+    public function getById(int $id)
     {
         $query = "SELECT * FROM {$this->table} WHERE id = ? LIMIT 1";
         return $this->db->fetchOne($query, [$id], "i");
@@ -139,7 +139,7 @@ class Notification
     /**
      * Send notification to specific user
      */
-    public function sendToUser($user_id, $title, $message, $type = 'System', $created_by = null)
+    public function sendToUser(int $user_id, string $title, string $message, string $type = 'System', ?int $created_by = null)
     {
         return $this->create([
             'title' => $title,
@@ -154,7 +154,7 @@ class Notification
     /**
      * Create notification for specific recipient (required by task spec)
      */
-    public function createForRecipient($title, $message, $recipientId)
+    public function createForRecipient(string $title, string $message, int $recipientId)
     {
         return $this->sendToUser($recipientId, $title, $message);
     }
@@ -162,7 +162,7 @@ class Notification
     /**
      * Broadcast notification to all users with specific role
      */
-    public function broadcastToRole($role, $title, $message, $type = 'System')
+    public function broadcastToRole(string $role, string $title, string $message, string $type = 'System')
     {
         // Enforce LYDO as the sole role recipient
         if (strtolower($role) !== 'lydo') {
@@ -191,7 +191,7 @@ class Notification
     /**
      * Broadcast notification to users in specific barangay
      */
-    public function broadcastToBarangay($barangay, $title, $message, $type = 'System')
+    public function broadcastToBarangay(string $barangay, string $title, string $message, string $type = 'System')
     {
         try {
             $query = "INSERT INTO {$this->table} (title, message, type, recipient_type, recipient_id, status, created_by, created_at)
@@ -216,7 +216,7 @@ class Notification
     /**
      * Get the role for a user
      */
-    private function getUserRole($user_id)
+    private function getUserRole(int $user_id)
     {
         $result = $this->db->fetchOne("SELECT role FROM users WHERE id = ? LIMIT 1", [$user_id], "i");
         return $result['role'] ?? null;
@@ -225,7 +225,7 @@ class Notification
     /**
      * Get notifications for current user
      */
-    public function getUserNotifications($user_id, $limit = 20)
+    public function getUserNotifications(int $user_id, int $limit = 20)
     {
         $role = $this->getUserRole($user_id);
         $query = "SELECT n.*, 
@@ -257,7 +257,7 @@ class Notification
     /**
      * Mark notification as read
      */
-    public function markAsRead($notification_id, $user_id)
+    public function markAsRead(int $notification_id, int $user_id)
     {
         try {
             $notification = $this->getById($notification_id);
@@ -300,7 +300,7 @@ class Notification
     /**
      * Get unread count for user
      */
-    public function getUnreadCount($user_id)
+    public function getUnreadCount(int $user_id)
     {
         $role = $this->getUserRole($user_id);
         $query = "SELECT COUNT(*) as count
@@ -328,7 +328,7 @@ class Notification
     /**
      * Create notification template
      */
-    public function createTemplate($data)
+    public function createTemplate(array $data)
     {
         try {
             $query = "INSERT INTO notification_templates 
@@ -368,7 +368,7 @@ class Notification
     /**
      * Get template by ID
      */
-    public function getTemplateById($id)
+    public function getTemplateById(int $id)
     {
         $query = "SELECT * FROM notification_templates WHERE id = ? LIMIT 1";
         return $this->db->fetchOne($query, [$id], "i");
@@ -377,7 +377,7 @@ class Notification
     /**
      * Update notification template
      */
-    public function updateTemplate($id, $data)
+    public function updateTemplate(int $id, array $data)
     {
         try {
             $query = "UPDATE notification_templates 
@@ -407,7 +407,7 @@ class Notification
     /**
      * Delete notification template
      */
-    public function deleteTemplate($id)
+    public function deleteTemplate(int $id)
     {
         try {
             $query = "DELETE FROM notification_templates WHERE id = ?";
@@ -428,7 +428,7 @@ class Notification
     /**
      * Render template with variables
      */
-    public function renderTemplate($template, $variables = [])
+    public function renderTemplate(array $template, array $variables = [])
     {
         $body = (string)($template['body'] ?? '');
         $subject = (string)($template['subject'] ?? '');

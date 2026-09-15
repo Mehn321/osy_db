@@ -14,6 +14,9 @@ require_once __DIR__ . '/../Classes/OSYProfile.php';
 require_once __DIR__ . '/../Classes/AuditLog.php';
 require_once __DIR__ . '/../Classes/Reference.php';
 
+$basePath = str_replace('\\', '/', dirname(dirname($_SERVER['SCRIPT_NAME'])));
+$basePath = $basePath === '/' ? '' : $basePath;
+
 // If already logged in, redirect
 if (isset($_SESSION['user_id'])) {
     header('Location: ' . (rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\') === '/' ? '' : rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\')) . '/dashboard.php');
@@ -23,6 +26,7 @@ if (isset($_SESSION['user_id'])) {
 $user = new User($database);
 $osyProfile = new OSYProfile($database);
 $auditLog = new AuditLog($database);
+$ref = new Reference($database);
 
 $message = '';
 $messageType = 'success';
@@ -353,7 +357,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Youth Sign Up - Youth Profiling System</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="<?php echo (isset($basePath) ? $basePath : ''); ?>/assets/js/tailwind.js"></script>
+    <link href="<?php echo (isset($basePath) ? $basePath : ''); ?>/assets/css/design-system.css" rel="stylesheet">
     <link rel="stylesheet"
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
     <style>
