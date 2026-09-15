@@ -790,7 +790,7 @@ class User
         return $maskedLocal . '@' . $domain;
     }
 
-    public function verifyEmailOtpForPendingLogin($otp)
+    public function verifyEmailOtpForPendingLogin(string $otp)
     {
         try {
             if (!$this->isOtpVerificationPending()) {
