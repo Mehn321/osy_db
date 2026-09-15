@@ -1,10 +1,10 @@
 services:
   - type: web
     name: osy-db
-    env: php
+    runtime: docker
     plan: free
-    buildCommand: ""
-    startCommand: "php -S 0.0.0.0:$PORT -t ."
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     envVars:
       - key: DB_HOST
         value: public-mysql-187728d1-kkonek-2026.l.aivencloud.com
@@ -21,6 +21,6 @@ services:
       - key: DB_SSL_CA
         value: config/ca.pem
       - key: DB_SSL_VERIFY_SERVER_CERT
-        value: false
+        value: "false"
       - key: GEMINI_API_KEY
         sync: false
