@@ -1000,7 +1000,7 @@ class User
         unset($_SESSION['pending_auth']);
     }
 
-    private function validateStrongPassword($password, array $context = [])
+    private function validateStrongPassword(string $password, array $context = [])
     {
         $password = (string) $password;
 
@@ -1068,7 +1068,7 @@ class User
         return ['valid' => true, 'message' => 'OK'];
     }
 
-    private function isPasswordReused($userId, $plainPassword)
+    private function isPasswordReused(int $userId, string $plainPassword)
     {
         $rows = $this->db->fetchAll(
             "SELECT password_hash FROM user_password_history WHERE user_id = ? ORDER BY id DESC LIMIT 5",
@@ -1085,7 +1085,7 @@ class User
         return false;
     }
 
-    private function rememberPassword($userId, $hash)
+    private function rememberPassword(int $userId, string $hash)
     {
         $this->db->execute(
             "INSERT INTO user_password_history (user_id, password_hash, created_at) VALUES (?, ?, NOW())",
@@ -1123,7 +1123,7 @@ class User
         return implode('', $passwordChars);
     }
 
-    private function isKnownLoginContext($userId, $ipAddress, $userAgent)
+    private function isKnownLoginContext(int $userId, string $ipAddress, string $userAgent)
     {
         if ($ipAddress === '' && $userAgent === '') {
             return true;
@@ -1138,7 +1138,7 @@ class User
         return !empty($row);
     }
 
-    private function recordLoginEvent($userId, $result, $reason = '')
+    private function recordLoginEvent(int $userId, string $result, string $reason = '')
     {
         $ipAddress = substr((string) ($_SERVER['REMOTE_ADDR'] ?? ''), 0, 45);
         $userAgent = substr((string) ($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 1000);
@@ -1150,7 +1150,7 @@ class User
         );
     }
 
-    private function sendActivityAlertEmail(array $userData, $subject, $message)
+    private function sendActivityAlertEmail(array $userData, string $subject, string $message)
     {
         $userId = (int) ($userData['id'] ?? 0);
         $email = (string) ($userData['email'] ?? '');
@@ -1178,7 +1178,7 @@ class User
         $emailService->send($email, $subject, $body);
     }
 
-    public function initiatePasswordReset($usernameOrEmail)
+    public function initiatePasswordReset(string $usernameOrEmail)
     {
         $user = $this->db->fetchOne("SELECT id, email, username FROM users WHERE username = ? OR email = ? LIMIT 1", [$usernameOrEmail, $usernameOrEmail], "ss");
         if (!$user) {
@@ -1273,7 +1273,7 @@ class User
         return ['success' => true, 'message' => 'A new verification code has been sent to your email.'];
     }
 
-    public function verifyPasswordResetOtp($otp)
+    public function verifyPasswordResetOtp(string $otp)
     {
         try {
             if (empty($_SESSION['pwd_reset']['user_id'])) {
@@ -1319,7 +1319,7 @@ class User
         }
     }
 
-    public function completePasswordReset($newPassword)
+    public function completePasswordReset(string $newPassword)
     {
         try {
             if (empty($_SESSION['pwd_reset']['user_id']) || empty($_SESSION['pwd_reset']['verified'])) {

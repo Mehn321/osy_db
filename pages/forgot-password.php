@@ -143,6 +143,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 Send Verification Code
             </button>
             <?php elseif ($step === 'verify'): ?>
+            <?php
+            $maskedEmail = '';
+            if (isset($_SESSION['pwd_reset']['email'])) {
+                $email = $_SESSION['pwd_reset']['email'];
+                $parts = explode('@', $email);
+                if (count($parts) === 2) {
+                    $name = $parts[0];
+                    if (strlen($name) > 2) {
+                        $maskedName = substr($name, 0, 1) . str_repeat('*', strlen($name) - 2) . substr($name, -1);
+                    } else {
+                        $maskedName = substr($name, 0, 1) . str_repeat('*', max(1, strlen($name) - 1));
+                    }
+                    $maskedEmail = $maskedName . '@' . $parts[1];
+                }
+            }
+            ?>
+            <div class="text-center mb-6">
+                <p class="text-sm text-slate-600">Enter the verification code sent to <br><span class="font-bold text-slate-800 tracking-wider"><?php echo htmlspecialchars($maskedEmail); ?></span></p>
+            </div>
             <div class="space-y-2">
                 <label class="block text-xs font-bold uppercase tracking-widest text-slate-600">Verification Code
                     (OTP)</label>
@@ -234,6 +253,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         });
     });
     </script>
+<script>
+// OTP resend countdown timer
+document.addEventListener('DOMContentLoaded', function () {
+    const countdownSpan = document.getElementById('countdown');
+    const resendBtn = document.querySelector('button[name="resend"]');
+    if (!countdownSpan || !resendBtn) return;
+    let seconds = parseInt(countdownSpan.textContent, 10);
+    if (isNaN(seconds) || seconds <= 0) {
+        // Enable button immediately if no cooldown
+        resendBtn.disabled = false;
+        resendBtn.classList.remove('bg-gray-400', 'opacity-50');
+        resendBtn.classList.add('bg-blue-600');
+        resendBtn.textContent = 'Resend OTP';
+        return;
+    }
+    // Ensure button is disabled initially
+    resendBtn.disabled = true;
+    const interval = setInterval(() => {
+        seconds--;
+        countdownSpan.textContent = seconds;
+        if (seconds <= 0) {
+            clearInterval(interval);
+            resendBtn.disabled = false;
+            resendBtn.classList.remove('bg-gray-400', 'opacity-50');
+            resendBtn.classList.add('bg-blue-600');
+            resendBtn.textContent = 'Resend OTP';
+        }
+    }, 1000);
+});
+</script>
 </body>
 
 </html>

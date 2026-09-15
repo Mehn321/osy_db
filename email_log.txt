@@ -144,3 +144,4 @@
 2026-09-11 05:34:19 | Email SENT | To: test@example.com | Subject: Test Email
 2026-09-14 12:17:15 | Email SENT | To: dummyseeker22+admin11@gmail.com | Subject: Your Login Verification Code
 2026-09-14 12:20:31 | Email SENT | To: dummyseeker22+admin11@gmail.com | Subject: Your Login Verification Code
+2026-09-15 02:05:26 | Email SENT | To: dummyseeker22+admin11@gmail.com | Subject: Password Reset Verification Code
