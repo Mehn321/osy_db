@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 require_once __DIR__ . '/../init.php';
@@ -136,7 +136,7 @@ if ($user->isLoggedIn()) {
                         <div class="flex justify-between items-center px-1">
                             <label
                                 class="block text-xs font-bold uppercase tracking-widest text-slate-600">Password</label>
-                            <a href="forgot-password.php"
+                            <a href="forgot-password.php?return=provider"
                                 class="text-xs font-bold text-blue-900 hover:underline uppercase tracking-widest">Forgot?</a>
                         </div>
                         <div class="relative">

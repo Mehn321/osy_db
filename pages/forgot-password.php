@@ -6,6 +6,19 @@ $error = '';
 $success = '';
 $step = $_GET['step'] ?? 'request';
 
+// Capture return path
+if (isset($_GET['return'])) {
+    $allowedReturns = [
+        'lydo' => 'lydo-login.php',
+        'sk' => 'sk-login.php',
+        'youth' => 'youth-login.php',
+        'provider' => 'provider-login.php',
+        'admin' => 'login.php'
+    ];
+    $_SESSION['pwd_reset_return'] = $allowedReturns[$_GET['return']] ?? 'youth-login.php';
+}
+$returnUrl = $_SESSION['pwd_reset_return'] ?? 'youth-login.php';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!consumeFormNonce($_POST['form_nonce'] ?? '')) {
         $error = 'Duplicate or invalid form submission detected.';
@@ -59,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $result = $user->completePasswordReset($new_password);
                 if ($result['success']) {
                     $success = 'Password successfully reset! Redirecting to login...';
-                    header("refresh:2;url=youth-login.php");
+                    header("refresh:2;url=" . $returnUrl);
                 } else {
                     $error = $result['message'];
                 }
@@ -232,7 +245,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
 
         <div class="mt-6 text-center">
-            <a href="youth-login.php"
+            <a href="<?php echo htmlspecialchars($returnUrl); ?>"
                 class="text-xs text-slate-500 hover:text-slate-800 hover:underline font-bold uppercase tracking-wider">Back
                 to Login</a>
         </div>

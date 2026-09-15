@@ -110,7 +110,7 @@ exit;
                         <div class="flex justify-between items-center px-1">
                             <label
                                 class="block text-xs font-bold uppercase tracking-widest text-slate-600">Password</label>
-                            <a href="forgot-password.php"
+                            <a href="forgot-password.php?return=admin"
                                 class="text-xs font-bold text-blue-900 hover:underline uppercase tracking-widest">Forgot?</a>
                         </div>
                         <div class="relative">
