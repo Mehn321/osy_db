@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($step === 'reset') {
             $new_password = $_POST['new_password'] ?? '';
             $confirm_password = $_POST['confirm_password'] ?? '';
-            
+
             if (empty($new_password) || empty($confirm_password)) {
                 $error = 'All fields are required.';
             } elseif ($new_password !== $confirm_password) {
@@ -121,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
         <?php endif; ?>
 
-        <?php if (!$success): ?>
+        <?php if ($step !== 'reset' || empty($success)): ?>
         <form method="POST" class="space-y-6">
             <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
             <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars(getCsrfToken()); ?>">
@@ -144,23 +144,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </button>
             <?php elseif ($step === 'verify'): ?>
             <?php
-            $maskedEmail = '';
-            if (isset($_SESSION['pwd_reset']['email'])) {
-                $email = $_SESSION['pwd_reset']['email'];
-                $parts = explode('@', $email);
-                if (count($parts) === 2) {
-                    $name = $parts[0];
-                    if (strlen($name) > 2) {
-                        $maskedName = substr($name, 0, 1) . str_repeat('*', strlen($name) - 2) . substr($name, -1);
-                    } else {
-                        $maskedName = substr($name, 0, 1) . str_repeat('*', max(1, strlen($name) - 1));
+                    $maskedEmail = '';
+                    if (isset($_SESSION['pwd_reset']['email'])) {
+                        $email = $_SESSION['pwd_reset']['email'];
+                        $parts = explode('@', $email);
+                        if (count($parts) === 2) {
+                            $name = $parts[0];
+                            if (strlen($name) > 2) {
+                                $maskedName = substr($name, 0, 1) . str_repeat('*', strlen($name) - 2) . substr($name, -1);
+                            } else {
+                                $maskedName = substr($name, 0, 1) . str_repeat('*', max(1, strlen($name) - 1));
+                            }
+                            $maskedEmail = $maskedName . '@' . $parts[1];
+                        }
                     }
-                    $maskedEmail = $maskedName . '@' . $parts[1];
-                }
-            }
-            ?>
+                    ?>
             <div class="text-center mb-6">
-                <p class="text-sm text-slate-600">Enter the verification code sent to <br><span class="font-bold text-slate-800 tracking-wider"><?php echo htmlspecialchars($maskedEmail); ?></span></p>
+                <p class="text-sm text-slate-600">Enter the verification code sent to <br><span
+                        class="font-bold text-slate-800 tracking-wider"><?php echo htmlspecialchars($maskedEmail); ?></span>
+                </p>
             </div>
             <div class="space-y-2">
                 <label class="block text-xs font-bold uppercase tracking-widest text-slate-600">Verification Code
@@ -178,17 +180,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 Verify Code
             </button>
             <?php
-    $now = time();
-    $availableAt = $_SESSION['pwd_reset']['resend_available_at'] ?? $now;
-    $secondsLeft = $availableAt - $now;
-?>
+                    $now = time();
+                    $availableAt = $_SESSION['pwd_reset']['resend_available_at'] ?? $now;
+                    $secondsLeft = $availableAt - $now;
+                    ?>
             <?php if ($secondsLeft > 0): ?>
-            <button type="submit" name="resend" value="1" disabled
+            <button type="submit" name="resend" value="1" disabled formnovalidate
                 class="w-full bg-gray-400 text-white py-3 rounded-lg font-bold mt-4 opacity-50">
                 Resend OTP (wait <span id="countdown"><?php echo $secondsLeft; ?></span>s)
             </button>
             <?php else: ?>
-            <button type="submit" name="resend" value="1"
+            <button type="submit" name="resend" value="1" formnovalidate
                 class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold mt-4">
                 Resend OTP
             </button>
@@ -253,36 +255,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         });
     });
     </script>
-<script>
-// OTP resend countdown timer
-document.addEventListener('DOMContentLoaded', function () {
-    const countdownSpan = document.getElementById('countdown');
-    const resendBtn = document.querySelector('button[name="resend"]');
-    if (!countdownSpan || !resendBtn) return;
-    let seconds = parseInt(countdownSpan.textContent, 10);
-    if (isNaN(seconds) || seconds <= 0) {
-        // Enable button immediately if no cooldown
-        resendBtn.disabled = false;
-        resendBtn.classList.remove('bg-gray-400', 'opacity-50');
-        resendBtn.classList.add('bg-blue-600');
-        resendBtn.textContent = 'Resend OTP';
-        return;
-    }
-    // Ensure button is disabled initially
-    resendBtn.disabled = true;
-    const interval = setInterval(() => {
-        seconds--;
-        countdownSpan.textContent = seconds;
-        if (seconds <= 0) {
-            clearInterval(interval);
+    <script>
+    // OTP resend countdown timer
+    document.addEventListener('DOMContentLoaded', function() {
+        const countdownSpan = document.getElementById('countdown');
+        const resendBtn = document.querySelector('button[name="resend"]');
+        if (!countdownSpan || !resendBtn) return;
+        let seconds = parseInt(countdownSpan.textContent, 10);
+        if (isNaN(seconds) || seconds <= 0) {
+            // Enable button immediately if no cooldown
             resendBtn.disabled = false;
             resendBtn.classList.remove('bg-gray-400', 'opacity-50');
             resendBtn.classList.add('bg-blue-600');
             resendBtn.textContent = 'Resend OTP';
+            return;
         }
-    }, 1000);
-});
-</script>
+        // Ensure button is disabled initially
+        resendBtn.disabled = true;
+        const interval = setInterval(() => {
+            seconds--;
+            countdownSpan.textContent = seconds;
+            if (seconds <= 0) {
+                clearInterval(interval);
+                resendBtn.disabled = false;
+                resendBtn.classList.remove('bg-gray-400', 'opacity-50');
+                resendBtn.classList.add('bg-blue-600');
+                resendBtn.textContent = 'Resend OTP';
+            }
+        }, 1000);
+    });
+    </script>
 </body>
 
 </html>

@@ -1,0 +1,17 @@
+{
+  "name": "osy_db",
+  "version": "1.0.0",
+  "description": "A complete implementation of the Integrated Web Based Information System for Youth Profiling and Skills Matching using **PHP (OOP), MySQL, Tailwind CSS, HTML, CSS, and JavaScript**.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "autoprefixer": "^10.6.0",
+    "postcss": "^8.5.28",
+    "tailwindcss": "^4.3.3"
+  }
+}

@@ -1207,7 +1207,11 @@ class User
             '<p>Hello,</p><p>You requested a password reset. Your verification code is:</p><p style="font-size:30px;font-weight:800;letter-spacing:4px;margin:16px 0;color:#1d4ed8;">' . htmlspecialchars($otpCode) . '</p><p>This code expires in 10 minutes. If you did not request this, please ignore this email.</p>'
         );
 
-        $emailService->send($user['email'], $subject, $body);
+        $sendResult = $emailService->send($user['email'], $subject, $body);
+        if (!$sendResult['success']) {
+            unset($_SESSION['pwd_reset']);
+            return ['success' => false, 'message' => $sendResult['message'] ?? 'Unable to send the password reset code at this time.'];
+        }
 
         $_SESSION['pwd_reset'] = [
             'user_id' => $user['id'],
@@ -1263,11 +1267,14 @@ class User
         $body = $emailService->buildStyledEmail(
             'Password Reset Verification',
             '<p>Hello,</p>' .
-            '<p>You requested a new password reset code. Your verification code is:</p>' .
-            '<p style="font-size:30px;font-weight:800;letter-spacing:4px;margin:16px 0;color:#1d4ed8;">' . htmlspecialchars($otpCode) . '</p>' .
-            '<p>This code expires in 10 minutes. If you did not request this, please ignore this email.</p>'
+                '<p>You requested a new password reset code. Your verification code is:</p>' .
+                '<p style="font-size:30px;font-weight:800;letter-spacing:4px;margin:16px 0;color:#1d4ed8;">' . htmlspecialchars($otpCode) . '</p>' .
+                '<p>This code expires in 10 minutes. If you did not request this, please ignore this email.</p>'
         );
-        $emailService->send($email, $subject, $body);
+        $sendResult = $emailService->send($email, $subject, $body);
+        if (!$sendResult['success']) {
+            return ['success' => false, 'message' => $sendResult['message'] ?? 'Unable to resend the verification code right now.'];
+        }
         // Update cooldown timestamp
         $_SESSION['pwd_reset']['resend_available_at'] = $now + self::OTP_RESEND_COOLDOWN_SECONDS;
         return ['success' => true, 'message' => 'A new verification code has been sent to your email.'];
