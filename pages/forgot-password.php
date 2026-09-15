@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 $pageTitle = 'Forgot Password';
 require_once __DIR__ . '/../init.php';
 

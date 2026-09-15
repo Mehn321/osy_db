@@ -118,10 +118,16 @@ function getFormNonce()
 }
 
 // Consume the form nonce: return true if valid and prevent reuse.
+// Also accepts a valid CSRF token as fallback for deployed environments where
+// sessions may be briefly disrupted between page load and form submit.
 function consumeFormNonce($nonce)
 {
     if (empty($nonce)) {
-        return false;
+        // No nonce posted — check CSRF token fallback
+        $csrfPosted = $_POST['csrf_token'] ?? '';
+        return !empty($csrfPosted)
+            && isset($_SESSION['csrf_token'])
+            && hash_equals((string) $_SESSION['csrf_token'], (string) $csrfPosted);
     }
 
     if (isset($_SESSION['form_nonce_pool']) && is_array($_SESSION['form_nonce_pool']) && isset($_SESSION['form_nonce_pool'][(string) $nonce])) {
@@ -134,6 +140,12 @@ function consumeFormNonce($nonce)
     if (isset($_SESSION['form_nonce']) && hash_equals((string) $_SESSION['form_nonce'], (string) $nonce)) {
         unset($_SESSION['form_nonce']);
         unset($_SESSION['form_nonce_page']);
+        return true;
+    }
+
+    // Nonce was posted but not found in session (session disruption fallback)
+    $csrfPosted = $_POST['csrf_token'] ?? '';
+    if (!empty($csrfPosted) && isset($_SESSION['csrf_token']) && hash_equals((string) $_SESSION['csrf_token'], (string) $csrfPosted)) {
         return true;
     }
 

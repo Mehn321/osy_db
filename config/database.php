@@ -104,14 +104,28 @@ define('DB_SSL_VERIFY_SERVER_CERT', filter_var(
 error_reporting(E_ALL);
 ini_set('display_errors', 0);
 
-// Session configuration
+// Detect HTTPS even behind a reverse proxy (e.g. Render, Heroku, Cloudflare)
+$isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')
+    || (!empty($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on')
+    || (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443);
+
+// Session configuration - must be set BEFORE session_start()
 ini_set('session.cookie_httponly', 1);
 ini_set('session.use_only_cookies', 1);
-ini_set('session.cookie_samesite', 'Lax');
 
-// If using HTTPS, force secure cookies (we check if it's HTTPS or typically true in prod)
-if (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') {
+if ($isHttps) {
+    // On HTTPS (including behind reverse proxy): secure cookie, SameSite=None required for cross-site
     ini_set('session.cookie_secure', 1);
+    ini_set('session.cookie_samesite', 'None');
+} else {
+    // Local HTTP dev: SameSite=Lax is fine
+    ini_set('session.cookie_secure', 0);
+    ini_set('session.cookie_samesite', 'Lax');
+}
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
 }
 
 // Security headers (CSP, HSTS, X-Frame-Options, Referrer-Policy, X-Content-Type-Options)
@@ -120,9 +134,5 @@ header("X-Frame-Options: SAMEORIGIN");
 header("X-XSS-Protection: 1; mode=block");
 header("Referrer-Policy: strict-origin-when-cross-origin");
 header("Strict-Transport-Security: max-age=31536000; includeSubDomains");
-// Content-Security-Policy can be tricky depending on inline scripts, so we start with a permissive but solid base
+// Content-Security-Policy - permissive but solid base
 header("Content-Security-Policy: default-src 'self' 'unsafe-inline' 'unsafe-eval' https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net data: blob:; img-src 'self' data: blob: https: http:;");
-
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
