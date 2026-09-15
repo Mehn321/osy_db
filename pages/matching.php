@@ -6,7 +6,7 @@ if (!$user->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
-requireRole(['lydo', 'employer']);
+requireRole(['lydo', 'employer', 'training_provider']);
 
 require_once __DIR__ . '/../includes/header.php';
 

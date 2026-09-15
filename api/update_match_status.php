@@ -8,8 +8,8 @@ if (!$user->isLoggedIn()) {
     exit;
 }
 
-if (($_SESSION['role'] ?? '') !== 'employer') {
-    echo json_encode(['success' => false, 'message' => 'Only employers can make candidate decisions.']);
+if (!in_array($_SESSION['role'] ?? '', ['employer', 'training_provider'], true)) {
+    echo json_encode(['success' => false, 'message' => 'Only employers and training providers can make candidate decisions.']);
     exit;
 }
 

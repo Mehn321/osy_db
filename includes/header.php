@@ -223,7 +223,8 @@ $basePath = $basePath === '/' ? '' : $basePath;
                 } elseif ($userRole === 'training_provider') {
                     $navItems = [
                         ['name' => 'Dashboard',          'icon' => 'dashboard',          'path' => 'dashboard.php'],
-                        ['name' => 'My Programs',        'icon' => 'school',             'path' => 'training-programs.php?edit_id=9'],
+                        ['name' => 'My Programs',        'icon' => 'school',             'path' => 'my-training-programs.php'],
+                        ['name' => 'Skills Matching',    'icon' => 'psychology',         'path' => 'matching.php'],
                         ['name' => 'My Notifications',   'icon' => 'notifications_active', 'path' => 'my-notifications.php'],
                     ];
                 } elseif ($userRole === 'youth') {

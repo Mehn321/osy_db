@@ -10,7 +10,7 @@ if (!$user->isLoggedIn()) {
 }
 
 $role = $_SESSION['role'] ?? '';
-if (!in_array($role, ['lydo', 'employer'], true)) {
+if (!in_array($role, ['lydo', 'employer', 'training_provider'], true)) {
     echo json_encode(['success' => false, 'message' => 'Access denied']);
     exit;
 }
@@ -26,8 +26,8 @@ $matching = new Matching($database);
 $opportunityObj = new Opportunity($database);
 
 $opportunity = $opportunityObj->getById($opportunity_id);
-if (!$opportunity || ($role === 'employer' && (int)$opportunity['provider_id'] !== (int)$_SESSION['user_id'])) {
-    echo json_encode(['success' => false, 'message' => 'Opportunity not found or not owned by this employer']);
+if (!$opportunity || ($role !== 'lydo' && (int)$opportunity['provider_id'] !== (int)$_SESSION['user_id'])) {
+    echo json_encode(['success' => false, 'message' => 'Opportunity not found or not owned by this provider']);
     exit;
 }
 

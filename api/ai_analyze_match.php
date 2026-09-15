@@ -15,6 +15,12 @@ if (!$user->isLoggedIn()) {
     exit;
 }
 
+$role = $_SESSION['role'] ?? '';
+if (!in_array($role, ['lydo', 'employer', 'training_provider'], true)) {
+    echo json_encode(['success' => false, 'message' => 'Access denied']);
+    exit;
+}
+
 // Get input
 $data = json_decode(file_get_contents('php://input'), true);
 $match_id = isset($data['match_id']) ? intval($data['match_id']) : 0;
@@ -29,7 +35,7 @@ try {
     $match = $database->fetchOne(
         "SELECT m.id, m.osy_id, m.opportunity_id, m.ai_insight,
                 p.primary_skill, p.skills, p.interests, p.education_level,
-                o.title, o.description, o.certification
+                o.title, o.description, o.certification, o.provider_id
          FROM osy_matches m
          JOIN osy_profiles p ON m.osy_id = p.id
          JOIN opportunities o ON m.opportunity_id = o.id
@@ -40,6 +46,10 @@ try {
 
     if (!$match) {
         throw new Exception("Match record not found.");
+    }
+
+    if ($role !== 'lydo' && (int) $match['provider_id'] !== (int) ($_SESSION['user_id'] ?? 0)) {
+        throw new Exception("You do not have permission to view this match.");
     }
 
     if (!empty($match['ai_insight'])) {
