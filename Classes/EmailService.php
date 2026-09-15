@@ -121,44 +121,62 @@ HTML;
       return ['success' => false, 'message' => 'Recipient email address is missing.'];
     }
 
-    $mail = new PHPMailer(true); // Enable exceptions
+    $attempts = [
+      ['port' => 587, 'secure' => PHPMailer::ENCRYPTION_STARTTLS, 'label' => 'STARTTLS on 587'],
+      ['port' => 465, 'secure' => PHPMailer::ENCRYPTION_SMTPS, 'label' => 'SSL on 465'],
+    ];
 
-    try {
-      // SMTP server configuration
-      $mail->isSMTP();
-      $mail->Host       = $this->host;
-      $mail->SMTPAuth   = true;
-      $mail->Username   = $this->user;
-      $mail->Password   = $this->pass;
-      $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-      $mail->Port       = $this->port;
-      $mail->Timeout    = 30;
+    $lastError = '';
 
-      // Sender & recipient
-      $mail->setFrom($this->user, 'Youth Profiling System');
-      $mail->addAddress($to);
+    foreach ($attempts as $attempt) {
+      $mail = new PHPMailer(true); // Enable exceptions
 
-      // Email content
-      $mail->isHTML(true);
-      $mail->CharSet = 'UTF-8';
-      $mail->Subject = $subject;
-      $mail->Body    = $message;
-      // Auto-generate a plain-text fallback from the HTML
-      $mail->AltBody = strip_tags(str_replace(['<br>', '<br/>', '<br />', '</p>'], "\n", $message));
+      try {
+        $mail->isSMTP();
+        $mail->Host       = $this->host;
+        $mail->SMTPAuth   = true;
+        $mail->Username   = $this->user;
+        $mail->Password   = $this->pass;
+        $mail->SMTPSecure = $attempt['secure'];
+        $mail->Port       = $attempt['port'];
+        $mail->Timeout    = 20;
 
-      $mail->send();
+        $mail->setFrom($this->user, 'Youth Profiling System');
+        $mail->addAddress($to);
 
-      // Log success
-      $logEntry = date('Y-m-d H:i:s') . " | Email SENT | To: $to | Subject: $subject\n";
-      @file_put_contents(__DIR__ . '/../email_log.txt', $logEntry, FILE_APPEND);
+        $mail->isHTML(true);
+        $mail->CharSet = 'UTF-8';
+        $mail->Subject = $subject;
+        $mail->Body    = $message;
+        $mail->AltBody = strip_tags(str_replace(['<br>', '<br/>', '<br />', '</p>'], "\n", $message));
 
-      return ['success' => true, 'message' => 'Email sent successfully via Gmail.'];
-    } catch (PHPMailerException $e) {
-      // Log failure
-      $logEntry = date('Y-m-d H:i:s') . " | Email FAILED | To: $to | Error: {$mail->ErrorInfo}\n";
-      @file_put_contents(__DIR__ . '/../email_log.txt', $logEntry, FILE_APPEND);
+        $mail->send();
 
-      return ['success' => false, 'message' => 'Email error: ' . $mail->ErrorInfo];
+        $logEntry = date('Y-m-d H:i:s') . " | Email SENT | To: $to | Subject: $subject\n";
+        @file_put_contents(__DIR__ . '/../email_log.txt', $logEntry, FILE_APPEND);
+
+        return ['success' => true, 'message' => 'Email sent successfully via Gmail.'];
+      } catch (PHPMailerException $e) {
+        $lastError = $mail->ErrorInfo ?: $e->getMessage();
+
+        $logEntry = date('Y-m-d H:i:s') . " | Email FAILED | To: $to | Attempt: {$attempt['label']} | Error: {$lastError}\n";
+        @file_put_contents(__DIR__ . '/../email_log.txt', $logEntry, FILE_APPEND);
+
+        if (stripos($lastError, 'Connection timed out') !== false || stripos($lastError, 'Failed to connect to server') !== false) {
+          continue;
+        }
+
+        return ['success' => false, 'message' => 'Email error: ' . $lastError];
+      }
     }
+
+    if (stripos($lastError, 'Connection timed out') !== false || stripos($lastError, 'Failed to connect to server') !== false) {
+      return [
+        'success' => false,
+        'message' => 'Email error: SMTP connection timed out. This usually means the deployed host is blocking outbound SMTP on port 587/465 or the server cannot reach smtp.gmail.com.'
+      ];
+    }
+
+    return ['success' => false, 'message' => 'Email error: ' . $lastError];
   }
 }
