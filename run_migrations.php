@@ -78,9 +78,9 @@ try {
 
 // Seed default rows for system_settings
 $defaultSettings = [
-    'traccar_token'    => '',
-    'gmail_user'       => '',
-    'gmail_app_password' => '',
+    'traccar_token'      => '',
+    'brevo_api_key'      => '',
+    'brevo_sender_email' => '',
     'system_name'      => 'Youth Profiling System',
     'system_version'   => '1.0.0',
 ];

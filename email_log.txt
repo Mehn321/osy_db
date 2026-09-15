@@ -147,3 +147,5 @@
 2026-09-15 02:05:26 | Email SENT | To: dummyseeker22+admin11@gmail.com | Subject: Password Reset Verification Code
 2026-09-15 02:09:54 | Email SENT | To: dummyseeker22+admin11@gmail.com | Subject: Password Reset Verification Code (Resend)
 2026-09-15 02:51:45 | Email SENT | To: dummyseeker22+admin11@gmail.com | Subject: Password Reset Verification Code (Resend)
+2026-09-15 06:42:02 | Brevo API | HTTP 401 | To: aclonhemday@gmail.com | Subject: System Test
+2026-09-15 06:43:37 | Brevo API | HTTP 201 | To: aclonhemday@gmail.com | Subject: System Test

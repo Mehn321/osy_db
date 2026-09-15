@@ -39,10 +39,10 @@ $conversation = $current_osy_id > 0 ? $messagesObj->getConversation($current_osy
 
 // Check if SMS/Email is configured (to show warnings)
 $settings = [];
-$raw = $database->fetchAll("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('traccar_token','gmail_user','gmail_app_password')");
+$raw = $database->fetchAll("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('traccar_token','brevo_api_key','brevo_sender_email')");
 foreach ($raw as $s) $settings[$s['setting_key']] = $s['setting_value'];
 $smsConfigured   = !empty($settings['traccar_token']);
-$emailConfigured = !empty($settings['gmail_user']) && !empty($settings['gmail_app_password']);
+$emailConfigured = !empty($settings['brevo_api_key']) && !empty($settings['brevo_sender_email']);
 ?>
 <?php require_once __DIR__ . '/../includes/header.php'; ?>
 
@@ -213,7 +213,7 @@ $emailConfigured = !empty($settings['gmail_user']) && !empty($settings['gmail_ap
                                     </span>
                                 </label>
                                 <label class="flex items-center gap-1.5 cursor-pointer select-none">
-                                    <input type="checkbox" id="chkEmail" class="rounded border-slate-300 text-blue-900 focus:ring-blue-900 w-3.5 h-3.5" <?php echo !$emailConfigured ? 'disabled title="Configure Gmail SMTP in Settings"' : ''; ?>>
+                                    <input type="checkbox" id="chkEmail" class="rounded border-slate-300 text-blue-900 focus:ring-blue-900 w-3.5 h-3.5" <?php echo !$emailConfigured ? 'disabled title="Configure Brevo API in Settings"' : ''; ?>>
                                     <span class="text-[11px] font-semibold text-slate-500 flex items-center gap-1 <?php echo !$emailConfigured ? 'opacity-40' : ''; ?>">
                                         <span class="material-symbols-outlined text-[13px]">email</span>Also send Email
                                     </span>

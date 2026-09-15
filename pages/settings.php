@@ -60,7 +60,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $activeTab = 'security';
         } elseif (isset($_POST['update_notifications'])) {
-            $fields = ['traccar_token', 'gmail_user', 'gmail_app_password'];
+            $fields = ['traccar_token', 'brevo_api_key', 'brevo_sender_email'];
             foreach ($fields as $f) {
                 // Use INSERT ... ON DUPLICATE KEY UPDATE so new keys are created automatically
                 $database->execute(
@@ -88,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif (isset($_POST['test_email'])) {
             require_once __DIR__ . '/../Classes/EmailService.php';
             $email = new EmailService($database);
-            $testResult = $email->send($_POST['test_email_addr'] ?? '', "System Test", "<h1>Test Successful</h1><p>Your Gmail SMTP setup is working perfectly!</p>");
+            $testResult = $email->send($_POST['test_email_addr'] ?? '', "System Test", "<h1>Test Successful</h1><p>Your Brevo API setup is working perfectly!</p>");
             $message = $testResult['message'];
             $messageType = $testResult['success'] ? 'success' : 'error';
             $activeTab = 'notifications';
@@ -303,20 +303,23 @@ $scoringPct = $syncStats['total_possible'] > 0
                         </div>
                     </div>
 
-                    <!-- Gmail SMTP Section -->
+                    <!-- Brevo API Section -->
                     <div class="space-y-4">
-                        <div class="flex items-center gap-2 text-red-600 dark:text-red-400 mb-4">
-                            <span class="material-symbols-outlined text-xl">mail</span>
-                            <h4 class="font-bold uppercase tracking-widest text-xs">Gmail Official SMTP</h4>
+                        <div class="flex items-center gap-2 text-blue-600 dark:text-blue-400 mb-4">
+                            <span class="material-symbols-outlined text-xl">api</span>
+                            <h4 class="font-bold uppercase tracking-widest text-xs">Brevo API Configuration</h4>
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-5 bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-200 dark:border-slate-700">
                             <div>
-                                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Gmail Address</label>
-                                <input type="email" name="gmail_user" value="<?php echo htmlspecialchars($sys_settings['gmail_user'] ?? ''); ?>" placeholder="example@gmail.com" class="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-900" />
+                                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Brevo API Key (v3)</label>
+                                <div class="relative">
+                                    <input type="password" name="brevo_api_key" value="<?php echo htmlspecialchars($sys_settings['brevo_api_key'] ?? ''); ?>" placeholder="xkeysib-..." class="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-900" />
+                                    <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 toggle-password-btn"><span class="material-symbols-outlined">visibility</span></button>
+                                </div>
                             </div>
                             <div>
-                                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Gmail App Password</label>
-                                <input type="password" name="gmail_app_password" value="<?php echo htmlspecialchars($sys_settings['gmail_app_password'] ?? ''); ?>" placeholder="16-character code" class="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-900" />
+                                <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Verified Sender Email</label>
+                                <input type="email" name="brevo_sender_email" value="<?php echo htmlspecialchars($sys_settings['brevo_sender_email'] ?? ''); ?>" placeholder="sender@yourdomain.com" class="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-900" />
                             </div>
                         </div>
                     </div>
@@ -348,7 +351,7 @@ $scoringPct = $syncStats['total_possible'] > 0
                         <!-- Test Email form -->
                         <form method="POST" class="space-y-4">
                             <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
-                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest">Test Gmail SMTP</label>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest">Test Brevo API Email</label>
                             <div class="flex gap-2">
                                 <input type="email" name="test_email_addr" placeholder="Enter recipient email" class="flex-1 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-sm rounded-lg" />
                                 <button type="submit" name="test_email" class="px-4 py-2 bg-slate-900 text-white text-xs font-bold rounded-lg hover:bg-slate-800">Send Test</button>

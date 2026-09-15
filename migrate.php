@@ -21,8 +21,8 @@ try {
 
     $defaultSettings = [
         'traccar_token' => '',
-        'gmail_user' => '',
-        'gmail_app_password' => ''
+        'brevo_api_key' => '',
+        'brevo_sender_email' => ''
     ];
     foreach ($defaultSettings as $k => $val) {
         $conn->query("INSERT IGNORE INTO `system_settings` (`setting_key`, `setting_value`)

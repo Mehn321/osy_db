@@ -34,7 +34,7 @@ if ($action === 'test_email') {
         'System Test – Youth Profiling System',
         "<div style='font-family:sans-serif;max-width:500px;margin:0 auto;padding:30px;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0'>
           <h2 style='color:#1e3a8a;margin:0 0 16px'>✅ Email Test Successful!</h2>
-          <p style='color:#374151'>Your Gmail SMTP configuration is working correctly.</p>
+          <p style='color:#374151'>Your Brevo API configuration is working correctly.</p>
           <p style='color:#6b7280;font-size:13px;margin-top:20px'>Sent at: " . date('F d, Y h:i A') . "<br>From: Youth Profiling System</p>
         </div>"
     );
