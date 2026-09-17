@@ -15,21 +15,38 @@ class Dashboard
         $this->db = $database;
     }
 
-    /**
-     * Get dashboard statistics
-     */
     public function getStats()
     {
+        $profileStats = $this->db->fetchOne("
+            SELECT 
+                COUNT(*) as total_kk,
+                SUM(IF(profile_type = 'OSY', 1, 0)) as total_osy,
+                SUM(IF(status = 'Active', 1, 0)) as active_osy,
+                SUM(IF(status = 'Employed', 1, 0)) as employed_osy
+            FROM osy_profiles
+        ");
+
+        $matchStats = $this->db->fetchOne("
+            SELECT 
+                COUNT(*) as total_matches,
+                SUM(IF(status = 'Accepted', 1, 0)) as accepted_matches,
+                SUM(IF(status = 'Pending', 1, 0)) as pending_matches
+            FROM osy_matches
+        ");
+
+        $totalOpportunities = $this->db->fetchOne("SELECT COUNT(*) as total FROM opportunities WHERE status = 'Open'")['total'] ?? 0;
+        $totalNotifications = $this->db->fetchOne("SELECT COUNT(*) as total FROM notifications")['total'] ?? 0;
+
         return [
-            'total_kk' => $this->getTotalKK(),
-            'total_osy' => $this->getTotalOSY(),
-            'active_osy' => $this->getActiveOSY(),
-            'employed_osy' => $this->getEmployedOSY(),
-            'total_opportunities' => $this->getTotalOpportunities(),
-            'total_matches' => $this->getTotalMatches(),
-            'accepted_matches' => $this->getAcceptedMatches(),
-            'pending_matches' => $this->getPendingMatches(),
-            'total_notifications_sent' => $this->getTotalNotificationsSent()
+            'total_kk' => $profileStats['total_kk'] ?? 0,
+            'total_osy' => $profileStats['total_osy'] ?? 0,
+            'active_osy' => $profileStats['active_osy'] ?? 0,
+            'employed_osy' => $profileStats['employed_osy'] ?? 0,
+            'total_opportunities' => $totalOpportunities,
+            'total_matches' => $matchStats['total_matches'] ?? 0,
+            'accepted_matches' => $matchStats['accepted_matches'] ?? 0,
+            'pending_matches' => $matchStats['pending_matches'] ?? 0,
+            'total_notifications_sent' => $totalNotifications
         ];
     }
 
@@ -38,18 +55,20 @@ class Dashboard
      */
     public function getSKStats($barangay)
     {
-        $stats = [];
+        $stats = $this->db->fetchOne("
+            SELECT 
+                COUNT(*) as total_kk,
+                SUM(IF(verification_status IN ('Pending', 'Drafting', 'Action Required'), 1, 0)) as pending_verification,
+                SUM(IF(verification_status = 'Verified', 1, 0)) as verified_youth
+            FROM osy_profiles 
+            WHERE barangay = ?
+        ", [$barangay], 's');
 
-        $res = $this->db->fetchOne("SELECT COUNT(*) as cnt FROM osy_profiles WHERE barangay = ?", [$barangay]);
-        $stats['total_kk'] = $res['cnt'] ?? 0;
-
-        $res = $this->db->fetchOne("SELECT COUNT(*) as cnt FROM osy_profiles WHERE barangay = ? AND verification_status IN ('Pending', 'Drafting', 'Action Required')", [$barangay]);
-        $stats['pending_verification'] = $res['cnt'] ?? 0;
-
-        $res = $this->db->fetchOne("SELECT COUNT(*) as cnt FROM osy_profiles WHERE barangay = ? AND verification_status = 'Verified'", [$barangay]);
-        $stats['verified_youth'] = $res['cnt'] ?? 0;
-
-        return $stats;
+        return [
+            'total_kk' => $stats['total_kk'] ?? 0,
+            'pending_verification' => $stats['pending_verification'] ?? 0,
+            'verified_youth' => $stats['verified_youth'] ?? 0
+        ];
     }
 
     /**

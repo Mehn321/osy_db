@@ -304,9 +304,16 @@ class Database
      */
     public function initializeSchema($filePath)
     {
+        $lockFile = dirname(__DIR__) . '/.db_initialized';
+        if (file_exists($lockFile)) {
+            return;
+        }
+
         if (!$this->hasTables()) {
             $this->importSqlFile($filePath);
         }
+        
+        file_put_contents($lockFile, '1');
     }
 
     /**

@@ -66,9 +66,9 @@ try {
 }
 
 // Run migrations silently
-if (file_exists(__DIR__ . '/migrate.php')) {
-    require_once __DIR__ . '/migrate.php';
-}
+// if (file_exists(__DIR__ . '/migrate.php')) {
+//     require_once __DIR__ . '/migrate.php';
+// }
 
 // Initialize core classes
 $user = new User($database);
