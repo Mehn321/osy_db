@@ -10,13 +10,7 @@ $userRole = $_SESSION['role'];
 
 require_once __DIR__ . '/../includes/header.php';
 
-// Fetch only "Vocational Training" or "Scholarship" type opportunities created by this user
-$query = "SELECT * FROM opportunities WHERE created_by = ? AND type IN ('Vocational Training', 'Scholarship') ORDER BY created_at DESC";
-$programs = $database->fetchAll($query, [$userId]);
-
-$totalPrograms = count($programs);
-$activePrograms = 0;
-foreach ($programs as $p) if ($p['status'] === 'Open') $activePrograms++;
+// Note: Heavy DB querying removed, using AJAX now
 ?>
 
 <div class="mb-10">
@@ -38,7 +32,7 @@ foreach ($programs as $p) if ($p['status'] === 'Open') $activePrograms++;
         </div>
         <div>
             <p class="text-sm font-bold text-slate-500 uppercase tracking-wider">Total Programs</p>
-            <h3 class="text-3xl font-black text-slate-900 dark:text-white"><?php echo $totalPrograms; ?></h3>
+            <h3 id="statTotal" class="text-3xl font-black text-slate-900 dark:text-white"><div class="skeleton-pulse h-8 w-16 rounded mt-1"></div></h3>
         </div>
     </div>
     <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 flex items-center gap-4">
@@ -47,7 +41,7 @@ foreach ($programs as $p) if ($p['status'] === 'Open') $activePrograms++;
         </div>
         <div>
             <p class="text-sm font-bold text-slate-500 uppercase tracking-wider">Active Enrollment</p>
-            <h3 class="text-3xl font-black text-slate-900 dark:text-white"><?php echo $activePrograms; ?></h3>
+            <h3 id="statActive" class="text-3xl font-black text-slate-900 dark:text-white"><div class="skeleton-pulse h-8 w-16 rounded mt-1"></div></h3>
         </div>
     </div>
 </div>
@@ -60,60 +54,75 @@ foreach ($programs as $p) if ($p['status'] === 'Open') $activePrograms++;
                     <th class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Program Title</th>
                     <th class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Type</th>
                     <th class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Slots</th>
-                    <th class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Applicants</th>
                     <th class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider text-right">Actions</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-slate-200 dark:divide-slate-700">
-                <?php if (!empty($programs)): ?>
-                    <?php foreach ($programs as $prog):
-                        $appCountRes = $database->fetchOne("SELECT COUNT(*) as cnt FROM osy_matches WHERE opportunity_id = ?", [$prog['id']]);
-                        $appCount = $appCountRes['cnt'] ?? 0;
-                    ?>
-                        <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
-                            <td class="px-6 py-4">
-                                <p class="font-bold text-slate-900 dark:text-white"><?php echo htmlspecialchars($prog['title']); ?></p>
-                                <p class="text-xs text-slate-500 dark:text-slate-400">Deadline: <?php echo $prog['deadline'] ? date('M d, Y', strtotime($prog['deadline'])) : 'Open'; ?></p>
-                            </td>
-                            <td class="px-6 py-4">
-                                <span class="text-xs font-medium text-slate-600 dark:text-slate-400"><?php echo htmlspecialchars($prog['type']); ?></span>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
-                                <span class="font-bold"><?php echo $prog['total_slots']; ?></span> Slots
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex flex-col">
-                                    <span class="text-sm font-black text-indigo-900 dark:text-indigo-400"><?php echo $appCount; ?> Enrolled</span>
-                                    <div class="w-24 h-1.5 bg-slate-100 rounded-full mt-1 overflow-hidden">
-                                        <?php $fill = $prog['total_slots'] > 0 ? ($appCount / $prog['total_slots']) * 100 : 0; ?>
-                                        <div class="h-full bg-indigo-500" style="width: <?php echo min(100, $fill); ?>%"></div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 text-right">
-                                <div class="flex items-center justify-end gap-2">
-                                    <a href="matching.php?opportunity_id=<?php echo $prog['id']; ?>" class="p-2 text-slate-400 hover:text-indigo-900 transition-colors" title="View Applicants">
-                                        <span class="material-symbols-outlined text-xl">group</span>
-                                    </a>
-                                    <a href="training-programs.php?edit_id=<?php echo $prog['id']; ?>" class="p-2 text-slate-400 hover:text-indigo-900 transition-colors" title="Edit Program">
-                                        <span class="material-symbols-outlined text-xl">edit</span>
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <tr>
-                        <td colspan="5" class="px-6 py-20 text-center text-slate-500">
-                            <span class="material-symbols-outlined text-5xl opacity-20 mb-4 block">school</span>
-                            <p class="text-lg font-medium">You haven't posted any training programs yet.</p>
-                            <a href="training-programs.php?create=1" class="text-indigo-900 font-bold hover:underline mt-2 inline-block">Post your first program</a>
-                        </td>
-                    </tr>
-                <?php endif; ?>
+            <tbody id="programsTableBody" class="divide-y divide-slate-200 dark:divide-slate-700">
+                <?php for ($i=0; $i<3; $i++): ?>
+                <tr class="skeleton-row">
+                    <td class="px-6 py-4"><div class="skeleton-pulse h-5 w-40 rounded mb-1"></div><div class="skeleton-pulse h-3 w-32 rounded"></div></td>
+                    <td class="px-6 py-4"><div class="skeleton-pulse h-4 w-24 rounded"></div></td>
+                    <td class="px-6 py-4"><div class="skeleton-pulse h-4 w-16 rounded"></div></td>
+                    <td class="px-6 py-4 flex justify-end gap-2"><div class="skeleton-pulse h-8 w-8 rounded"></div><div class="skeleton-pulse h-8 w-8 rounded"></div></td>
+                </tr>
+                <?php endfor; ?>
             </tbody>
         </table>
     </div>
 </div>
+
+<script>
+(function() {
+    fetch('../api/get_opportunities_data.php')
+        .then(r => r.json())
+        .then(res => {
+            if (!res.success) return;
+            
+            // Filter to only show Training/Scholarship types for this specific page
+            const programs = (res.opportunities || []).filter(o => o.type !== 'Job Opening');
+            let active = 0;
+            
+            let html = '';
+            if (programs.length === 0) {
+                html = `<tr><td colspan="4" class="px-6 py-20 text-center text-slate-500"><span class="material-symbols-outlined text-5xl opacity-20 mb-4 block">school</span><p class="text-lg font-medium">You haven't posted any training programs yet.</p><a href="training-programs.php?create=1" class="text-indigo-900 font-bold hover:underline mt-2 inline-block">Post your first program</a></td></tr>`;
+            } else {
+                programs.forEach(prog => {
+                    if (prog.status === 'Open') active++;
+                    const deadline = prog.deadline ? new Date(prog.deadline).toLocaleDateString('en-US', {month:'short',day:'2-digit',year:'numeric'}) : 'Open';
+                    
+                    html += `
+                    <tr class="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                        <td class="px-6 py-4">
+                            <p class="font-bold text-slate-900 dark:text-white">${prog.title}</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Deadline: ${deadline}</p>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="text-xs font-medium text-slate-600 dark:text-slate-400">${prog.type}</span>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">
+                            <span class="font-bold">${prog.total_slots}</span> Slots
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <div class="flex items-center justify-end gap-2">
+                                <a href="matching.php?opportunity_id=${prog.id}" class="p-2 text-slate-400 hover:text-indigo-900 transition-colors" title="View Applicants"><span class="material-symbols-outlined text-xl">group</span></a>
+                                <a href="training-programs.php?edit_id=${prog.id}" class="p-2 text-slate-400 hover:text-indigo-900 transition-colors" title="Edit Program"><span class="material-symbols-outlined text-xl">edit</span></a>
+                            </div>
+                        </td>
+                    </tr>`;
+                });
+            }
+            
+            document.getElementById('programsTableBody').innerHTML = html;
+            document.getElementById('statTotal').textContent = programs.length;
+            document.getElementById('statActive').textContent = active;
+        });
+})();
+</script>
+
+<style>
+.skeleton-pulse { background: linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%); background-size: 200% 100%; animation: skeleton-shimmer 1.4s ease-in-out infinite; display: block; }
+.dark .skeleton-pulse { background: linear-gradient(90deg,#1e293b 25%,#334155 50%,#1e293b 75%); background-size: 200% 100%; }
+@keyframes skeleton-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+</style>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

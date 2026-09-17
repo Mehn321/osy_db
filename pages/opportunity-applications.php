@@ -46,10 +46,7 @@ if ($_SESSION['role'] !== 'lydo' && (int) $opportunity['provider_id'] !== (int) 
     exit('Access denied. You can only view applications for your own opportunities.');
 }
 
-// Retrieve all applications (matches) for this opportunity
-$matching = new Matching($database);
-$applications = $matching->getMatchesForOpportunity($opportunityId);
-
+// Retrieve applications query removed, using AJAX now
 require_once __DIR__ . '/../includes/header.php';
 ?>
 
@@ -64,33 +61,17 @@ require_once __DIR__ . '/../includes/header.php';
         </div>
     <?php endif; ?>
 
-    <?php if (empty($applications)): ?>
-        <p class="text-gray-600">No applications submitted yet.</p>
-    <?php else: ?>
-        <!-- Client-side Filters -->
-        <div class="mb-6 bg-white dark:bg-slate-800 p-4 rounded-lg shadow border border-slate-200 dark:border-slate-700 flex flex-wrap gap-4 items-end">
-            <div class="flex-1 min-w-[200px]">
-                <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase pl-1">Search Applicants</label>
-                <input type="text" id="applicant_search" data-target=".applicant-row" data-filter-type="search" placeholder="Search by name, email, phone or skill..."
-                    class="client-filter w-full bg-slate-100 dark:bg-slate-700 rounded-lg py-2 px-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all" />
-            </div>
-            <div>
-                <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase pl-1">Filter by Status</label>
-                <select id="applicant_status" data-target=".applicant-row" data-filter-type="exact" data-filter-attr="status"
-                    class="client-filter bg-slate-100 dark:bg-slate-700 rounded-lg py-2 px-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all">
-                    <option value="All">All Statuses</option>
-                    <option value="Pending">Pending</option>
     <!-- Client-side Filters -->
     <div class="mb-6 bg-white dark:bg-slate-800 p-4 rounded-lg shadow border border-slate-200 dark:border-slate-700 flex flex-wrap gap-4 items-end">
         <div class="flex-1 min-w-[200px]">
             <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase pl-1">Search Applicants</label>
-            <input type="text" id="applicant_search" data-target=".applicant-row" data-filter-type="search" placeholder="Search by name, email, phone or skill..."
-                class="client-filter w-full bg-slate-100 dark:bg-slate-700 rounded-lg py-2 px-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all" />
+            <input type="text" id="applicant_search" placeholder="Search by name, email, phone or skill..."
+                class="w-full bg-slate-100 dark:bg-slate-700 rounded-lg py-2 px-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all" />
         </div>
         <div>
             <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase pl-1">Filter by Status</label>
-            <select id="applicant_status" data-target=".applicant-row" data-filter-type="exact" data-filter-attr="status"
-                class="client-filter bg-slate-100 dark:bg-slate-700 rounded-lg py-2 px-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all">
+            <select id="applicant_status"
+                class="bg-slate-100 dark:bg-slate-700 rounded-lg py-2 px-3 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all">
                 <option value="All">All Statuses</option>
                 <option value="Pending">Pending</option>
                 <option value="Accepted">Accepted</option>
@@ -112,54 +93,117 @@ require_once __DIR__ . '/../includes/header.php';
                     <?php endif; ?>
                 </tr>
             </thead>
-            <tbody>
-                <?php if (empty($applications)): ?>
-                    <tr><td colspan="5" class="px-4 py-4 text-center text-gray-500">No applications submitted yet.</td></tr>
-                <?php else: ?>
-                    <?php foreach ($applications as $app): ?>
-                        <tr class="applicant-row border-b border-gray-200 dark:border-slate-700" data-status="<?= htmlspecialchars($app['status']) ?>">
-                            <td class="px-4 py-2">
-                                <?= htmlspecialchars($app['first_name'] . ' ' . $app['last_name']) ?><br>
-                                <span class="text-sm text-gray-500 dark:text-gray-400"><?= htmlspecialchars($app['email'] . ' | ' . $app['phone']) ?></span>
-                            </td>
-                            <td class="px-4 py-2 text-center"><?= htmlspecialchars($app['age'] ?? '-') ?></td>
-                            <td class="px-4 py-2"><?= htmlspecialchars($app['primary_skill'] ?? '-') ?></td>
-                            <td class="px-4 py-2">
-                                <span class="inline-block px-2 py-1 text-xs rounded <?= $app['status'] === 'Accepted' ? 'bg-emerald-100 text-emerald-800' : ($app['status'] === 'Rejected' ? 'bg-rose-100 text-rose-800' : 'bg-yellow-100 text-yellow-800') ?>">
-                                    <?= htmlspecialchars($app['status']) ?>
-                                </span>
-                            </td>
-                            <?php if ($_SESSION['role'] !== 'youth'): ?>
-                            <td class="px-4 py-2 text-center">
-                                <?php if ($app['status'] === 'Pending'): ?>
-                                    <form method="POST" class="inline" style="margin:0;">
-                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(getCsrfToken()) ?>">
-                                        <input type="hidden" name="form_nonce" value="<?= htmlspecialchars(getFormNonce()) ?>">
-                                        <input type="hidden" name="match_id" value="<?= $app['id'] ?>">
-                                        <input type="hidden" name="new_status" value="Accepted">
-                                        <button type="submit" class="px-2 py-1 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-xs">Accept</button>
-                                    </form>
-                                    <form method="POST" class="inline" style="margin:0;">
-                                        <input type="hidden" name="csrf_token" value="<?= htmlspecialchars(getCsrfToken()) ?>">
-                                        <input type="hidden" name="form_nonce" value="<?= htmlspecialchars(getFormNonce()) ?>">
-                                        <input type="hidden" name="match_id" value="<?= $app['id'] ?>">
-                                        <input type="hidden" name="new_status" value="Rejected">
-                                        <button type="submit" class="px-2 py-1 bg-rose-600 text-white rounded hover:bg-rose-700 text-xs">Reject</button>
-                                    </form>
-                                <?php else: ?>
-                                    —
-                                <?php endif; ?>
-                            </td>
-                            <?php endif; ?>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php endif; ?>
+            <tbody id="applicationsTableBody">
+                <?php for ($i=0; $i<4; $i++): ?>
+                <tr class="skeleton-row border-b border-gray-200 dark:border-slate-700">
+                    <td class="px-4 py-2"><div class="skeleton-pulse h-4 w-32 rounded mb-1"></div><div class="skeleton-pulse h-3 w-48 rounded"></div></td>
+                    <td class="px-4 py-2 text-center"><div class="skeleton-pulse h-4 w-8 rounded mx-auto"></div></td>
+                    <td class="px-4 py-2"><div class="skeleton-pulse h-4 w-24 rounded"></div></td>
+                    <td class="px-4 py-2"><div class="skeleton-pulse h-6 w-16 rounded"></div></td>
+                    <?php if ($_SESSION['role'] !== 'youth'): ?>
+                    <td class="px-4 py-2 flex justify-center gap-2"><div class="skeleton-pulse h-6 w-12 rounded"></div><div class="skeleton-pulse h-6 w-12 rounded"></div></td>
+                    <?php endif; ?>
+                </tr>
+                <?php endfor; ?>
             </tbody>
         </table>
-    <?php endif; ?>
+    </div>
+    
     <div class="mt-6">
         <a href="opportunities.php" class="text-blue-600 hover:underline">← Back to Opportunities</a>
     </div>
 </div>
+
+<script>
+(function() {
+    const oppId = <?php echo $opportunityId; ?>;
+    const isYouth = <?php echo $_SESSION['role'] === 'youth' ? 'true' : 'false'; ?>;
+    const csrfToken = "<?php echo htmlspecialchars(getCsrfToken()); ?>";
+    const formNonce = "<?php echo htmlspecialchars(getFormNonce()); ?>";
+    let allApps = [];
+
+    function renderApps() {
+        const search = document.getElementById('applicant_search').value.toLowerCase();
+        const status = document.getElementById('applicant_status').value;
+        const tbody = document.getElementById('applicationsTableBody');
+        
+        const filtered = allApps.filter(app => {
+            if (status !== 'All' && app.status !== status) return false;
+            if (search) {
+                const text = `${app.first_name} ${app.last_name} ${app.email} ${app.phone} ${app.primary_skill}`.toLowerCase();
+                if (!text.includes(search)) return false;
+            }
+            return true;
+        });
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="${isYouth ? 4 : 5}" class="px-4 py-8 text-center text-gray-500">No applications match your criteria.</td></tr>`;
+            return;
+        }
+
+        let html = '';
+        filtered.forEach(app => {
+            const statusClass = app.status === 'Accepted' ? 'bg-emerald-100 text-emerald-800' : (app.status === 'Rejected' ? 'bg-rose-100 text-rose-800' : 'bg-yellow-100 text-yellow-800');
+            
+            let actions = '—';
+            if (!isYouth && app.status === 'Pending') {
+                actions = `
+                <form method="POST" class="inline m-0">
+                    <input type="hidden" name="csrf_token" value="${csrfToken}">
+                    <input type="hidden" name="form_nonce" value="${formNonce}">
+                    <input type="hidden" name="match_id" value="${app.id}">
+                    <input type="hidden" name="new_status" value="Accepted">
+                    <button type="submit" class="px-2 py-1 bg-emerald-600 text-white rounded hover:bg-emerald-700 text-xs">Accept</button>
+                </form>
+                <form method="POST" class="inline m-0">
+                    <input type="hidden" name="csrf_token" value="${csrfToken}">
+                    <input type="hidden" name="form_nonce" value="${formNonce}">
+                    <input type="hidden" name="match_id" value="${app.id}">
+                    <input type="hidden" name="new_status" value="Rejected">
+                    <button type="submit" class="px-2 py-1 bg-rose-600 text-white rounded hover:bg-rose-700 text-xs">Reject</button>
+                </form>`;
+            }
+
+            html += `
+            <tr class="border-b border-gray-200 dark:border-slate-700">
+                <td class="px-4 py-2">
+                    ${app.first_name} ${app.last_name}<br>
+                    <span class="text-sm text-gray-500 dark:text-gray-400">${app.email} | ${app.phone}</span>
+                </td>
+                <td class="px-4 py-2 text-center">${app.age || '-'}</td>
+                <td class="px-4 py-2">${app.primary_skill || '-'}</td>
+                <td class="px-4 py-2">
+                    <span class="inline-block px-2 py-1 text-xs rounded ${statusClass}">${app.status}</span>
+                </td>
+                ${!isYouth ? `<td class="px-4 py-2 text-center">${actions}</td>` : ''}
+            </tr>`;
+        });
+        tbody.innerHTML = html;
+    }
+
+    fetch(`../api/get_matching_data.php?opportunity_id=${oppId}`)
+        .then(r => r.json())
+        .then(res => {
+            if (res.success && res.matches) {
+                allApps = res.matches;
+                renderApps();
+            } else {
+                document.getElementById('applicationsTableBody').innerHTML = `<tr><td colspan="${isYouth ? 4 : 5}" class="px-4 py-8 text-center text-red-500">Failed to load data.</td></tr>`;
+            }
+        })
+        .catch(() => {
+            document.getElementById('applicationsTableBody').innerHTML = `<tr><td colspan="${isYouth ? 4 : 5}" class="px-4 py-8 text-center text-red-500">Network error.</td></tr>`;
+        });
+
+    document.getElementById('applicant_search').addEventListener('input', renderApps);
+    document.getElementById('applicant_status').addEventListener('change', renderApps);
+})();
+</script>
+
+<style>
+.skeleton-pulse { background: linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%); background-size: 200% 100%; animation: skeleton-shimmer 1.4s ease-in-out infinite; display: block; }
+.dark .skeleton-pulse { background: linear-gradient(90deg,#1e293b 25%,#334155 50%,#1e293b 75%); background-size: 200% 100%; }
+@keyframes skeleton-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+</style>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

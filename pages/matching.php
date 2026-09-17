@@ -113,7 +113,6 @@ if (!canManageMatchingOpportunity($selectedOpportunity)) {
     $selectedOpportunityId = null;
 }
 $minScore = $filters['min_score'];
-$matches_for_opportunity = $selectedOpportunityId ? $matching->getMatchesForOpportunity($selectedOpportunityId, $minScore) : [];
 ?>
 
 <!-- Page Header -->
@@ -170,7 +169,7 @@ $matches_for_opportunity = $selectedOpportunityId ? $matching->getMatchesForOppo
                 </div>
                 <div class="flex items-center gap-2 px-4 py-2 bg-slate-100 dark:bg-slate-700 rounded-lg border border-slate-200 dark:border-slate-600">
                     <span class="material-symbols-outlined text-blue-900 dark:text-blue-400 text-xl">people</span>
-                    <span id="heroMatchCount" class="font-semibold text-sm text-slate-900 dark:text-white"><?php echo count($matches_for_opportunity); ?> candidates found</span>
+                    <span id="heroMatchCount" class="font-semibold text-sm text-slate-900 dark:text-white"><span id="totalMatchesCount">0</span> candidates found</span>
                 </div>
             </div>
         </div>
@@ -272,11 +271,12 @@ $matches_for_opportunity = $selectedOpportunityId ? $matching->getMatchesForOppo
 </div>
 
 <script>
+(function() {
     // Preview Logic Script
-    var sampleName = "<?php echo !empty($acceptedMatches) ? addslashes($acceptedMatches[0]['first_name']) : 'John'; ?>";
-    var oppName = "<?php echo addslashes($selectedOpportunity['title'] ?? 'Sample Job'); ?>";
+    window.sampleName = "<?php echo !empty($acceptedMatches) ? addslashes($acceptedMatches[0]['first_name']) : 'John'; ?>";
+    window.oppName = "<?php echo addslashes($selectedOpportunity['title'] ?? 'Sample Job'); ?>";
     
-    function applyTemplate() {
+    window.applyTemplate = function() {
         const sel = document.getElementById('templateSelect');
         if (sel.value) {
             document.getElementById('customMessageArea').value = sel.value;
@@ -284,7 +284,7 @@ $matches_for_opportunity = $selectedOpportunityId ? $matching->getMatchesForOppo
         updateLivePreview();
     }
     
-    function updateLivePreview() {
+    window.updateLivePreview = function() {
         let text = document.getElementById('customMessageArea').value;
         text = text.replace(/{{name}}/g, sampleName);
         text = text.replace(/{{opportunity}}/g, oppName);
@@ -292,24 +292,13 @@ $matches_for_opportunity = $selectedOpportunityId ? $matching->getMatchesForOppo
     }
     
     // Initial run
+    if (currentOpportunityId) { loadMatchesAJAX(currentOpportunityId); }
     updateLivePreview();
+})();
 </script>
 
 
-<?php
-    $pendingMatches = [];
-    $acceptedMatches = [];
-    $rejectedMatches = [];
-    foreach ($matches_for_opportunity as $match) {
-        if ($match['status'] === 'Accepted') {
-            $acceptedMatches[] = $match;
-        } elseif ($match['status'] === 'Pending') {
-            $pendingMatches[] = $match;
-        } elseif ($match['status'] === 'Rejected') {
-            $rejectedMatches[] = $match;
-        }
-    }
-?>
+
 
 <section class="mb-10">
     <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-4 mb-6">
@@ -322,7 +311,7 @@ $matches_for_opportunity = $selectedOpportunityId ? $matching->getMatchesForOppo
                 <p class="text-sm text-slate-600 dark:text-slate-400 font-medium">Real-time candidate sorting and shortlisting.</p>
             </div>
         </div>
-        <span class="text-sm font-bold text-slate-500 bg-slate-100 py-1 px-3 rounded-full"><?php echo count($matches_for_opportunity); ?> total matches</span>
+        <span class="text-sm font-bold text-slate-500 bg-slate-100 py-1 px-3 rounded-full"><span id="totalMatchesCount">0</span> total matches</span>
     </div>
 
     <!-- Kanban Grid -->
@@ -331,33 +320,16 @@ $matches_for_opportunity = $selectedOpportunityId ? $matching->getMatchesForOppo
         <!-- LEFT COLUMN: SHORTLISTED / REJECTED TABS -->
         <div class="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 h-[800px] flex flex-col relative">
             <div class="flex border-b border-slate-200 dark:border-slate-700 mb-4">
-                <button onclick="switchTab('shortlisted')" id="tabShortlisted" class="flex-1 py-2 text-sm font-bold border-b-2 border-blue-600 text-blue-600">Shortlisted (<span id="pendingCount"><?php echo count($pendingMatches); ?></span>)</button>
-                <button onclick="switchTab('rejected')" id="tabRejected" class="flex-1 py-2 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300">Rejected (<span id="rejectedCount"><?php echo count($rejectedMatches); ?></span>)</button>
+                <button onclick="switchTab('shortlisted')" id="tabShortlisted" class="flex-1 py-2 text-sm font-bold border-b-2 border-blue-600 text-blue-600">Shortlisted (<span id="pendingCount">0</span>)</button>
+                <button onclick="switchTab('rejected')" id="tabRejected" class="flex-1 py-2 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300">Rejected (<span id="rejectedCount">0</span>)</button>
             </div>
 
+            
             <div id="colPending" class="flex-1 overflow-y-auto space-y-4 pr-2 pb-4">
-                <?php if (empty($pendingMatches)): ?>
-                    <p id="pendingEmptyMsg" class="text-xs text-center text-slate-400 mt-10">No shortlisted candidates.</p>
-                <?php else: ?>
-                    <p id="pendingEmptyMsg" class="hidden text-xs text-center text-slate-400 mt-10">No shortlisted candidates.</p>
-                <?php endif; ?>
-
-                <?php foreach ($pendingMatches as $match): ?>
-                    <?php renderMatchCard($match, 'Pending'); ?>
-                <?php endforeach; ?>
+                <div class="skeleton-pulse h-32 w-full rounded-xl"></div>
+                <div class="skeleton-pulse h-32 w-full rounded-xl"></div>
             </div>
-
-            <div id="colRejected" class="flex-1 overflow-y-auto space-y-4 pr-2 pb-4 hidden">
-                <?php if (empty($rejectedMatches)): ?>
-                    <p id="rejectedEmptyMsg" class="text-xs text-center text-slate-400 mt-10">No rejected candidates.</p>
-                <?php else: ?>
-                    <p id="rejectedEmptyMsg" class="hidden text-xs text-center text-slate-400 mt-10">No rejected candidates.</p>
-                <?php endif; ?>
-
-                <?php foreach ($rejectedMatches as $match): ?>
-                    <?php renderMatchCard($match, 'Rejected'); ?>
-                <?php endforeach; ?>
-            </div>
+            <div id="colRejected" class="flex-1 overflow-y-auto space-y-4 pr-2 pb-4 hidden"></div>
         </div>
 
         <!-- RIGHT COLUMN: ACCEPTED -->
@@ -367,18 +339,12 @@ $matches_for_opportunity = $selectedOpportunityId ? $matching->getMatchesForOppo
                     <span class="w-3 h-3 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></span>
                     Accepted
                 </h3>
-                <span id="acceptedCount" class="text-xs font-bold text-blue-700 bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded-full"><?php echo count($acceptedMatches); ?></span>
+                <span id="acceptedCount" class="text-xs font-bold text-blue-700 bg-blue-100 dark:bg-blue-900 px-2 py-1 rounded-full">0</span>
             </div>
+            
             <div id="colAccepted" class="flex-1 overflow-y-auto space-y-4 pr-2 pb-4">
-                <?php if (empty($acceptedMatches)): ?>
-                    <p id="acceptedEmptyMsg" class="text-xs text-center text-slate-400 mt-10">No candidates accepted yet.</p>
-                <?php else: ?>
-                    <p id="acceptedEmptyMsg" class="hidden text-xs text-center text-slate-400 mt-10">No candidates accepted yet.</p>
-                <?php endif; ?>
-
-                <?php foreach ($acceptedMatches as $match): ?>
-                    <?php renderMatchCard($match, 'Accepted'); ?>
-                <?php endforeach; ?>
+                <div class="skeleton-pulse h-32 w-full rounded-xl"></div>
+                <div class="skeleton-pulse h-32 w-full rounded-xl"></div>
             </div>
         </div>
     </div>
@@ -408,67 +374,12 @@ $matches_for_opportunity = $selectedOpportunityId ? $matching->getMatchesForOppo
     </div>
 </div>
 
-<?php
-// Extracted card rendering logic since we use it in both columns
-function renderMatchCard($match, $status) {
-    ?>
-    <div id="matchCard-<?php echo $match['id']; ?>" class="match-card bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-all duration-300 relative overflow-hidden group"
-         data-score="<?php echo $match['match_score']; ?>">
-        <div class="flex items-start justify-between mb-3">
-            <div class="flex items-start gap-4">
-                <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-bold text-base shadow-sm">
-                    <?php echo strtoupper(substr($match['first_name'], 0, 1)); ?>
-                </div>
-                <div>
-                    <h3 class="font-bold text-sm text-slate-900 dark:text-white"><?php echo htmlspecialchars($match['first_name'] . ' ' . $match['last_name']); ?></h3>
-                    <p class="text-[11px] text-slate-500 font-medium tracking-wide uppercase mt-0.5"><?php echo htmlspecialchars($match['primary_skill']); ?></p>
-                </div>
-            </div>
-            <div class="text-right">
-                <div class="text-2xl font-black <?php echo $match['match_score'] >= 85 ? 'text-green-600' : ($match['match_score'] >= 70 ? 'text-yellow-600' : 'text-orange-600'); ?> tracking-tighter"><?php echo $match['match_score']; ?>%</div>
-            </div>
-        </div>
-        
-        <div id="actionBtns-<?php echo $match['id']; ?>" class="flex gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-            <button onclick="showDetailsModal(<?php echo htmlspecialchars(json_encode($match)); ?>)" class="flex-1 py-1.5 px-3 bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white border border-blue-200 hover:border-blue-600 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95">
-                <span class="material-symbols-outlined text-[16px]">visibility</span> Details
-            </button>
-            <?php if ($status === 'Pending'): ?>
-                <button onclick="updateMatchStatus(<?php echo $match['id']; ?>, 'Accepted')" class="flex-1 py-1.5 px-3 bg-green-50 text-green-700 hover:bg-green-600 hover:text-white border border-green-200 hover:border-green-600 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95">
-                    <span class="material-symbols-outlined text-[16px]">how_to_reg</span> Accept
-                </button>
-                <button onclick="updateMatchStatus(<?php echo $match['id']; ?>, 'Rejected')" class="flex-1 py-1.5 px-3 bg-slate-50 text-slate-600 hover:bg-red-500 hover:text-white border border-slate-200 hover:border-red-500 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95">
-                    <span class="material-symbols-outlined text-[16px]">cancel</span> Reject
-                </button>
-            <?php elseif ($status === 'Rejected'): ?>
-                <button onclick="updateMatchStatus(<?php echo $match['id']; ?>, 'Accepted')" class="flex-1 py-1.5 px-3 bg-green-50 text-green-700 hover:bg-green-600 hover:text-white border border-green-200 hover:border-green-600 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95">
-                    <span class="material-symbols-outlined text-[16px]">how_to_reg</span> Accept
-                </button>
-            <?php elseif ($status === 'Accepted'): ?>
-                <button onclick="updateMatchStatus(<?php echo $match['id']; ?>, 'Pending')" class="flex-1 py-1.5 px-3 bg-orange-50 text-orange-700 hover:bg-orange-600 hover:text-white border border-orange-200 hover:border-orange-600 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95">
-                    <span class="material-symbols-outlined text-[16px]">undo</span> Disapprove
-                </button>
-            <?php endif; ?>
-        </div>
 
-        <!-- AI Insight Section -->
-        <div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-            <button onclick="analyzeMatchAI(<?php echo $match['id']; ?>)" id="aiBtn-<?php echo $match['id']; ?>" class="w-full py-2 px-3 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 hover:bg-blue-600 hover:text-white border border-blue-200 dark:border-blue-800 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-2">
-                <span class="material-symbols-outlined text-[18px] animate-pulse">auto_awesome</span> 
-                <?php echo !empty($match['ai_insight']) ? 'View AI Rationale' : 'Analyze with AI'; ?>
-            </button>
-            <div id="aiInsight-<?php echo $match['id']; ?>" class="hidden mt-3 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg border-l-4 border-blue-500 text-[12px] text-slate-600 dark:text-slate-300 italic leading-relaxed">
-                <?php if (!empty($match['ai_insight'])) echo htmlspecialchars($match['ai_insight']); ?>
-            </div>
-        </div>
-    </div>
-    <?php
-}
-?>
 
 <!-- Real-time Logic -->
 <script>
-    function switchTab(tab) {
+(function() {
+    window.switchTab = function(tab) {
         if (tab === 'shortlisted') {
             document.getElementById('tabShortlisted').className = 'flex-1 py-2 text-sm font-bold border-b-2 border-blue-600 text-blue-600';
             document.getElementById('tabRejected').className = 'flex-1 py-2 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300';
@@ -482,7 +393,7 @@ function renderMatchCard($match, $status) {
         }
     }
 
-    function showDetailsModal(match) {
+    window.showDetailsModal = function(match) {
         document.getElementById('mdlName').textContent = match.first_name + ' ' + match.last_name;
         document.getElementById('mdlAge').textContent = match.age || 'N/A';
         document.getElementById('mdlGender').textContent = match.gender || 'N/A';
@@ -494,12 +405,12 @@ function renderMatchCard($match, $status) {
         document.getElementById('detailsModal').classList.remove('hidden');
     }
 
-    var currentOpportunityId = <?php echo $selectedOpportunityId ?: 'null'; ?>;
-    var currentOpportunityTitle = "<?php echo addslashes($selectedOpportunity['title'] ?? ''); ?>";
+    window.currentOpportunityId = <?php echo $selectedOpportunityId ?: 'null'; ?>;
+    window.currentOpportunityTitle = "<?php echo addslashes($selectedOpportunity['title'] ?? ''); ?>";
 
-    function handleOpportunityChange(id) {
+    window.handleOpportunityChange = function(id) {
         if (!id) return;
-        currentOpportunityId = id;
+        window.currentOpportunityId = id;
         
         // Update URL without reload for state persistence
         const url = new URL(window.location);
@@ -509,7 +420,7 @@ function renderMatchCard($match, $status) {
         loadMatchesAJAX(id);
     }
 
-    async function loadMatchesAJAX(id) {
+    async window.loadMatchesAJAX = async function(id) {
         const colPending = document.getElementById('colPending');
         const colRejected = document.getElementById('colRejected');
         const colAccepted = document.getElementById('colAccepted');
@@ -535,12 +446,23 @@ function renderMatchCard($match, $status) {
                 document.getElementById('heroLocation').textContent = result.opportunity.location;
                 document.getElementById('heroDeadline').textContent = result.opportunity.deadline ? new Date(result.opportunity.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'No deadline';
                 document.getElementById('heroMatchCount').textContent = result.data.length + ' candidates found';
+
+    document.getElementById('totalMatchesCount').textContent = result.data.length;
+    document.getElementById('pendingCount').textContent = result.data.filter(m => m.status === 'Pending').length;
+    const rejEl = document.getElementById('rejectedCount'); if (rejEl) rejEl.textContent = result.data.filter(m => m.status === 'Rejected').length;
+    document.getElementById('acceptedCount').textContent = result.data.filter(m => m.status === 'Accepted').length;
+    
+    // Check if initial load
+    if (!window.initialMatchLoaded && currentOpportunityId) {
+        window.initialMatchLoaded = true;
+    }
+
                 // Broadcast info
                 const bOppName = document.getElementById('broadcastOppName');
                 const bOppId = document.getElementById('broadcastOppId');
                 if (bOppName) bOppName.textContent = result.opportunity.title;
                 if (bOppId) bOppId.value = result.opportunity.id;
-                oppName = result.opportunity.title;
+                window.oppName = result.opportunity.title;
                 updateLivePreview();
             }
             
@@ -587,6 +509,17 @@ function renderMatchCard($match, $status) {
                     document.getElementById('heroLocation').textContent = result.opportunity.location;
                     document.getElementById('heroDeadline').textContent = result.opportunity.deadline ? new Date(result.opportunity.deadline).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'No deadline';
                     document.getElementById('heroMatchCount').textContent = result.data.length + ' candidates found';
+
+    document.getElementById('totalMatchesCount').textContent = result.data.length;
+    document.getElementById('pendingCount').textContent = result.data.filter(m => m.status === 'Pending').length;
+    const rejEl = document.getElementById('rejectedCount'); if (rejEl) rejEl.textContent = result.data.filter(m => m.status === 'Rejected').length;
+    document.getElementById('acceptedCount').textContent = result.data.filter(m => m.status === 'Accepted').length;
+    
+    // Check if initial load
+    if (!window.initialMatchLoaded && currentOpportunityId) {
+        window.initialMatchLoaded = true;
+    }
+
                     
                     // Update Broadcast info
                     const bOppName = document.getElementById('broadcastOppName');
@@ -595,7 +528,7 @@ function renderMatchCard($match, $status) {
                     if (bOppId) bOppId.value = result.opportunity.id;
                     
                     // Update global JS variable for preview
-                    oppName = result.opportunity.title;
+                    window.oppName = result.opportunity.title;
                     updateLivePreview();
                 }
 
@@ -630,7 +563,7 @@ function renderMatchCard($match, $status) {
         }
     }
 
-    function renderMatchCardJS(match, status) {
+    window.renderMatchCardJS = function(match, status) {
         if (!match) return '';
         const scoreClass = match.match_score >= 85 ? 'text-green-600' : (match.match_score >= 70 ? 'text-yellow-600' : 'text-orange-600');
         const firstLetter = match.first_name ? match.first_name.charAt(0).toUpperCase() : '?';
@@ -890,6 +823,8 @@ function renderMatchCard($match, $status) {
             }
         });
     }
+})();
 </script>
 
+<style>.skeleton-pulse { background: linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%); background-size: 200% 100%; animation: skeleton-shimmer 1.4s ease-in-out infinite; display: block; } .dark .skeleton-pulse { background: linear-gradient(90deg,#1e293b 25%,#334155 50%,#1e293b 75%); background-size: 200% 100%; } @keyframes skeleton-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}</style>
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

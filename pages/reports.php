@@ -50,8 +50,7 @@ $profilingFilters = [
     'verification_status' => $filterVerification,
 ];
 
-$report = new Report($database);
-$stats = $report->generateMatchingStats($profilingFilters);
+$report = new Report($database); $stats = ["total_matches_made"=>"...", "pending_matches"=>"...", "average_match_score"=>"...", "employment_success_rate"=>"..."];
 $message = $dateError;
 $messageType = $dateError !== '' ? 'error' : '';
 
@@ -81,7 +80,7 @@ require_once __DIR__ . '/../includes/header.php';
 $reference = new Reference($database);
 $barangays = $reference->getByCategory('barangay');
 $eduLevels = $reference->getByCategory('education_level');
-$profilingCount = count($report->getYouthProfilingProfiles($profilingFilters));
+$profilingCount = 0;
 
 // Handle CSV report generation
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['export_panaon_profiling'])) {
@@ -259,7 +258,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['export_panaon_profil
             <div>
                 <h3 class="font-bold text-slate-900 dark:text-white">Panaon Youth Profiling</h3>
                 <p class="text-sm text-slate-600 dark:text-slate-400 mt-1">Download the official municipal spreadsheet template filled with youth profiles matching the filters above.</p>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-2"><?php echo (int) $profilingCount; ?> profile<?php echo $profilingCount === 1 ? '' : 's'; ?> will be included.</p>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mt-2"><span id="profilingCountSpan">...</span> profile<span id="profilingCountPlural">s</span> will be included.</p>
             </div>
         </div>
         <form method="GET" action="reports.php" class="w-full lg:w-auto">
@@ -285,25 +284,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['export_panaon_profil
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
     <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
         <p class="text-sm font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">Total Matches</p>
-        <h3 class="text-4xl font-black text-blue-900 dark:text-blue-400"><?php echo $stats['total_matches_made']; ?></h3>
+        <h3 class="text-4xl font-black text-blue-900 dark:text-blue-400"><span id="stat_total_matches">...</span></h3>
         <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">Accepted matches</p>
     </div>
 
     <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
         <p class="text-sm font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">Pending</p>
-        <h3 class="text-4xl font-black text-orange-600 dark:text-orange-400"><?php echo $stats['pending_matches']; ?></h3>
+        <h3 class="text-4xl font-black text-orange-600 dark:text-orange-400"><span id="stat_pending_matches">...</span></h3>
         <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">Awaiting response</p>
     </div>
 
     <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
         <p class="text-sm font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">Avg Score</p>
-        <h3 class="text-4xl font-black text-green-600 dark:text-green-400"><?php echo round($stats['average_match_score'] ?? 0); ?>%</h3>
+        <h3 class="text-4xl font-black text-green-600 dark:text-green-400"><span id="stat_avg_score">...</span>%</h3>
         <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">Average match score</p>
     </div>
 
     <div class="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
         <p class="text-sm font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">Success Rate</p>
-        <h3 class="text-4xl font-black text-purple-600 dark:text-purple-400"><?php echo $stats['employment_success_rate']; ?>%</h3>
+        <h3 class="text-4xl font-black text-purple-600 dark:text-purple-400"><span id="stat_success_rate">...</span>%</h3>
         <p class="text-xs text-slate-500 dark:text-slate-400 mt-2">Employment success</p>
     </div>
 </div>
@@ -522,6 +521,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !isset($_POST['export_panaon_profil
         function renderCharts(data) {
             // Destroy existing if any
             Object.keys(charts).forEach(key => charts[key].destroy());
+
+            
+            if (data.stats) {
+                document.getElementById('stat_total_matches').textContent = data.stats.total_matches_made;
+                document.getElementById('stat_pending_matches').textContent = data.stats.pending_matches;
+                document.getElementById('stat_avg_score').textContent = Math.round(data.stats.average_match_score || 0);
+                document.getElementById('stat_success_rate').textContent = data.stats.employment_success_rate;
+            }
+            if (data.profilingCount !== undefined) {
+                document.getElementById('profilingCountSpan').textContent = data.profilingCount;
+                document.getElementById('profilingCountPlural').textContent = data.profilingCount === 1 ? '' : 's';
+            }
 
             // 1. Profile Types Chart
             const typeLabels = data.profile_types.map(item => item.type);

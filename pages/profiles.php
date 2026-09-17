@@ -97,31 +97,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Get filters
+// Active filter state (used for filter dropdowns initial state only)
 $filters = [
     'profile_type' => $_GET['profile_type'] ?? 'All Types',
-    'barangay' => $_GET['barangay'] ?? 'All Barangays',
-    'gender' => $_GET['gender'] ?? 'All Genders',
-    'education' => $_GET['education'] ?? 'Any Level',
-    'status' => $_GET['status'] ?? 'All Status',
-    'search' => $_GET['search'] ?? ''
+    'barangay'     => $_GET['barangay']      ?? 'All Barangays',
+    'gender'       => $_GET['gender']        ?? 'All Genders',
+    'education'    => $_GET['education']     ?? 'Any Level',
+    'status'       => $_GET['status']        ?? 'All Status',
+    'search'       => $_GET['search']        ?? '',
 ];
 
-$page = isset($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
-$limit = 50;
-$offset = ($page - 1) * $limit;
-
-$totalFiltered = $osyProfile->getFilteredCount($filters);
-$profiles = $osyProfile->getAll($filters, $limit, $offset);
-$totalPages = ceil($totalFiltered / $limit);
-
+// Reference data for filter dropdowns (fast, cached separately)
 require_once __DIR__ . '/../Classes/Reference.php';
+require_once __DIR__ . '/../Classes/Cache.php';
 $reference = new Reference($database);
-$govtIdTypes = $reference->getByCategory('govt_id_type');
-$barangays = $reference->getByCategory('barangay');
-$eduLevels = $reference->getByCategory('education_level');
-$reasons = $reference->getByCategory('reason');
+$cache = new Cache(300); // Reference data cached 5 min
 
+$govtIdTypes = $cache->remember('ref_govt_id_types', fn() => $reference->getByCategory('govt_id_type'), 300);
+$barangays   = $cache->remember('ref_barangays',     fn() => $reference->getByCategory('barangay'),     300);
+$eduLevels   = $cache->remember('ref_edu_levels',    fn() => $reference->getByCategory('education_level'), 300);
+$reasons     = $cache->remember('ref_reasons',       fn() => $reference->getByCategory('reason'),       300);
+
+// NOTE: Heavy $profiles and $totalFiltered queries removed — now fetched via AJAX
 require_once __DIR__ . '/../includes/header.php';
 ?>
 
@@ -220,81 +217,37 @@ require_once __DIR__ . '/../includes/header.php';
                 </tr>
             </thead>
             <tbody id="profilesTableBody" class="divide-y divide-slate-200 dark:divide-slate-700">
-                <?php if (!empty($profiles)): ?>
-                    <?php foreach ($profiles as $profile): ?>
-                        <tr class="profile-row hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-                            <td class="px-6 py-4">
-                                <div class="w-10 h-10 rounded-full bg-blue-200 dark:bg-blue-900 flex items-center justify-center text-blue-900 dark:text-blue-200 font-bold">
-                                    <?php echo strtoupper(substr($profile['first_name'], 0, 1)); ?>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4">
-                                <p class="font-bold text-slate-900 dark:text-white"><?php echo htmlspecialchars($profile['first_name'] . ' ' . $profile['last_name']); ?></p>
-                                <p class="text-xs text-slate-500 dark:text-slate-400"><?php echo htmlspecialchars($profile['email']); ?></p>
-                            </td>
-                            <td class="px-6 py-4">
-                                <span class="text-xs font-semibold px-2 py-1 <?php echo $profile['profile_type'] === 'OSY' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-900 dark:text-orange-300' : 'bg-green-100 dark:bg-green-900/30 text-green-900 dark:text-green-300'; ?> rounded-md">
-                                    <?php echo htmlspecialchars($profile['profile_type']); ?>
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300"><?php echo $profile['age']; ?></td>
-                            <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300"><?php echo htmlspecialchars($profile['barangay']); ?></td>
-                            <td class="px-6 py-4">
-                                <span class="text-xs font-semibold px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-300 rounded-md"><?php echo htmlspecialchars($profile['primary_skill']); ?></span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <span class="inline-flex px-3 py-1 rounded-full text-xs font-bold <?php echo ($profile['status'] == 'Active' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'); ?>">
-                                    <?php echo htmlspecialchars($profile['status']); ?>
-                                </span>
-                            </td>
-                            <td class="px-6 py-4">
-                                <a href="profile-detail.php?id=<?php echo $profile['id']; ?>" class="p-2 text-blue-900 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-all inline-block" title="View">
-                                    <span class="material-symbols-outlined text-[20px]">visibility</span>
-                                </a>
-                                <button onclick="openEditModal(<?php echo $profile['id']; ?>)" class="p-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-all inline-block" title="Edit">
-                                    <span class="material-symbols-outlined text-[20px]">edit</span>
-                                </button>
-                                <button onclick="deleteProfile(<?php echo $profile['id']; ?>)" class="p-2 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg transition-all inline-block" title="Delete">
-                                    <span class="material-symbols-outlined text-[20px]">delete</span>
-                                </button>
-                            </td>
-                        </tr>
-                    <?php endforeach; ?>
-                <?php else: ?>
-                    <tr>
-                        <td colspan="8" class="px-6 py-12 text-center">
-                            <div class="flex flex-col items-center justify-center text-slate-500">
-                                <span class="material-symbols-outlined text-4xl mb-2 opacity-30">person_search</span>
-                                <p class="font-medium">No profiles found</p>
-                            </div>
-                        </td>
-                    </tr>
-                <?php endif; ?>
+                <!-- Skeleton rows -->
+                <?php for ($i = 0; $i < 8; $i++): ?>
+                <tr class="skeleton-row">
+                    <td class="px-6 py-4"><div class="w-10 h-10 rounded-full skeleton-pulse"></div></td>
+                    <td class="px-6 py-4"><div class="skeleton-pulse h-4 w-32 rounded mb-1"></div><div class="skeleton-pulse h-3 w-24 rounded"></div></td>
+                    <td class="px-6 py-4"><div class="skeleton-pulse h-5 w-14 rounded-md"></div></td>
+                    <td class="px-6 py-4"><div class="skeleton-pulse h-4 w-8 rounded"></div></td>
+                    <td class="px-6 py-4"><div class="skeleton-pulse h-4 w-20 rounded"></div></td>
+                    <td class="px-6 py-4"><div class="skeleton-pulse h-5 w-20 rounded-md"></div></td>
+                    <td class="px-6 py-4"><div class="skeleton-pulse h-6 w-16 rounded-full"></div></td>
+                    <td class="px-6 py-4"><div class="skeleton-pulse h-8 w-20 rounded-lg"></div></td>
+                </tr>
+                <?php endfor; ?>
             </tbody>
         </table>
     </div>
+
+    <!-- Pagination & count -->
     <div class="px-6 py-4 bg-slate-100 dark:bg-slate-700 flex flex-col md:flex-row items-center justify-between gap-4">
-        <span class="text-sm text-slate-600 dark:text-slate-400">Showing <?php echo count($profiles); ?> of <?php echo $totalFiltered; ?> entries (Page <?php echo $page; ?> of <?php echo max(1, $totalPages); ?>)</span>
-
-        <?php if ($totalPages > 1): ?>
-            <div class="flex gap-2">
-                <?php
-                $queryParams = $_GET;
-                if ($page > 1):
-                    $queryParams['page'] = $page - 1;
-                ?>
-                    <a href="?<?php echo http_build_query($queryParams); ?>" class="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm">Previous</a>
-                <?php endif; ?>
-
-                <?php if ($page < $totalPages):
-                    $queryParams['page'] = $page + 1;
-                ?>
-                    <a href="?<?php echo http_build_query($queryParams); ?>" class="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm">Next</a>
-                <?php endif; ?>
-            </div>
-        <?php endif; ?>
+        <span id="profilesCount" class="text-sm text-slate-600 dark:text-slate-400">
+            <span class="skeleton-pulse inline-block h-4 w-40 rounded align-middle"></span>
+        </span>
+        <div id="profilesPagination" class="flex gap-2"></div>
     </div>
 </div>
+
+<!-- Loading indicator at bottom -->
+<div id="profilesLoading" class="flex items-center justify-center gap-2 mt-4 text-sm text-slate-500 dark:text-slate-400">
+    <span class="material-symbols-outlined text-base animate-spin">refresh</span> Loading profiles…
+</div>
+
 
 <!-- Create/Edit Profile Modal -->
 <div id="profileModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
@@ -586,4 +539,139 @@ require_once __DIR__ . '/../includes/header.php';
     // Real-time filtering handled by form submission now
 </script>
 
-<?php require_once __DIR__ . '/../includes/footer.php'; ?>
+<style>
+.skeleton-pulse {
+    background: linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.4s ease-in-out infinite;
+    display: block;
+}
+.dark .skeleton-pulse {
+    background: linear-gradient(90deg,#1e293b 25%,#334155 50%,#1e293b 75%);
+    background-size: 200% 100%;
+}
+@keyframes skeleton-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+</style>
+
+<script>
+(function(){
+    // ── State ────────────────────────────────────────────────────────────────
+    let currentPage = 1;
+    const limit     = 50;
+
+    // Read initial filter state from PHP-rendered dropdowns
+    function getFilters() {
+        return {
+            profile_type: document.getElementById('filter_type')?.value        || 'All Types',
+            barangay:     document.getElementById('filter_barangay')?.value    || 'All Barangays',
+            gender:       document.getElementById('filter_gender')?.value      || 'All Genders',
+            education:    document.getElementById('filter_education')?.value   || 'Any Level',
+            status:       document.getElementById('filter_status')?.value      || 'All Status',
+            search:       document.getElementById('filter_search')?.value      || '',
+        };
+    }
+
+    // ── Render helpers ────────────────────────────────────────────────────────
+    function typeBadge(type) {
+        return type === 'OSY'
+            ? `<span class="text-xs font-semibold px-2 py-1 bg-orange-100 text-orange-900 rounded-md">${type}</span>`
+            : `<span class="text-xs font-semibold px-2 py-1 bg-green-100 text-green-900 rounded-md">${type}</span>`;
+    }
+    function statusBadge(status) {
+        const cls = status === 'Active'
+            ? 'bg-green-100 text-green-700'
+            : status === 'Employed' ? 'bg-blue-100 text-blue-700'
+            : status === 'In Training' ? 'bg-orange-100 text-orange-700'
+            : 'bg-yellow-100 text-yellow-700';
+        return `<span class="inline-flex px-3 py-1 rounded-full text-xs font-bold ${cls}">${status}</span>`;
+    }
+    function renderRow(p) {
+        return `<tr class="profile-row hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+            <td class="px-6 py-4"><div class="w-10 h-10 rounded-full bg-blue-200 flex items-center justify-center text-blue-900 font-bold">${(p.first_name||'?')[0].toUpperCase()}</div></td>
+            <td class="px-6 py-4"><p class="font-bold text-slate-900 dark:text-white">${p.first_name} ${p.last_name}</p><p class="text-xs text-slate-500">${p.email||''}</p></td>
+            <td class="px-6 py-4">${typeBadge(p.profile_type)}</td>
+            <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">${p.age}</td>
+            <td class="px-6 py-4 text-sm text-slate-700 dark:text-slate-300">${p.barangay||''}</td>
+            <td class="px-6 py-4"><span class="text-xs font-semibold px-2 py-1 bg-blue-100 text-blue-900 rounded-md">${p.primary_skill||''}</span></td>
+            <td class="px-6 py-4">${statusBadge(p.status)}</td>
+            <td class="px-6 py-4">
+                <a href="profile-detail.php?id=${p.id}" class="p-2 text-blue-900 hover:bg-blue-100 rounded-lg transition-all inline-block" title="View"><span class="material-symbols-outlined text-[20px]">visibility</span></a>
+                <button onclick="openEditModal(${p.id})" class="p-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-all inline-block" title="Edit"><span class="material-symbols-outlined text-[20px]">edit</span></button>
+                <button onclick="deleteProfile(${p.id})" class="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-all inline-block" title="Delete"><span class="material-symbols-outlined text-[20px]">delete</span></button>
+            </td>
+        </tr>`;
+    }
+
+    // ── Fetch & Render ────────────────────────────────────────────────────────
+    function loadProfiles(page) {
+        currentPage = page || 1;
+        const filters = getFilters();
+        const params  = new URLSearchParams({...filters, page: currentPage, limit});
+
+        const tbody = document.getElementById('profilesTableBody');
+        const loader = document.getElementById('profilesLoading');
+        if (loader) loader.style.display = 'flex';
+
+        fetch(`../api/get_profiles_data.php?${params}`)
+            .then(r => r.json())
+            .then(res => {
+                if (!res.success) return;
+
+                // Store for edit modal
+                window.profilesData = {};
+                res.profiles.forEach(p => { window.profilesData[p.id] = p; });
+
+                // Render rows
+                tbody.innerHTML = res.profiles.length
+                    ? res.profiles.map(renderRow).join('')
+                    : `<tr><td colspan="8" class="px-6 py-12 text-center"><div class="flex flex-col items-center text-slate-500"><span class="material-symbols-outlined text-4xl mb-2 opacity-30">person_search</span><p class="font-medium">No profiles found</p></div></td></tr>`;
+
+                // Count label
+                const countEl = document.getElementById('profilesCount');
+                if (countEl) countEl.textContent = `Showing ${res.profiles.length} of ${res.total} entries (Page ${currentPage} of ${Math.max(1, res.totalPages)})`;
+
+                // Pagination
+                const pagEl = document.getElementById('profilesPagination');
+                if (pagEl) {
+                    let html = '';
+                    if (currentPage > 1) html += `<button onclick="loadProfiles(${currentPage-1})" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 shadow-sm">Previous</button>`;
+                    if (currentPage < res.totalPages) html += `<button onclick="loadProfiles(${currentPage+1})" class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 shadow-sm">Next</button>`;
+                    pagEl.innerHTML = html;
+                }
+
+                if (loader) loader.style.display = 'none';
+            })
+            .catch(() => { if (loader) loader.innerHTML = '<span class="text-red-500">Failed to load. Refresh to retry.</span>'; });
+    }
+
+    // Initial load
+    loadProfiles(1);
+
+    // Filter changes → AJAX instead of page reload
+    ['filter_type','filter_barangay','filter_gender','filter_education','filter_status'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('change', () => loadProfiles(1));
+    });
+
+    // Search: debounce on keypress
+    const searchEl = document.getElementById('filter_search');
+    if (searchEl) {
+        let debounce;
+        searchEl.addEventListener('input', () => {
+            clearTimeout(debounce);
+            debounce = setTimeout(() => loadProfiles(1), 400);
+        });
+        // Prevent form submit reload
+        searchEl.addEventListener('keypress', e => { if (e.key === 'Enter') { e.preventDefault(); loadProfiles(1); } });
+    }
+
+    // Prevent filter form from doing a page reload
+    const filterForm = document.getElementById('filterForm');
+    if (filterForm) filterForm.addEventListener('submit', e => e.preventDefault());
+
+    // Expose loadProfiles globally for pagination buttons
+    window.loadProfiles = loadProfiles;
+})();
+</script>
+
+<?php require_once __DIR__ . '/../includes/footer.php'; ?>

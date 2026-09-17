@@ -52,8 +52,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['provider_action'])) {
     }
 }
 
-$pendingEmployers = $userModel->getUsersByRole('employer', ['status' => 'Pending']);
-$pendingProviders = $userModel->getUsersByRole('training_provider', ['status' => 'Pending']);
+
+
 ?>
 
 <?php require_once __DIR__ . '/../includes/header.php'; ?>
@@ -179,5 +179,59 @@ $pendingProviders = $userModel->getUsersByRole('training_provider', ['status' =>
         <?php endif; ?>
     <?php endif; ?>
 </div>
+
+
+<script>
+(function() {
+    function loadApprovals() {
+        fetch(`../api/get_system_data.php?view=provider_approvals&status=Pending`)
+            .then(r => r.json())
+            .then(res => {
+                const tbody = document.getElementById('approvalsTableBody');
+                if (!res.success || !res.providers || res.providers.length === 0) {
+                    document.getElementById('approvalsContainer').innerHTML = `<div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 p-8"><h2 class="text-xl font-bold text-slate-900 dark:text-white">No pending provider accounts</h2><p class="text-sm text-slate-500 mt-3">There are currently no employer or training provider accounts awaiting approval.</p></div>`;
+                    return;
+                }
+                
+                const nonce = document.querySelector('input[name="form_nonce"]')?.value || '<?php echo htmlspecialchars(getFormNonce()); ?>';
+                const csrf = '<?php echo htmlspecialchars(getCsrfToken()); ?>';
+                
+                tbody.innerHTML = res.providers.map(provider => {
+                    const roleLabel = provider.role === 'employer' ? 'Employer' : 'Training Provider';
+                    const proofHtml = provider.document_path ? `<a href="provider-document.php?provider_id=${provider.id}" target="_blank" rel="noopener noreferrer" class="text-blue-700 hover:underline">View document</a>` : `<span class="text-red-600">Missing</span>`;
+                    
+                    return `
+                    <tr class="border-t border-slate-200 dark:border-slate-700">
+                        <td class="px-4 py-4">${provider.fullname}</td>
+                        <td class="px-4 py-4">${roleLabel}</td>
+                        <td class="px-4 py-4">${provider.email}</td>
+                        <td class="px-4 py-4">${provider.barangay || 'N/A'}</td>
+                        <td class="px-4 py-4">${proofHtml}</td>
+                        <td class="px-4 py-4">${provider.created_at}</td>
+                        <td class="px-4 py-4">
+                            <form method="POST" class="flex flex-col gap-2">
+                                <input type="hidden" name="provider_id" value="${provider.id}">
+                                <input type="hidden" name="csrf_token" value="${csrf}">
+                                <input type="hidden" name="form_nonce" value="${nonce}">
+                                <textarea name="remark" rows="1" placeholder="Optional remark" class="w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 py-2 px-3 text-sm text-slate-900 dark:text-white"></textarea>
+                                <div class="flex gap-2">
+                                    <button type="submit" name="provider_action" value="approve" class="flex-1 rounded-2xl bg-green-700 text-white px-3 py-2 text-xs font-semibold hover:bg-green-600 transition">Approve</button>
+                                    <button type="submit" name="provider_action" value="decline" class="flex-1 rounded-2xl bg-red-700 text-white px-3 py-2 text-xs font-semibold hover:bg-red-600 transition">Decline</button>
+                                </div>
+                            </form>
+                        </td>
+                    </tr>`;
+                }).join('');
+            });
+    }
+    
+    loadApprovals();
+})();
+</script>
+<style>
+.skeleton-pulse { background: linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%); background-size: 200% 100%; animation: skeleton-shimmer 1.4s ease-in-out infinite; display: block; }
+.dark .skeleton-pulse { background: linear-gradient(90deg,#1e293b 25%,#334155 50%,#1e293b 75%); background-size: 200% 100%; }
+@keyframes skeleton-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+</style>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

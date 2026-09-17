@@ -152,3 +152,5 @@
 2026-09-15 06:54:07 | Brevo API | HTTP 201 | To: dummyseeker22+skbaga26@gmail.com | Subject: Your Login Verification Code
 2026-09-15 06:55:41 | Brevo API | HTTP 201 | To: dummyseeker22+skbaga26@gmail.com | Subject: Your Login Verification Code
 2026-09-15 06:56:09 | Brevo API | HTTP 201 | To: dummyseeker22+skbaga26@gmail.com | Subject: Security Alert: New Login Activity
+2026-09-17 12:59:29 | Brevo API | HTTP 201 | To: dummyseeker22+testyouth10@gmail.com | Subject: Your Login Verification Code
+2026-09-17 13:00:43 | Brevo API | HTTP 201 | To: dummyseeker22+testyouth10@gmail.com | Subject: Your Login Verification Code

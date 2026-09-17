@@ -8,9 +8,13 @@ if (!$user->isLoggedIn() || ($_SESSION['role'] ?? '') !== 'lydo') {
     exit;
 }
 
+session_write_close(); // Allow parallel requests
+
 $startDate = $_GET['start_date'] ?? '';
 $endDate = $_GET['end_date'] ?? '';
 $filters = [
+    'start_date' => $startDate,
+    'end_date' => $endDate,
     'barangay' => $_GET['barangay'] ?? '',
     'gender' => $_GET['gender'] ?? '',
     'profile_type' => $_GET['profile_type'] ?? '',
@@ -74,12 +78,18 @@ try {
     } else {
         $monthlyRegistrations = $database->fetchAll($queryMonthly);
     }
+    
+    $report = new Report($database);
+    $stats = $report->generateMatchingStats($filters);
+    $profilingCount = count($report->getYouthProfilingProfiles($filters));
 
     echo json_encode([
         'success' => true,
         'profile_types' => $profileTypes,
         'employment_status' => $employmentStatus,
-        'monthly_registrations' => $monthlyRegistrations
+        'monthly_registrations' => $monthlyRegistrations,
+        'stats' => $stats,
+        'profilingCount' => $profilingCount
     ]);
 } catch (Exception $e) {
     echo json_encode([

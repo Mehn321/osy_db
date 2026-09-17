@@ -179,7 +179,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_chairman'])) {
     }
 }
 
-$chairmen = $userModel->getUsersByRole('sk_chairman');
+
 $editId = isset($_GET['edit_id']) ? intval($_GET['edit_id']) : 0;
 $editChairman = $editId > 0 ? $database->fetchOne("SELECT * FROM users WHERE id = ? AND role = 'sk_chairman'", [$editId], 'i') : null;
 ?>
@@ -198,7 +198,7 @@ $editChairman = $editId > 0 ? $database->fetchOne("SELECT * FROM users WHERE id 
             <p class="text-slate-600 dark:text-slate-400 mt-2 max-w-2xl">Create, update, and remove SK Chairman accounts for barangay-level youth verification.</p>
         </div>
         <div class="inline-flex items-center gap-2 rounded-full bg-blue-50 dark:bg-blue-900/20 px-4 py-2 text-sm font-bold text-blue-800 dark:text-blue-300">
-            <span class="material-symbols-outlined text-base">groups</span><?php echo count($chairmen); ?> chairmen
+            <span class="material-symbols-outlined text-base">groups</span><span id="chairmenCount">...</span> chairmen
         </div>
     </div>
 </div>
@@ -254,48 +254,32 @@ $editChairman = $editId > 0 ? $database->fetchOne("SELECT * FROM users WHERE id 
 
         <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 p-8">
             <h2 class="text-xl font-bold text-slate-900 dark:text-white mb-4">Current SK Chairmen</h2>
-            <?php if (empty($chairmen)): ?>
-                <p class="text-sm text-slate-500">No SK Chairman accounts have been created yet.</p>
-            <?php else: ?>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full text-left text-sm text-slate-700 dark:text-slate-300">
-                        <thead>
-                            <tr>
-                                <th class="px-4 py-3 font-semibold uppercase">Name</th>
-                                <th class="px-4 py-3 font-semibold uppercase">Username</th>
-                                <th class="px-4 py-3 font-semibold uppercase">Barangay</th>
-                                <th class="px-4 py-3 font-semibold uppercase">Status</th>
-                                <th class="px-4 py-3 font-semibold uppercase">Created</th>
-                                <th class="px-4 py-3 font-semibold uppercase text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($chairmen as $chairman): ?>
-                                <tr class="border-t border-slate-200 dark:border-slate-700">
-                                    <td class="px-4 py-4"><?php echo htmlspecialchars($chairman['fullname']); ?></td>
-                                    <td class="px-4 py-4"><?php echo htmlspecialchars($chairman['username']); ?></td>
-                                    <td class="px-4 py-4"><?php echo htmlspecialchars($chairman['barangay'] ?? 'N/A'); ?></td>
-                                    <td class="px-4 py-4">
-                                        <span class="px-3 py-1 rounded-full text-xs font-semibold <?php echo $chairman['status'] === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'; ?>">
-                                            <?php echo htmlspecialchars($chairman['status']); ?>
-                                        </span>
-                                    </td>
-                                    <td class="px-4 py-4"><?php echo htmlspecialchars($chairman['created_at']); ?></td>
-                                    <td class="px-4 py-4 text-right whitespace-nowrap">
-                                        <button type="button" class="edit-chairman-btn inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-800 font-semibold transition" data-id="<?php echo (int)$chairman['id']; ?>" data-fullname="<?php echo htmlspecialchars($chairman['fullname'], ENT_QUOTES); ?>" data-username="<?php echo htmlspecialchars($chairman['username'], ENT_QUOTES); ?>" data-email="<?php echo htmlspecialchars($chairman['email'], ENT_QUOTES); ?>" data-barangay="<?php echo htmlspecialchars($chairman['barangay'] ?? '', ENT_QUOTES); ?>"><span class="material-symbols-outlined text-base">edit</span>Edit</button>
-                                        <form method="POST" class="inline-block ml-2" onsubmit="return confirm('Permanently delete this SK Chairman account? This cannot be undone.');">
-                                            <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
-                                            <input type="hidden" name="delete_chairman" value="1">
-                                            <input type="hidden" name="chairman_id" value="<?php echo intval($chairman['id']); ?>">
-                                            <button type="submit" class="inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-800 font-semibold transition"><span class="material-symbols-outlined text-base">delete</span>Delete</button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            <?php endif; ?>
+            <div class="overflow-x-auto">
+    <table class="min-w-full text-left text-sm text-slate-700 dark:text-slate-300">
+        <thead>
+            <tr>
+                <th class="px-4 py-3 font-semibold uppercase">Name</th>
+                <th class="px-4 py-3 font-semibold uppercase">Username</th>
+                <th class="px-4 py-3 font-semibold uppercase">Barangay</th>
+                <th class="px-4 py-3 font-semibold uppercase">Status</th>
+                <th class="px-4 py-3 font-semibold uppercase">Created</th>
+                <th class="px-4 py-3 font-semibold uppercase text-right">Actions</th>
+            </tr>
+        </thead>
+        <tbody id="chairmenTableBody">
+            <?php for ($i=0; $i<3; $i++): ?>
+                <tr class="border-t border-slate-200 dark:border-slate-700">
+                    <td class="px-4 py-4"><div class="skeleton-pulse h-4 w-32 rounded"></div></td>
+                    <td class="px-4 py-4"><div class="skeleton-pulse h-4 w-24 rounded"></div></td>
+                    <td class="px-4 py-4"><div class="skeleton-pulse h-4 w-24 rounded"></div></td>
+                    <td class="px-4 py-4"><div class="skeleton-pulse h-6 w-16 rounded-full"></div></td>
+                    <td class="px-4 py-4"><div class="skeleton-pulse h-4 w-20 rounded"></div></td>
+                    <td class="px-4 py-4 text-right"><div class="skeleton-pulse h-8 w-24 rounded float-right"></div></td>
+                </tr>
+            <?php endfor; ?>
+        </tbody>
+    </table>
+</div>
         </div>
     </div>
 </div>
@@ -345,5 +329,65 @@ $editChairman = $editId > 0 ? $database->fetchOne("SELECT * FROM users WHERE id 
         if (event.key === 'Escape') closeEditChairman();
     });
 </script>
+
+
+<script>
+(function() {
+    function loadChairmen() {
+        fetch(`../api/get_system_data.php?view=sk_chairmen`)
+            .then(r => r.json())
+            .then(res => {
+                const tbody = document.getElementById('chairmenTableBody');
+                if (!res.success || !res.sk_chairmen || res.sk_chairmen.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="px-4 py-8 text-center text-slate-500">No SK Chairman accounts have been created yet.</td></tr>`;
+                    document.getElementById('chairmenCount').textContent = '0';
+                    return;
+                }
+                
+                document.getElementById('chairmenCount').textContent = res.sk_chairmen.length;
+                const nonce = document.querySelector('input[name="form_nonce"]')?.value || '<?php echo htmlspecialchars(getFormNonce()); ?>';
+                
+                tbody.innerHTML = res.sk_chairmen.map(chairman => {
+                    const statusClass = chairman.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+                    
+                    return `
+                    <tr class="border-t border-slate-200 dark:border-slate-700">
+                        <td class="px-4 py-4">${chairman.fullname}</td>
+                        <td class="px-4 py-4">${chairman.username}</td>
+                        <td class="px-4 py-4">${chairman.barangay || 'N/A'}</td>
+                        <td class="px-4 py-4"><span class="px-3 py-1 rounded-full text-xs font-semibold ${statusClass}">${chairman.status}</span></td>
+                        <td class="px-4 py-4">${chairman.created_at || '-'}</td>
+                        <td class="px-4 py-4 text-right whitespace-nowrap">
+                            <button type="button" onclick="openEditChairman(${chairman.id}, '${chairman.fullname.replace(/'/g, "\'")}', '${chairman.username.replace(/'/g, "\'")}', '${(chairman.email || '').replace(/'/g, "\'")}', '${(chairman.barangay || '').replace(/'/g, "\'")}')" class="inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-800 font-semibold transition"><span class="material-symbols-outlined text-base">edit</span>Edit</button>
+                            <form method="POST" class="inline-block ml-2" onsubmit="return confirm('Permanently delete this SK Chairman account? This cannot be undone.');">
+                                <input type="hidden" name="form_nonce" value="${nonce}">
+                                <input type="hidden" name="delete_chairman" value="1">
+                                <input type="hidden" name="chairman_id" value="${chairman.id}">
+                                <button type="submit" class="inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-red-100 hover:bg-red-200 text-red-800 font-semibold transition"><span class="material-symbols-outlined text-base">delete</span>Delete</button>
+                            </form>
+                        </td>
+                    </tr>`;
+                }).join('');
+            });
+    }
+    
+    window.openEditChairman = function(id, fullname, username, email, barangay) {
+        document.getElementById('editChairmanId').value = id;
+        document.getElementById('editFullname').value = fullname;
+        document.getElementById('editUsername').value = username;
+        document.getElementById('editEmail').value = email;
+        document.getElementById('editBarangay').value = barangay;
+        document.getElementById('editChairmanModal').classList.replace('hidden', 'flex');
+        document.getElementById('editFullname').focus();
+    };
+    
+    loadChairmen();
+})();
+</script>
+<style>
+.skeleton-pulse { background: linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%); background-size: 200% 100%; animation: skeleton-shimmer 1.4s ease-in-out infinite; display: block; }
+.dark .skeleton-pulse { background: linear-gradient(90deg,#1e293b 25%,#334155 50%,#1e293b 75%); background-size: 200% 100%; }
+@keyframes skeleton-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+</style>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

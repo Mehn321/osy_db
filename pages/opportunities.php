@@ -95,86 +95,16 @@ if (isset($_GET['success'])) {
     $message = $actions[$_GET['success']] ?? 'Action completed!';
 }
 
-// Get opportunities based on user role
-if (in_array($_SESSION['role'], ['employer', 'training_provider'])) {
-    // Providers see their own opportunities
-    $opportunities = $opportunity->getByProvider();
-    $isProvider = true;
-    $canCreate = ($_SESSION['status'] === 'Active');
-} elseif ($_SESSION['role'] === 'youth' && $_SESSION['status'] === 'Active') {
-    // Youth see available opportunities
-    $filters = [
-        'search' => $_GET['search'] ?? '',
-        'type' => $_GET['type'] ?? 'All'
-    ];
+// Get roles for header rendering
+$isProvider = in_array($_SESSION['role'], ['employer', 'training_provider']);
+$canCreate = ($isProvider && $_SESSION['status'] === 'Active');
 
-    $profile = $database->fetchOne("SELECT id, age FROM osy_profiles WHERE created_by = ? LIMIT 1", [$_SESSION['user_id']], 'i');
-
-    // Fetch youth matches to know if they already applied
-    $youthMatches = [];
-    if ($profile) {
-        $matches = $database->fetchAll("SELECT opportunity_id, status, match_score FROM osy_matches WHERE osy_id = ?", [$profile['id']], 'i');
-        foreach ($matches as $m) {
-            $youthMatches[(int)$m['opportunity_id']] = $m;
-        }
-    }
-
-    $opportunities = $opportunity->getForYouth($filters);
-
-    // Process Match Scores & Application Statuses
-    foreach ($opportunities as &$opp) {
-        $oppId = (int)$opp['id'];
-        $isJob = ($opp['type'] === 'Job Opening');
-        if (isset($youthMatches[$oppId])) {
-            $opp['application_status'] = $youthMatches[$oppId]['status'];
-            $opp['match_score'] = $isJob ? $youthMatches[$oppId]['match_score'] : null;
-        } else {
-            $opp['application_status'] = null;
-            $opp['match_score'] = ($profile && $isJob) ? $matching->calculateMatchScore($profile['id'], $oppId) : null;
-        }
-    }
-    unset($opp);
-
-    // Filter by Age & Sort
-    if ($profile) {
-        $opportunities = array_filter($opportunities, function ($opp) use ($profile) {
-            if (!empty($opp['age_min']) || !empty($opp['age_max'])) {
-                $age = intval($profile['age'] ?? 0);
-                $min = intval($opp['age_min'] ?? 0);
-                $max = intval($opp['age_max'] ?? 0);
-                if ($age > 0) {
-                    if ($min > 0 && $age < $min) return false;
-                    if ($max > 0 && $age > $max) return false;
-                }
-            }
-            return true;
-        });
-
-        // Sort by match score (highest first)
-        usort($opportunities, function($a, $b) {
-            $scoreA = isset($a['match_score']) ? $a['match_score'] : -1;
-            $scoreB = isset($b['match_score']) ? $b['match_score'] : -1;
-            if ($scoreA !== $scoreB) {
-                return $scoreB <=> $scoreA;
-            }
-            return $b['id'] <=> $a['id'];
-        });
-    }
-
-    $isProvider = false;
-    $canCreate = false;
-    
-} else {
-    // LYDO and SK Chairman see all opportunities
-    $filters = [
-        'search' => $_GET['search'] ?? '',
-        'type' => $_GET['type'] ?? 'All',
-        'status' => $_GET['status'] ?? 'All'
-    ];
-    $opportunities = $opportunity->getAll($filters);
-    $isProvider = false;
-    $canCreate = false;
-}
+// Note: Heavy opportunities list fetching removed (now done via AJAX)
+$filters = [
+    'search' => $_GET['search'] ?? '',
+    'type' => $_GET['type'] ?? 'All',
+    'status' => $_GET['status'] ?? 'All'
+];
 ?>
 
 <!-- Page Header -->
@@ -221,14 +151,14 @@ if (in_array($_SESSION['role'], ['employer', 'training_provider'])) {
 
 <!-- Filter Bar -->
 <div class="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm mb-8">
-    <form method="GET" class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-end">
+    <form id="filterForm" method="GET" class="grid grid-cols-1 lg:grid-cols-3 gap-4 items-end">
         <div>
             <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase pl-1">Search</label>
-            <input type="text" name="search" value="<?php echo htmlspecialchars($filters['search']); ?>" placeholder="Search opportunities..." class="w-full auto-filter bg-slate-100 dark:bg-slate-700 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all" />
+            <input type="text" id="filter_search" name="search" value="<?php echo htmlspecialchars($filters['search']); ?>" placeholder="Search opportunities..." class="w-full bg-slate-100 dark:bg-slate-700 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all" />
         </div>
         <div>
             <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase pl-1">Type</label>
-            <select name="type" class="w-full auto-filter bg-slate-100 dark:bg-slate-700 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all">
+            <select id="filter_type" name="type" class="w-full bg-slate-100 dark:bg-slate-700 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all">
                 <option value="All" <?php echo $filters['type'] === 'All' ? ' selected' : ''; ?>>All Types</option>
                 <option value="Job Opening" <?php echo $filters['type'] === 'Job Opening' ? ' selected' : ''; ?>>Job Opening</option>
                 <option value="Vocational Training" <?php echo $filters['type'] === 'Vocational Training' ? ' selected' : ''; ?>>Training Opportunity</option>
@@ -238,7 +168,7 @@ if (in_array($_SESSION['role'], ['employer', 'training_provider'])) {
         <?php if (!$isProvider && $_SESSION['role'] !== 'youth'): ?>
             <div>
                 <label class="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase pl-1">Status</label>
-                <select name="status" class="w-full auto-filter bg-slate-100 dark:bg-slate-700 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all">
+                <select id="filter_status" name="status" class="w-full bg-slate-100 dark:bg-slate-700 rounded-xl py-3 px-4 text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-900 border border-transparent transition-all">
                     <option value="All" <?php echo $filters['status'] === 'All' ? ' selected' : ''; ?>>All Status</option>
                     <option value="Open" <?php echo $filters['status'] === 'Open' ? ' selected' : ''; ?>>Open</option>
                     <option value="Closed" <?php echo $filters['status'] === 'Closed' ? ' selected' : ''; ?>>Closed</option>
@@ -247,201 +177,33 @@ if (in_array($_SESSION['role'], ['employer', 'training_provider'])) {
         <?php endif; ?>
         
         <div class="flex gap-3">
-            <a href="opportunities.php" class="w-full py-3 bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white rounded-xl font-bold text-sm text-center hover:bg-slate-200 dark:hover:bg-slate-600 transition-all">Reset</a>
+            <button type="button" onclick="resetFilters()" class="w-full py-3 bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-white rounded-xl font-bold text-sm text-center hover:bg-slate-200 dark:hover:bg-slate-600 transition-all">Reset</button>
         </div>
     </form>
 </div>
 
-<!-- Opportunities Cards Grid -->
-<?php
-// When "All Types" is selected, split into left=Training, right=Jobs
-$showSplit = ($filters['type'] === 'All') && !empty($opportunities);
-$trainingOpps = $jobOpps = $otherOpps = [];
-if ($showSplit) {
-    foreach ($opportunities as $opp) {
-        if ($opp['type'] === 'Vocational Training') $trainingOpps[] = $opp;
-        elseif ($opp['type'] === 'Job Opening')     $jobOpps[] = $opp;
-        else                                         $otherOpps[] = $opp;
-    }
-}
-
-// Reusable card renderer as a closure
-$renderCard = function($opp) use ($isProvider) {
-?>
-            <div class="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all">
-                <div class="p-6 border-b border-slate-200 dark:border-slate-700">
-                    <!-- Match Score Badge (Youth / Job Opening only) -->
-                    <?php if ($_SESSION['role'] === 'youth' && isset($opp['match_score']) && $opp['type'] === 'Job Opening'): ?>
-                        <?php
-                            $score = intval($opp['match_score']);
-                            $scoreColor = $score >= 70 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-400'
-                                        : ($score >= 40 ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-400'
-                                                        : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300');
-                        ?>
-                        <div class="mb-3">
-                            <span class="inline-flex items-center px-2 py-1 rounded text-xs font-bold <?php echo $scoreColor; ?>">
-                                <span class="material-symbols-outlined text-[14px] mr-1">auto_awesome</span>
-                                <?php echo $score; ?>% Match
-                            </span>
-                        </div>
-                    <?php endif; ?>
-
-                    <div class="flex items-start justify-between mb-3">
-                        <div>
-                            <p class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1"><?php echo htmlspecialchars($opp['type'] === 'Vocational Training' ? 'Training Opportunity' : $opp['type']); ?></p>
-                            <h3 class="text-xl font-bold text-slate-900 dark:text-white"><?php echo htmlspecialchars($opp['title']); ?></h3>
-                        </div>
-                        <span class="px-3 py-1 <?php echo $opp['status'] === 'Open' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'; ?> rounded-full text-xs font-bold">
-                            <?php echo htmlspecialchars($opp['status']); ?>
-                        </span>
-                    </div>
-                    <p class="text-sm text-slate-600 dark:text-slate-300 flex items-center gap-2">
-                        <span class="material-symbols-outlined text-base">location_on</span>
-                        <?php echo htmlspecialchars($opp['location']); ?>
-                    </p>
-                </div>
-
-                <div class="p-6 space-y-4">
-                    <?php if ($opp['description']): ?>
-                        <p class="text-sm text-slate-600 dark:text-slate-300 line-clamp-2"><?php echo htmlspecialchars($opp['description']); ?></p>
-                    <?php endif; ?>
-
-                    <?php if ($opp['compensation']): ?>
-                        <div>
-                            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Compensation</p>
-                            <p class="text-lg font-bold text-slate-900 dark:text-white"><?php echo htmlspecialchars($opp['compensation']); ?></p>
-                        </div>
-                    <?php endif; ?>
-
-                    <?php if ($opp['certification']): ?>
-                        <div>
-                            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Certification</p>
-                            <p class="text-sm text-slate-700 dark:text-slate-300"><?php echo htmlspecialchars($opp['certification']); ?></p>
-                        </div>
-                    <?php endif; ?>
-
-                    <div class="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
-                        <div>
-                            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Deadline</p>
-                            <p class="text-sm font-bold text-slate-900 dark:text-white"><?php echo !empty($opp['deadline']) ? date('M d, Y', strtotime($opp['deadline'])) : 'No deadline'; ?></p>
-                        </div>
-                        <div>
-                            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase">Slots</p>
-                            <p class="text-sm font-bold text-slate-900 dark:text-white"><?php echo $opp['total_slots']; ?> available</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="px-6 py-4 bg-slate-100 dark:bg-slate-700 flex gap-2">
-                    <button onclick="viewOpportunityDetail(<?php echo $opp['id']; ?>)" class="flex-1 py-2 px-3 bg-blue-900 text-white rounded-lg text-sm font-semibold hover:bg-blue-800 transition-colors flex items-center justify-center gap-2">
-                        <span class="material-symbols-outlined text-base">visibility</span>
-                        View Details
-                    </button>
-                    <?php if ($isProvider && $opp['provider_id'] == $_SESSION['user_id']): ?>
-                        <button onclick="openEditModal(<?php echo $opp['id']; ?>)" class="py-2 px-3 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg text-slate-600 dark:text-slate-300 transition-colors">
-                            <span class="material-symbols-outlined">edit</span>
-                        </button>
-                        <button onclick="deleteOpportunity(<?php echo $opp['id']; ?>)" class="py-2 px-3 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400 transition-colors">
-                            <span class="material-symbols-outlined">delete</span>
-                        </button>
-                        <button onclick="viewApplications(<?php echo $opp['id']; ?>)" class="py-2 px-3 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg text-slate-600 dark:text-slate-300 transition-colors">
-                            <span class="material-symbols-outlined">people</span>
-                        </button>
-                    <?php elseif ($_SESSION['role'] === 'youth'): ?>
-                        <?php if (empty($opp['application_status']) && $opp['status'] === 'Open'): ?>
-                            <button id="apply-btn-<?php echo $opp['id']; ?>" onclick="applyToOpportunity(<?php echo $opp['id']; ?>)" class="py-2 px-3 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 transition-colors flex items-center gap-2">
-                                <span class="material-symbols-outlined text-base">send</span>
-                                Apply
-                            </button>
-                        <?php elseif ($opp['application_status'] === 'Pending'): ?>
-                            <button id="cancel-btn-<?php echo $opp['id']; ?>" onclick="cancelApplication(<?php echo $opp['id']; ?>)" class="py-2 px-3 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors flex items-center gap-2">
-                                <span class="material-symbols-outlined text-base">cancel</span>
-                                Cancel Application
-                            </button>
-                        <?php elseif (!empty($opp['application_status'])): ?>
-                            <div class="py-2 px-3 bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 rounded-lg text-sm font-semibold flex items-center gap-2 cursor-not-allowed">
-                                <span class="material-symbols-outlined text-base">check_circle</span>
-                                Applied (<?php echo htmlspecialchars($opp['application_status']); ?>)
-                            </div>
-                        <?php else: ?>
-                            <div class="py-2 px-3 bg-slate-200 dark:bg-slate-600 text-slate-500 dark:text-slate-400 rounded-lg text-sm font-semibold flex items-center gap-2 cursor-not-allowed">
-                                <span class="material-symbols-outlined text-base">block</span>
-                                Closed
-                            </div>
-                        <?php endif; ?>
-                    <?php elseif ($_SESSION['role'] === 'lydo' || $_SESSION['role'] === 'sk_chairman'): ?>
-                        <button onclick="viewApplications(<?php echo $opp['id']; ?>)" class="py-2 px-3 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700 transition-colors flex items-center gap-2">
-                            <span class="material-symbols-outlined text-base">people</span>
-                            View Applications
-                        </button>
-                    <?php endif; ?>
-                </div>
+<!-- Opportunities Container -->
+<div id="opportunitiesContainer">
+    <!-- Skeletons will be injected here by JS, followed by AJAX results -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <?php for ($i=0; $i<4; $i++): ?>
+        <div class="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700">
+            <div class="p-6 border-b border-slate-200 dark:border-slate-700">
+                <div class="skeleton-pulse h-4 w-24 rounded mb-2"></div>
+                <div class="skeleton-pulse h-6 w-48 rounded"></div>
             </div>
-<?php
-}; // end $renderCard
-?>
-
-<?php if ($showSplit): ?>
-<!-- Split layout: Training (left) | Jobs (right) -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-    <!-- LEFT COLUMN: Training Opportunities -->
-    <div>
-        <h2 class="text-base font-bold text-purple-700 dark:text-purple-400 mb-4 flex items-center gap-2 uppercase tracking-wide">
-            <span class="material-symbols-outlined text-xl">school</span> Training Opportunities
-        </h2>
-        <?php if (!empty($trainingOpps)): ?>
-            <div class="space-y-6">
-                <?php foreach ($trainingOpps as $opp): $renderCard($opp); endforeach; ?>
+            <div class="p-6 space-y-4">
+                <div class="skeleton-pulse h-4 w-full rounded"></div>
+                <div class="skeleton-pulse h-4 w-3/4 rounded"></div>
+                <div class="skeleton-pulse h-16 w-full rounded mt-4"></div>
             </div>
-        <?php else: ?>
-            <div class="text-center py-10 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-                <span class="material-symbols-outlined text-4xl text-slate-300">school</span>
-                <p class="text-slate-400 text-sm mt-2">No training opportunities available.</p>
-            </div>
-        <?php endif; ?>
-
-        <?php if (!empty($otherOpps)): ?>
-            <h2 class="text-base font-bold text-yellow-700 dark:text-yellow-400 mt-8 mb-4 flex items-center gap-2 uppercase tracking-wide">
-                <span class="material-symbols-outlined text-xl">workspace_premium</span> Scholarships
-            </h2>
-            <div class="space-y-6">
-                <?php foreach ($otherOpps as $opp): $renderCard($opp); endforeach; ?>
-            </div>
-        <?php endif; ?>
-    </div>
-
-    <!-- RIGHT COLUMN: Job Openings -->
-    <div>
-        <h2 class="text-base font-bold text-blue-900 dark:text-blue-400 mb-4 flex items-center gap-2 uppercase tracking-wide">
-            <span class="material-symbols-outlined text-xl">work</span> Job Openings
-        </h2>
-        <?php if (!empty($jobOpps)): ?>
-            <div class="space-y-6">
-                <?php foreach ($jobOpps as $opp): $renderCard($opp); endforeach; ?>
-            </div>
-        <?php else: ?>
-            <div class="text-center py-10 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-                <span class="material-symbols-outlined text-4xl text-slate-300">work_off</span>
-                <p class="text-slate-400 text-sm mt-2">No job openings available.</p>
-            </div>
-        <?php endif; ?>
-    </div>
-</div>
-
-<?php else: ?>
-<!-- Single-type filtered grid -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <?php if (!empty($opportunities)): ?>
-        <?php foreach ($opportunities as $opp): $renderCard($opp); endforeach; ?>
-    <?php else: ?>
-        <div class="lg:col-span-2 text-center py-16 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700">
-            <span class="material-symbols-outlined text-5xl text-slate-300 mb-3">work_off</span>
-            <p class="text-slate-500 font-semibold text-lg">No opportunities found</p>
-            <p class="text-sm text-slate-400 mt-1">Check back later for new openings matching your profile.</p>
         </div>
-    <?php endif; ?>
+        <?php endfor; ?>
+    </div>
 </div>
-<?php endif; ?>
+<div id="opportunitiesLoading" class="hidden flex items-center justify-center gap-2 mt-4 text-sm text-slate-500">
+    <span class="material-symbols-outlined text-base animate-spin">refresh</span> Loading opportunities…
+</div>
 <!-- Create/Edit Opportunity Modal (unchanged) -->
 <div id="opportunityModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
     <div class="flex items-center justify-center min-h-screen p-4">
@@ -587,9 +349,6 @@ $renderCard = function($opp) use ($isProvider) {
 <script>
     // Store opportunities data for JS access
     var opportunitiesData = {};
-    <?php foreach ($opportunities as $opp): ?>
-        opportunitiesData[<?php echo $opp['id']; ?>] = <?php echo json_encode($opp); ?>;
-    <?php endforeach; ?>
 
     function openCreateModal(type) {
         document.getElementById('modalTitle').textContent = 'Create New ' + (type === 'Job Opening' ? 'Job' : (type === 'Scholarship' ? 'Scholarship' : 'Training'));
@@ -759,12 +518,196 @@ $renderCard = function($opp) use ($isProvider) {
     function viewApplications(id) {
         window.location.href = 'opportunity-applications.php?opportunity_id=' + id;
     }
-    // Auto-submit filter form
-    document.querySelectorAll('.auto-filter').forEach(el => {
-        el.addEventListener('change', function() {
-            this.closest('form').submit();
-        });
+    // AJAX Loading Logic
+    const sessionRole = "<?php echo $_SESSION['role']; ?>";
+    const sessionUserId = "<?php echo $_SESSION['user_id']; ?>";
+    const isProvider = <?php echo $isProvider ? 'true' : 'false'; ?>;
+
+    function renderOppCard(opp) {
+        let scoreBadge = '';
+        if (sessionRole === 'youth' && opp.match_score !== null && opp.type === 'Job Opening') {
+            const score = parseInt(opp.match_score);
+            const scoreColor = score >= 70 ? 'bg-emerald-100 text-emerald-800' : (score >= 40 ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600');
+            scoreBadge = `<div class="mb-3"><span class="inline-flex items-center px-2 py-1 rounded text-xs font-bold ${scoreColor}"><span class="material-symbols-outlined text-[14px] mr-1">auto_awesome</span>${score}% Match</span></div>`;
+        }
+
+        const typeDisplay = opp.type === 'Vocational Training' ? 'Training Opportunity' : opp.type;
+        const statusColor = opp.status === 'Open' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
+        
+        let desc = opp.description ? `<p class="text-sm text-slate-600 dark:text-slate-300 line-clamp-2">${opp.description}</p>` : '';
+        let comp = opp.compensation ? `<div><p class="text-xs font-semibold text-slate-500 uppercase">Compensation</p><p class="text-lg font-bold text-slate-900 dark:text-white">${opp.compensation}</p></div>` : '';
+        let cert = opp.certification ? `<div><p class="text-xs font-semibold text-slate-500 uppercase">Certification</p><p class="text-sm text-slate-700 dark:text-slate-300">${opp.certification}</p></div>` : '';
+        
+        const deadline = opp.deadline ? new Date(opp.deadline).toLocaleDateString('en-US', {month:'short',day:'2-digit',year:'numeric'}) : 'No deadline';
+
+        let buttons = `<button onclick="viewOpportunityDetail(${opp.id})" class="flex-1 py-2 px-3 bg-blue-900 text-white rounded-lg text-sm font-semibold hover:bg-blue-800 transition-colors flex items-center justify-center gap-2"><span class="material-symbols-outlined text-base">visibility</span> View Details</button>`;
+
+        if (isProvider && parseInt(opp.provider_id) === parseInt(sessionUserId)) {
+            buttons += `<button onclick="openEditModal(${opp.id})" class="py-2 px-3 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg text-slate-600 dark:text-slate-300 transition-colors"><span class="material-symbols-outlined">edit</span></button>
+                <button onclick="deleteOpportunity(${opp.id})" class="py-2 px-3 hover:bg-red-100 dark:hover:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400 transition-colors"><span class="material-symbols-outlined">delete</span></button>
+                <button onclick="viewApplications(${opp.id})" class="py-2 px-3 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg text-slate-600 dark:text-slate-300 transition-colors"><span class="material-symbols-outlined">people</span></button>`;
+        } else if (sessionRole === 'youth') {
+            if (!opp.application_status && opp.status === 'Open') {
+                buttons += `<button id="apply-btn-${opp.id}" onclick="applyToOpportunity(${opp.id})" class="py-2 px-3 bg-green-600 text-white rounded-lg text-sm font-semibold hover:bg-green-700 transition-colors flex items-center gap-2"><span class="material-symbols-outlined text-base">send</span> Apply</button>`;
+            } else if (opp.application_status === 'Pending') {
+                buttons += `<button id="cancel-btn-${opp.id}" onclick="cancelApplication(${opp.id})" class="py-2 px-3 bg-red-600 text-white rounded-lg text-sm font-semibold hover:bg-red-700 transition-colors flex items-center gap-2"><span class="material-symbols-outlined text-base">cancel</span> Cancel Application</button>`;
+            } else if (opp.application_status) {
+                buttons += `<div class="py-2 px-3 bg-slate-200 dark:bg-slate-600 text-slate-600 dark:text-slate-300 rounded-lg text-sm font-semibold flex items-center gap-2 cursor-not-allowed"><span class="material-symbols-outlined text-base">check_circle</span> Applied (${opp.application_status})</div>`;
+            } else {
+                buttons += `<div class="py-2 px-3 bg-slate-200 dark:bg-slate-600 text-slate-500 dark:text-slate-400 rounded-lg text-sm font-semibold flex items-center gap-2 cursor-not-allowed"><span class="material-symbols-outlined text-base">block</span> Closed</div>`;
+            }
+        } else if (sessionRole === 'lydo' || sessionRole === 'sk_chairman') {
+            buttons += `<button onclick="viewApplications(${opp.id})" class="py-2 px-3 bg-purple-600 text-white rounded-lg text-sm font-semibold hover:bg-purple-700 transition-colors flex items-center gap-2"><span class="material-symbols-outlined text-base">people</span> View Applications</button>`;
+        }
+
+        return `
+        <div class="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-lg transition-all opp-card">
+            <div class="p-6 border-b border-slate-200 dark:border-slate-700">
+                ${scoreBadge}
+                <div class="flex items-start justify-between mb-3">
+                    <div>
+                        <p class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">${typeDisplay}</p>
+                        <h3 class="text-xl font-bold text-slate-900 dark:text-white">${opp.title}</h3>
+                    </div>
+                    <span class="px-3 py-1 ${statusColor} rounded-full text-xs font-bold">${opp.status}</span>
+                </div>
+                <p class="text-sm text-slate-600 dark:text-slate-300 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-base">location_on</span> ${opp.location}
+                </p>
+            </div>
+            <div class="p-6 space-y-4">
+                ${desc}
+                ${comp}
+                ${cert}
+                <div class="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
+                    <div>
+                        <p class="text-xs font-semibold text-slate-500 uppercase">Deadline</p>
+                        <p class="text-sm font-bold text-slate-900 dark:text-white">${deadline}</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold text-slate-500 uppercase">Slots</p>
+                        <p class="text-sm font-bold text-slate-900 dark:text-white">${opp.total_slots} available</p>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-4 bg-slate-100 dark:bg-slate-700 flex gap-2">
+                ${buttons}
+            </div>
+        </div>`;
+    }
+
+    function loadOpportunities() {
+        const type = document.getElementById('filter_type')?.value || 'All';
+        const search = document.getElementById('filter_search')?.value || '';
+        const status = document.getElementById('filter_status')?.value || 'All';
+        
+        const params = new URLSearchParams({ type, search, status });
+        const container = document.getElementById('opportunitiesContainer');
+        const loader = document.getElementById('opportunitiesLoading');
+        
+        loader.classList.remove('hidden');
+        
+        // Skeletons
+        container.innerHTML = `<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">` + 
+            Array(4).fill(0).map(() => `
+            <div class="bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700">
+                <div class="p-6 border-b border-slate-200 dark:border-slate-700"><div class="skeleton-pulse h-4 w-24 rounded mb-2"></div><div class="skeleton-pulse h-6 w-48 rounded"></div></div>
+                <div class="p-6 space-y-4"><div class="skeleton-pulse h-4 w-full rounded"></div><div class="skeleton-pulse h-4 w-3/4 rounded"></div><div class="skeleton-pulse h-16 w-full rounded mt-4"></div></div>
+            </div>`).join('') + `</div>`;
+
+        fetch(`../api/get_opportunities_data.php?${params}`)
+            .then(r => r.json())
+            .then(res => {
+                loader.classList.add('hidden');
+                
+                opportunitiesData = {};
+                if (res.success && res.opportunities) {
+                    res.opportunities.forEach(opp => {
+                        opportunitiesData[opp.id] = opp;
+                    });
+                }
+                
+                if (!res.success || !res.opportunities.length) {
+                    container.innerHTML = `<div class="text-center py-16 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700"><span class="material-symbols-outlined text-5xl text-slate-300 mb-3">work_off</span><p class="text-slate-500 font-semibold text-lg">No opportunities found</p></div>`;
+                    return;
+                }
+                
+                if (type === 'All' && res.opportunities.length > 0) {
+                    // Split view
+                    const trainingOpps = res.opportunities.filter(o => o.type === 'Vocational Training');
+                    const jobOpps = res.opportunities.filter(o => o.type === 'Job Opening');
+                    const otherOpps = res.opportunities.filter(o => o.type !== 'Vocational Training' && o.type !== 'Job Opening');
+                    
+                    let html = `<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">`;
+                    // Left: Training + Other
+                    html += `<div><h2 class="text-base font-bold text-purple-700 dark:text-purple-400 mb-4 flex items-center gap-2 uppercase tracking-wide"><span class="material-symbols-outlined text-xl">school</span> Training Opportunities</h2>`;
+                    if (trainingOpps.length) {
+                        html += `<div class="space-y-6">${trainingOpps.map(renderOppCard).join('')}</div>`;
+                    } else {
+                        html += `<div class="text-center py-10 bg-white dark:bg-slate-800 rounded-xl border border-slate-200"><span class="material-symbols-outlined text-4xl text-slate-300">school</span><p class="text-slate-400 text-sm mt-2">None available.</p></div>`;
+                    }
+                    if (otherOpps.length) {
+                        html += `<h2 class="text-base font-bold text-yellow-700 dark:text-yellow-400 mt-8 mb-4 flex items-center gap-2 uppercase tracking-wide"><span class="material-symbols-outlined text-xl">workspace_premium</span> Scholarships</h2>`;
+                        html += `<div class="space-y-6">${otherOpps.map(renderOppCard).join('')}</div>`;
+                    }
+                    html += `</div>`;
+                    
+                    // Right: Jobs
+                    html += `<div><h2 class="text-base font-bold text-blue-900 dark:text-blue-400 mb-4 flex items-center gap-2 uppercase tracking-wide"><span class="material-symbols-outlined text-xl">work</span> Job Openings</h2>`;
+                    if (jobOpps.length) {
+                        html += `<div class="space-y-6">${jobOpps.map(renderOppCard).join('')}</div>`;
+                    } else {
+                        html += `<div class="text-center py-10 bg-white dark:bg-slate-800 rounded-xl border border-slate-200"><span class="material-symbols-outlined text-4xl text-slate-300">work_off</span><p class="text-slate-400 text-sm mt-2">None available.</p></div>`;
+                    }
+                    html += `</div></div>`;
+                    container.innerHTML = html;
+                } else {
+                    // Single grid
+                    container.innerHTML = `<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">${res.opportunities.map(renderOppCard).join('')}</div>`;
+                }
+            })
+            .catch(() => {
+                loader.classList.add('hidden');
+                container.innerHTML = `<p class="text-red-500">Failed to load opportunities.</p>`;
+            });
+    }
+
+    // Initialize
+    loadOpportunities();
+    
+    // Event listeners
+    ['filter_type', 'filter_status'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener('change', loadOpportunities);
     });
+    var searchEl = document.getElementById('filter_search');
+    if (searchEl) {
+        let debounce;
+        searchEl.addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(loadOpportunities, 400); });
+    }
+    var filterForm = document.getElementById('filterForm');
+    if (filterForm) filterForm.addEventListener('submit', e => e.preventDefault());
+
+    function resetFilters() {
+        if (searchEl) searchEl.value = '';
+        if (document.getElementById('filter_type')) document.getElementById('filter_type').value = 'All';
+        if (document.getElementById('filter_status')) document.getElementById('filter_status').value = 'All';
+        loadOpportunities();
+    }
 </script>
+
+<style>
+.skeleton-pulse {
+    background: linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.4s ease-in-out infinite;
+    display: block;
+}
+.dark .skeleton-pulse {
+    background: linear-gradient(90deg,#1e293b 25%,#334155 50%,#1e293b 75%);
+    background-size: 200% 100%;
+}
+@keyframes skeleton-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+</style>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

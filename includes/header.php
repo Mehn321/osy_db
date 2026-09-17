@@ -149,16 +149,23 @@ $basePath = $basePath === '/' ? '' : $basePath;
 
         <?php
         // Get dynamic user notification count
+        require_once __DIR__ . '/../Classes/Cache.php';
+        $headerCache = new Cache(30);
         $notifCount = 0;
         $messageCount = 0;
         try {
             if (isset($_SESSION['user_id'])) {
-                $notification = new Notification($database);
-                $notifCount = $notification->getUnreadCount($_SESSION['user_id']);
+                $uid = (int) $_SESSION['user_id'];
+                $notifCount = (int) $headerCache->remember("unread_notifs_user_$uid", function() use ($database, $uid) {
+                    $notification = new Notification($database);
+                    return $notification->getUnreadCount($uid);
+                }, 30);
             }
 
-            $msgResult = $database->fetchOne("SELECT COUNT(*) as cnt FROM messages WHERE recipient_type = 'admin' AND is_read = 0");
-            $messageCount = $msgResult['cnt'] ?? 0;
+            $messageCount = (int) $headerCache->remember("unread_msgs_admin", function() use ($database) {
+                $msgResult = $database->fetchOne("SELECT COUNT(*) as cnt FROM messages WHERE recipient_type = 'admin' AND is_read = 0");
+                return $msgResult['cnt'] ?? 0;
+            }, 30);
         } catch (Exception $e) {
             $notifCount = 0;
             $messageCount = 0;
@@ -677,14 +684,17 @@ $basePath = $basePath === '/' ? '' : $basePath;
                     window.__spaExecutedScripts = window.__spaExecutedScripts || new Set();
                     const scripts = container.querySelectorAll('script');
                     scripts.forEach(oldScript => {
-                        const scriptKey = oldScript.src ?
-                            'src:' + oldScript.src :
-                            'inline:' + oldScript.textContent.trim();
+                        const isExternal = !!oldScript.src;
+                        const scriptKey = isExternal ? 'src:' + oldScript.src : null;
 
-                        if (window.__spaExecutedScripts.has(scriptKey)) {
+                        // Only deduplicate external src scripts
+                        if (isExternal && window.__spaExecutedScripts.has(scriptKey)) {
                             return;
                         }
-                        window.__spaExecutedScripts.add(scriptKey);
+                        
+                        if (isExternal) {
+                            window.__spaExecutedScripts.add(scriptKey);
+                        }
 
                         const newScript = document.createElement('script');
                         Array.from(oldScript.attributes).forEach(attr => {

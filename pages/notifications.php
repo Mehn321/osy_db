@@ -62,7 +62,7 @@ if (isset($_GET['deleted'])) {
     $messageType = 'success';
 }
 
-$notifications = $notification->getAll(20);
+
 ?>
 
 <!-- Page Header -->
@@ -99,65 +99,25 @@ $notifications = $notification->getAll(20);
 
 <!-- Notifications List -->
 <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 overflow-hidden">
-    <?php if (!empty($notifications)): ?>
-        <div class="divide-y divide-slate-200 dark:divide-slate-700">
-            <?php foreach ($notifications as $notif): ?>
-                <div class="notif-item p-6 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors relative group"
-                    data-search="<?php echo strtolower(htmlspecialchars($notif['title'] . ' ' . (str_replace(["\r", "\n"], ' ', $notif['message'])))); ?>">
-                    <div class="flex items-start justify-between mb-3">
-                        <div>
-                            <div class="flex items-center gap-2 mb-2">
-                                <span class="inline-flex px-3 py-1 text-xs font-bold rounded-full 
-                            <?php
-                            if ($notif['type'] == 'Opportunity') echo 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
-                            elseif ($notif['type'] == 'Match') echo 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
-                            elseif ($notif['type'] == 'Reminder') echo 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400';
-                            else echo 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400';
-                            ?>
-                        ">
-                                    <?php echo htmlspecialchars($notif['type']); ?>
-                                </span>
-                                <span class="px-3 py-1 text-xs font-bold rounded-full bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300">
-                                    <?php echo htmlspecialchars($notif['status']); ?>
-                                </span>
-                                <span class="px-3 py-1 text-xs font-bold rounded-full bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400">
-                                    <?php echo htmlspecialchars($notif['recipient_type'] ?? 'All'); ?>
-                                </span>
-                            </div>
-                            <h3 class="font-bold text-slate-900 dark:text-white text-lg"><?php echo htmlspecialchars($notif['title']); ?></h3>
-                        </div>
-                        <div class="relative">
-                            <button onclick="toggleDropdown(<?php echo $notif['id']; ?>)" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
-                                <span class="material-symbols-outlined">more_vert</span>
-                            </button>
-                            <div id="dropdown-<?php echo $notif['id']; ?>" class="hidden absolute right-0 top-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl py-1 w-44 z-10">
-                                <button onclick="viewNotification(<?php echo $notif['id']; ?>)" class="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2">
-                                    <span class="material-symbols-outlined text-base">visibility</span>
-                                    View Full
-                                </button>
-                                <form method="POST" onsubmit="return confirm('Delete this notification?')">
-                                    <input type="hidden" name="notification_id" value="<?php echo $notif['id']; ?>">
-                                    <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
-                                    <button type="submit" name="delete_notification" value="1" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2">
-                                        <span class="material-symbols-outlined text-base">delete</span>
-                                        Delete
-                                    </button>
-                                </form>
-                            </div>
-                        </div>
+    <div class="divide-y divide-slate-200 dark:divide-slate-700" id="notificationsList">
+    <?php for ($i=0; $i<4; $i++): ?>
+        <div class="p-6 relative">
+            <div class="flex items-start justify-between mb-3">
+                <div>
+                    <div class="flex items-center gap-2 mb-2">
+                        <div class="skeleton-pulse h-5 w-20 rounded-full"></div>
+                        <div class="skeleton-pulse h-5 w-20 rounded-full"></div>
+                        <div class="skeleton-pulse h-5 w-20 rounded-full"></div>
                     </div>
-                    <p class="text-slate-600 dark:text-slate-300 text-sm mb-4"><?php echo htmlspecialchars($notif['message']); ?></p>
-                    <p class="text-xs text-slate-500 dark:text-slate-400"><?php echo date('M d, Y H:i', strtotime($notif['created_at'])); ?></p>
+                    <div class="skeleton-pulse h-6 w-48 rounded mb-2"></div>
                 </div>
-            <?php endforeach; ?>
+            </div>
+            <div class="skeleton-pulse h-4 w-full rounded mb-1"></div>
+            <div class="skeleton-pulse h-4 w-3/4 rounded mb-4"></div>
+            <div class="skeleton-pulse h-3 w-32 rounded"></div>
         </div>
-    <?php else: ?>
-        <div class="p-12 text-center">
-            <span class="material-symbols-outlined text-4xl text-slate-300 mb-2">notifications_off</span>
-            <p class="text-slate-500 font-medium">No notifications yet</p>
-            <p class="text-sm text-slate-400 mt-1">Click "Send New Notification" to create one.</p>
-        </div>
-    <?php endif; ?>
+    <?php endfor; ?>
+</div>
 </div>
 
 <!-- Send Notification Modal -->
@@ -290,8 +250,9 @@ $notifications = $notification->getAll(20);
             </form>
 
             <script>
+(function(){
                 // Live Preview JS
-                function applyTemplate() {
+                window.applyTemplate = function() {
                     const sel = document.getElementById('templateSelect');
                     const selected = sel.options[sel.selectedIndex];
                     document.getElementById('selected_template_id').value = selected?.dataset.templateId || '';
@@ -301,7 +262,7 @@ $notifications = $notification->getAll(20);
                 }
 
                 // Open send notification modal with fresh form nonce
-                function openSendNotificationModal() {
+                window.openSendNotificationModal = function() {
                     // Refresh form nonce
                     fetch('../api/get_form_nonce.php')
                         .then(r => r.json())
@@ -332,13 +293,13 @@ $notifications = $notification->getAll(20);
                 document.addEventListener("DOMContentLoaded", () => {});
 
 
-                function toggleSpecificRecipients() {
+                window.toggleSpecificRecipients = function() {
                     const group = document.getElementById('target_group_select').value;
                     document.getElementById('specific_recipients_container').style.display = (group === 'Specific') ? 'block' : 'none';
                 }
 
                 // Filter specific recipients list based on search input
-                function filterSpecificRecipients() {
+                window.filterSpecificRecipients = function() {
                     const query = document.getElementById('specific_search').value.toLowerCase();
                     const container = document.getElementById('specific_recipients_container');
                     const labels = container.querySelectorAll('label');
@@ -353,7 +314,7 @@ $notifications = $notification->getAll(20);
                 }
 
                 // Save a new group of selected individuals
-                function saveGroup() {
+                window.saveGroup = function() {
                     const groupName = document.getElementById('new_group_name').value.trim();
                     if (!groupName) {
                         showNotifToast('Please enter a group name.', 'error');
@@ -393,7 +354,7 @@ $notifications = $notification->getAll(20);
                 }
 
                 // Load selected group members and check the corresponding checkboxes
-                function loadGroup() {
+                window.loadGroup = function() {
                     const dropdown = document.getElementById('existing_groups');
                     const groupId = dropdown.value;
                     if (!groupId) return;
@@ -420,7 +381,7 @@ $notifications = $notification->getAll(20);
                         .catch(() => showNotifToast('Network error while loading group.', 'error'));
                 }
 
-                function updateGroup() {
+                window.updateGroup = function() {
                     const dropdown = document.getElementById('existing_groups');
                     const groupId = dropdown.value;
                     if (!groupId) {
@@ -462,7 +423,7 @@ $notifications = $notification->getAll(20);
                         .catch(() => showNotifToast('Network error while updating group.', 'error'));
                 }
 
-                function deleteGroup() {
+                window.deleteGroup = function() {
                     const dropdown = document.getElementById('existing_groups');
                     if (!dropdown.value) {
                         showNotifToast('Please select a group to delete.', 'error');
@@ -472,7 +433,7 @@ $notifications = $notification->getAll(20);
                     document.getElementById('deleteGroupModal').classList.remove('hidden');
                 }
 
-                function executeDeleteGroup() {
+                window.executeDeleteGroup = function() {
                     const dropdown = document.getElementById('existing_groups');
                     const groupId = dropdown.value;
 
@@ -503,7 +464,7 @@ $notifications = $notification->getAll(20);
                         .catch(() => showNotifToast('Network error while deleting group.', 'error'));
                 }
 
-                function submitNotificationAjax() {
+                window.submitNotificationAjax = function() {
                     var titleVal = document.querySelector('[name="title"]').value.trim();
                     var msgVal = document.getElementById('customMessageArea').value.trim();
                     var typeVal = document.querySelector('[name="type"]').value;
@@ -608,11 +569,11 @@ $notifications = $notification->getAll(20);
                         });
                 }
 
-                function escapeHtml(str) {
+                window.escapeHtml = function(str) {
                     return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
                 }
 
-                function showNotifToast(msg, type) {
+                window.showNotifToast = function(msg, type) {
                     var toast = document.createElement('div');
                     toast.className = 'fixed bottom-6 right-6 z-50 max-w-sm px-5 py-3 rounded-xl shadow-xl text-sm font-semibold ' +
                         (type === 'error' ? 'bg-red-600 text-white' : 'bg-green-600 text-white');
@@ -623,7 +584,8 @@ $notifications = $notification->getAll(20);
                         setTimeout(() => toast.remove(), 400);
                     }, 5000);
                 }
-            </script>
+            })();
+</script>
 
         </div>
 
@@ -669,12 +631,10 @@ $notifications = $notification->getAll(20);
         </div>
 
         <script>
-            var notificationsData = {};
-            <?php foreach ($notifications as $n): ?>
-                notificationsData[<?php echo $n['id']; ?>] = <?php echo json_encode($n); ?>;
-            <?php endforeach; ?>
+(function(){
+            
 
-            function toggleDropdown(id) {
+            window.toggleDropdown = function(id) {
                 // Close all other dropdowns
                 document.querySelectorAll('[id^="dropdown-"]').forEach(d => {
                     if (d.id !== 'dropdown-' + id) d.classList.add('hidden');
@@ -682,7 +642,7 @@ $notifications = $notification->getAll(20);
                 document.getElementById('dropdown-' + id).classList.toggle('hidden');
             }
 
-            function viewNotification(id) {
+            window.viewNotification = function(id) {
                 var n = notificationsData[id];
                 if (n) {
                     document.getElementById('viewTitle').textContent = n.title;
@@ -701,7 +661,7 @@ $notifications = $notification->getAll(20);
             });
 
             // Real-time filtering for notifications
-            function filterNotifications() {
+            window.filterNotifications = function() {
                 const searchVal = document.getElementById('notif_search').value.toLowerCase();
                 const items = document.querySelectorAll('.notif-item');
 
@@ -716,4 +676,80 @@ $notifications = $notification->getAll(20);
             }
         </script>
 
-        <?php require_once __DIR__ . '/../includes/footer.php'; ?>
+        
+<script>
+(function() {
+    function loadNotifications() {
+        fetch(`../api/get_notifications_data.php?view=sent`)
+            .then(r => r.json())
+            .then(res => {
+                const list = document.getElementById('notificationsList');
+                if (!res.success || !res.notifications || res.notifications.length === 0) {
+                    list.innerHTML = `<div class="p-12 text-center"><span class="material-symbols-outlined text-4xl text-slate-300 mb-2">notifications_off</span><p class="text-slate-500 font-medium">No notifications yet</p><p class="text-sm text-slate-400 mt-1">Click "Send New Notification" to create one.</p></div>`;
+                    return;
+                }
+                
+                const nonce = document.querySelector('input[name="form_nonce"]')?.value || '<?php echo htmlspecialchars(getFormNonce()); ?>';
+                window.notificationsData = {};
+                
+                list.innerHTML = res.notifications.map(notif => {
+                    window.notificationsData[notif.id] = notif;
+                    
+                    let typeBadge = 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400';
+                    if (notif.type === 'Opportunity') typeBadge = 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400';
+                    else if (notif.type === 'Match') typeBadge = 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
+                    else if (notif.type === 'Reminder') typeBadge = 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400';
+                    
+                    const searchData = `${notif.title} ${notif.message.replace(/[\r\n]+/g, ' ')}`.toLowerCase().replace(/"/g, '&quot;');
+                    
+                    const dt = new Date(notif.created_at);
+                    const formattedDate = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) + ' ' + dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+                    
+                    return `
+                    <div class="notif-item p-6 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors relative group" data-search="${searchData}">
+                        <div class="flex items-start justify-between mb-3">
+                            <div>
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="inline-flex px-3 py-1 text-xs font-bold rounded-full ${typeBadge}">${notif.type}</span>
+                                    <span class="px-3 py-1 text-xs font-bold rounded-full bg-slate-200 dark:bg-slate-600 text-slate-700 dark:text-slate-300">${notif.status}</span>
+                                    <span class="px-3 py-1 text-xs font-bold rounded-full bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400">${notif.recipient_type || 'All'}</span>
+                                </div>
+                                <h3 class="font-bold text-slate-900 dark:text-white text-lg">${escapeHtml(notif.title)}</h3>
+                            </div>
+                            <div class="relative">
+                                <button onclick="toggleDropdown(${notif.id})" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
+                                    <span class="material-symbols-outlined">more_vert</span>
+                                </button>
+                                <div id="dropdown-${notif.id}" class="hidden absolute right-0 top-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-xl py-1 w-44 z-10">
+                                    <button onclick="viewNotification(${notif.id})" class="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-base">visibility</span>
+                                        View Full
+                                    </button>
+                                    <form method="POST" onsubmit="return confirm('Delete this notification?')">
+                                        <input type="hidden" name="notification_id" value="${notif.id}">
+                                        <input type="hidden" name="form_nonce" value="${nonce}">
+                                        <button type="submit" name="delete_notification" value="1" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2">
+                                            <span class="material-symbols-outlined text-base">delete</span>
+                                            Delete
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="text-slate-600 dark:text-slate-300 text-sm mb-4">${escapeHtml(notif.message)}</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">${formattedDate}</p>
+                    </div>`;
+                }).join('');
+            });
+    }
+    
+    loadNotifications();
+})();
+</script>
+<style>
+.skeleton-pulse { background: linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%); background-size: 200% 100%; animation: skeleton-shimmer 1.4s ease-in-out infinite; display: block; }
+.dark .skeleton-pulse { background: linear-gradient(90deg,#1e293b 25%,#334155 50%,#1e293b 75%); background-size: 200% 100%; }
+@keyframes skeleton-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+</style>
+
+<?php require_once __DIR__ . '/../includes/footer.php'; ?>
