@@ -1,4 +1,5 @@
 <?php
+
 /**
  * API: Notifications Data
  * Serves notification lists for:
@@ -31,12 +32,12 @@ try {
     if ($view === 'inbox') {
         // Every user fetches their own inbox — no cache (realtime)
         $limit         = (int)($_GET['limit'] ?? 50);
-        $notifications = $notification->getNotifications($userId, $limit);
+        $notifications = $notification->getUserNotifications($userId, $limit);
         $unread_count  = $notification->getUnreadCount($userId);
 
         echo json_encode([
             'success'      => true,
-            'notifications'=> $notifications,
+            'notifications' => $notifications,
             'unread_count' => $unread_count,
         ]);
         exit;
@@ -72,7 +73,6 @@ try {
     }
 
     echo json_encode(['success' => false, 'message' => 'Invalid view or unauthorized']);
-
-} catch (Exception $e) {
+} catch (Throwable $e) {
     echo json_encode(['success' => false, 'message' => 'Error fetching notifications']);
 }

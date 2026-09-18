@@ -4,7 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Youth Profiling System - Youth Skills Matching & Employment Opportunities</title>
+    <title>Panaon KK - Youth Skills Matching & Employment Opportunities</title>
+    <link rel="icon" type="image/jpeg" href="assets/images/panaon-kk-youth-registry.jpg">
+    <link rel="apple-touch-icon" href="assets/images/panaon-kk-youth-registry.jpg">
     <script src="<?php echo (isset($basePath) ? $basePath : ""); ?>/assets/js/tailwind.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
@@ -16,10 +18,8 @@
     <nav class="bg-white shadow-sm sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-lg bg-blue-900 flex items-center justify-center text-white">
-                    <span class="material-symbols-outlined">account_balance</span>
-                </div>
-                <span class="text-xl font-bold text-blue-900">Municipal KK</span>
+                <img src="assets/images/panaon-kk-youth-registry.jpg" alt="Panaon KK logo" class="w-10 h-10 rounded-lg object-cover">
+                <span class="text-xl font-bold text-blue-900">Panaon KK</span>
             </div>
             <a href="pages/login.php" class="px-6 py-2 bg-blue-900 text-white rounded-lg font-semibold hover:bg-blue-800 transition-colors">
                 Login
@@ -132,7 +132,7 @@
         <div class="max-w-7xl mx-auto">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
                 <div>
-                    <h4 class="font-bold text-white mb-4">Municipal KK</h4>
+                    <h4 class="font-bold text-white mb-4">Panaon KK</h4>
                     <p class="text-sm">Empowering out-of-school youth through skills matching and employment pathways.</p>
                 </div>
                 <div>
@@ -161,7 +161,7 @@
                 </div>
             </div>
             <div class="border-t border-slate-800 pt-8 text-center text-sm">
-                <p>&copy; 2026 Municipal KK. All rights reserved.</p>
+                <p>&copy; 2026 Panaon KK. All rights reserved.</p>
             </div>
         </div>
     </footer>

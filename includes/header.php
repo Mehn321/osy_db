@@ -1,5 +1,5 @@
-<?php 
-require_once __DIR__ . '/../init.php'; 
+<?php
+require_once __DIR__ . '/../init.php';
 $basePath = str_replace('\\', '/', dirname(dirname($_SERVER['SCRIPT_NAME'])));
 $basePath = $basePath === '/' ? '' : $basePath;
 ?>
@@ -9,12 +9,16 @@ $basePath = $basePath === '/' ? '' : $basePath;
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo isset($pageTitle) ? $pageTitle . ' - Integrated Web Based Information System for Youth Profiling and Skills Matching' : 'Integrated Web Based Information System for Youth Profiling and Skills Matching'; ?></title>
+    <title><?php echo isset($pageTitle) ? $pageTitle . ' - Panaon KK Youth Profiling System' : 'Panaon KK Youth Profiling System'; ?></title>
+    <link rel="icon" type="image/jpeg" href="<?php echo $basePath; ?>/assets/images/panaon-kk-youth-registry.jpg">
+    <link rel="apple-touch-icon" href="<?php echo $basePath; ?>/assets/images/panaon-kk-youth-registry.jpg">
     <meta name="csrf-token" content="<?php echo htmlspecialchars(getCsrfToken()); ?>">
     <meta name="form-nonce" content="<?php echo htmlspecialchars(getFormNonce()); ?>">
     <script src="<?php echo $basePath; ?>/assets/js/tailwind.js"></script>
     <script>
-        tailwind.config = { darkMode: 'class' };
+        tailwind.config = {
+            darkMode: 'class'
+        };
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
@@ -111,22 +115,26 @@ $basePath = $basePath === '/' ? '' : $basePath;
             width: 6px;
             height: 6px;
         }
+
         .thin-scrollbar::-webkit-scrollbar-track,
         .overflow-x-auto::-webkit-scrollbar-track,
         .overflow-y-auto::-webkit-scrollbar-track {
             background: transparent;
         }
+
         .thin-scrollbar::-webkit-scrollbar-thumb,
         .overflow-x-auto::-webkit-scrollbar-thumb,
         .overflow-y-auto::-webkit-scrollbar-thumb {
             background-color: #cbd5e1;
             border-radius: 20px;
         }
+
         .dark .thin-scrollbar::-webkit-scrollbar-thumb,
         .dark .overflow-x-auto::-webkit-scrollbar-thumb,
         .dark .overflow-y-auto::-webkit-scrollbar-thumb {
             background-color: #475569;
         }
+
         /* For Firefox */
         .thin-scrollbar,
         .overflow-x-auto,
@@ -134,6 +142,7 @@ $basePath = $basePath === '/' ? '' : $basePath;
             scrollbar-width: thin;
             scrollbar-color: #cbd5e1 transparent;
         }
+
         .dark .thin-scrollbar,
         .dark .overflow-x-auto,
         .dark .overflow-y-auto {
@@ -156,13 +165,13 @@ $basePath = $basePath === '/' ? '' : $basePath;
         try {
             if (isset($_SESSION['user_id'])) {
                 $uid = (int) $_SESSION['user_id'];
-                $notifCount = (int) $headerCache->remember("unread_notifs_user_$uid", function() use ($database, $uid) {
+                $notifCount = (int) $headerCache->remember("unread_notifs_user_$uid", function () use ($database, $uid) {
                     $notification = new Notification($database);
                     return $notification->getUnreadCount($uid);
                 }, 30);
             }
 
-            $messageCount = (int) $headerCache->remember("unread_msgs_admin", function() use ($database) {
+            $messageCount = (int) $headerCache->remember("unread_msgs_admin", function () use ($database) {
                 $msgResult = $database->fetchOne("SELECT COUNT(*) as cnt FROM messages WHERE recipient_type = 'admin' AND is_read = 0");
                 return $msgResult['cnt'] ?? 0;
             }, 30);
@@ -177,11 +186,9 @@ $basePath = $basePath === '/' ? '' : $basePath;
         <!-- Sidebar -->
         <aside id="sidebar" class="app-sidebar fixed left-0 top-0 h-full flex flex-col p-4 gap-2 bg-white dark:bg-slate-900 w-64 border-r border-slate-200/50 dark:border-slate-700/50 z-50 font-inter transform -translate-x-full md:translate-x-0 transition-transform duration-300">
             <div class="flex items-center gap-3 px-2 py-4 mb-6">
-                <div class="w-10 h-10 rounded-lg bg-blue-900 flex items-center justify-center text-white shadow-lg">
-                    <span class="material-symbols-outlined">account_balance</span>
-                </div>
+                <img src="<?php echo $basePath; ?>/assets/images/panaon-kk-youth-registry.jpg" alt="Panaon KK logo" class="w-10 h-10 rounded-lg object-cover shadow-lg">
                 <div>
-                    <h1 class="font-bold text-white leading-tight text-sm">Municipal KK</h1>
+                    <h1 class="font-bold text-white leading-tight text-sm">Panaon KK</h1>
                     <p class="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-widest mt-1">Youth Registry</p>
                 </div>
             </div>
@@ -210,7 +217,7 @@ $basePath = $basePath === '/' ? '' : $basePath;
                         ['name' => 'Reports',            'icon' => 'assessment',         'path' => 'reports.php'],
                         ['name' => 'SK Chairmen',        'icon' => 'supervisor_account', 'path' => 'manage-sk-chairmen.php'],
                         ['name' => 'Provider Approvals', 'icon' => 'how_to_reg',         'path' => 'provider-approvals.php'],
-                        
+
                         ['name' => 'My Notifications',   'icon' => 'notifications_active', 'path' => 'my-notifications.php'],
                     ];
                 } elseif ($userRole === 'sk_chairman') {
@@ -301,7 +308,7 @@ $basePath = $basePath === '/' ? '' : $basePath;
                     <span class="material-symbols-outlined">help</span>
                     <span class="text-sm">Help Center</span>
                 </a>
-                
+
                 <?php if ($userRole === 'lydo'): ?>
                     <a href="<?php echo $basePath; ?>/pages/settings.php?tab=match-youth" class="flex items-center gap-3 px-3 py-2 rounded-lg transition-transform duration-200 hover:translate-x-1 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
                         <span class="material-symbols-outlined text-[20px]">settings</span>
@@ -568,8 +575,8 @@ $basePath = $basePath === '/' ? '' : $basePath;
                     overlay.classList.toggle('hidden');
                 }
                 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('mobileMenuBtn')?.addEventListener('click', toggleSidebar);
-});
+                    document.getElementById('mobileMenuBtn')?.addEventListener('click', toggleSidebar);
+                });
 
                 function toggleSubmenu(id) {
                     const el = document.getElementById(id);
@@ -691,7 +698,7 @@ $basePath = $basePath === '/' ? '' : $basePath;
                         if (isExternal && window.__spaExecutedScripts.has(scriptKey)) {
                             return;
                         }
-                        
+
                         if (isExternal) {
                             window.__spaExecutedScripts.add(scriptKey);
                         }

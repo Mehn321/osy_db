@@ -8,10 +8,10 @@
 
 class Opportunity
 {
-    private $db;
-    private $table = 'opportunities';
+    private Database $db;
+    private string $table = 'opportunities';
 
-    public function __construct($database)
+    public function __construct(Database $database)
     {
         $this->db = $database;
     }
@@ -19,7 +19,7 @@ class Opportunity
     /**
      * Create new opportunity
      */
-    public function create($data)
+    public function create(array $data): array
     {
         try {
             if (!isset($_SESSION['role']) || !in_array($_SESSION['role'], ['lydo', 'employer', 'training_provider'], true)) {
@@ -63,7 +63,7 @@ class Opportunity
     /**
      * Get opportunity by ID
      */
-    public function getById($id)
+    public function getById(int $id): ?array
     {
         $query = "SELECT * FROM {$this->table} WHERE id = ? LIMIT 1";
         return $this->db->fetchOne($query, [$id], "i");
@@ -72,7 +72,7 @@ class Opportunity
     /**
      * Get all opportunities
      */
-    public function getAll($filters = [])
+    public function getAll(array $filters = []): array
     {
         $this->autoCloseExpired();
         $query = "SELECT o.*, u.fullname as provider_name, u.provider_type as provider_type FROM {$this->table} o LEFT JOIN users u ON o.created_by = u.id WHERE 1=1";
@@ -114,7 +114,7 @@ class Opportunity
     /**
      * Update opportunity
      */
-    public function update($id, $data)
+    public function update(int $id, array $data): array
     {
         try {
             $opportunity = $this->getById($id);
@@ -132,7 +132,7 @@ class Opportunity
             $params = [];
             $types = '';
             foreach ($data as $key => $value) {
-                if (in_array($key, ['title','type','employment_type','work_schedule','experience_req','training_provider','duration','modality','location','compensation','benefits','certification','description','total_slots','deadline','age_min','age_max','status'])) {
+                if (in_array($key, ['title', 'type', 'employment_type', 'work_schedule', 'experience_req', 'training_provider', 'duration', 'modality', 'location', 'compensation', 'benefits', 'certification', 'description', 'total_slots', 'deadline', 'age_min', 'age_max', 'status'])) {
                     $updates[] = "{$key} = ?";
                     $params[] = $value;
                     $types .= ($key == 'total_slots' || $key == 'age_min' || $key == 'age_max') ? 'i' : 's';
@@ -154,7 +154,7 @@ class Opportunity
     /**
      * Delete opportunity
      */
-    public function delete($id)
+    public function delete(int $id): array
     {
         try {
             $opportunity = $this->getById($id);
@@ -178,26 +178,26 @@ class Opportunity
     /**
      * Get total opportunities
      */
-    public function getTotalCount()
+    public function getTotalCount(): int
     {
         $result = $this->db->fetchOne("SELECT COUNT(*) as total FROM {$this->table} WHERE status = 'Open'");
-        return $result['total'];
+        return (int) ($result['total'] ?? 0);
     }
 
     /**
      * Get opportunities by type count
      */
-    public function getByType($type)
+    public function getByType(string $type): int
     {
         $query = "SELECT COUNT(*) as count FROM {$this->table} WHERE type = ? AND status = 'Open'";
         $result = $this->db->fetchOne($query, [$type], "s");
-        return $result['count'];
+        return (int) ($result['count'] ?? 0);
     }
 
     /**
      * Get opportunities by provider
      */
-    public function getByProvider($providerId = null)
+    public function getByProvider(?int $providerId = null): array
     {
         $providerId = $providerId ?? $_SESSION['user_id'];
         $query = "SELECT o.*, u.fullname as provider_name FROM {$this->table} o LEFT JOIN users u ON o.provider_id = u.id WHERE provider_id = ? ORDER BY created_at DESC";
@@ -208,7 +208,7 @@ class Opportunity
      * Employers may publish jobs only; training providers may publish training
      * programs and scholarships. LYDO staff may manage municipal listings.
      */
-    private function assertRoleCanManageOpportunityType($type)
+    private function assertRoleCanManageOpportunityType(string $type): void
     {
         $role = $_SESSION['role'] ?? null;
         $allowedTypes = [
@@ -225,7 +225,7 @@ class Opportunity
     /**
      * Auto-close expired opportunities
      */
-    public function autoCloseExpired()
+    public function autoCloseExpired(): void
     {
         $query = "UPDATE {$this->table} SET status = 'Closed' WHERE status = 'Open' AND deadline < CURDATE()";
         $this->db->execute($query);
@@ -234,7 +234,7 @@ class Opportunity
     /**
      * Get opportunities for youth (only open, active providers, no scholarships)
      */
-    public function getForYouth($filters = [])
+    public function getForYouth(array $filters = []): array
     {
         $this->autoCloseExpired();
 
@@ -277,7 +277,7 @@ class Opportunity
     /**
      * Add required skill to opportunity
      */
-    public function addRequiredSkill($opportunityId, $skill, $importanceLevel = 'Required')
+    public function addRequiredSkill(int $opportunityId, string $skill, string $importanceLevel = 'Required'): array
     {
         try {
             $query = "INSERT INTO opportunity_required_skills (opportunity_id, skill, importance_level) VALUES (?, ?, ?)";
@@ -291,7 +291,7 @@ class Opportunity
     /**
      * Get required skills for opportunity
      */
-    public function getRequiredSkills($opportunityId)
+    public function getRequiredSkills(int $opportunityId): array
     {
         $query = "SELECT * FROM opportunity_required_skills WHERE opportunity_id = ? ORDER BY importance_level, created_at";
         return $this->db->fetchAll($query, [$opportunityId], "i");
@@ -300,7 +300,7 @@ class Opportunity
     /**
      * Remove required skill from opportunity
      */
-    public function removeRequiredSkill($skillId)
+    public function removeRequiredSkill(int $skillId): array
     {
         try {
             $query = "DELETE FROM opportunity_required_skills WHERE id = ?";
@@ -314,7 +314,7 @@ class Opportunity
     /**
      * Update required skills for opportunity (bulk operation)
      */
-    public function updateRequiredSkills($opportunityId, $skills)
+    public function updateRequiredSkills(int $opportunityId, array $skills): array
     {
         try {
             $this->db->execute("DELETE FROM opportunity_required_skills WHERE opportunity_id = ?", [$opportunityId], "i");
@@ -334,7 +334,7 @@ class Opportunity
     /**
      * Get opportunities by required skill
      */
-    public function getByRequiredSkill($skill, $filters = [])
+    public function getByRequiredSkill(string $skill, array $filters = []): array
     {
         $query = "SELECT DISTINCT o.* FROM {$this->table} o 
                  INNER JOIN opportunity_required_skills ors ON o.id = ors.opportunity_id 

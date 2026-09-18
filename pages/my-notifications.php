@@ -157,7 +157,12 @@ $unreadCount = 0;
     (function() {
         function loadMyNotifications() {
             fetch(`../api/get_notifications_data.php?view=inbox`)
-                .then(r => r.json())
+                .then(r => {
+                    if (!r.ok) {
+                        throw new Error(`Notifications request failed with status ${r.status}`);
+                    }
+                    return r.json();
+                })
                 .then(res => {
                     const list = document.getElementById('notificationsList');
 
@@ -234,6 +239,13 @@ $unreadCount = 0;
                         </div>
                     </div>`;
                     }).join('');
+                })
+                .catch(err => {
+                    console.error(err);
+                    const list = document.getElementById('notificationsList');
+                    if (list) {
+                        list.innerHTML = `<div class="bg-red-50 border border-red-200 rounded-xl p-6 text-red-800">Unable to load notifications right now. Please refresh and try again.</div>`;
+                    }
                 });
         }
 

@@ -167,8 +167,8 @@ if ($user->isLoggedIn()) {
                 <div class="absolute inset-0 opacity-20 bg-[url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2220%22 cy=%2220%22 r=%225%22 fill=%22white%22/></svg>')]"></div>
                 <div class="relative z-10">
                     <div class="flex items-center gap-2 mb-8">
-                        <span class="material-symbols-outlined text-4xl">account_balance</span>
-                        <span class="text-2xl font-bold tracking-tighter">Municipal KK</span>
+                        <img src="../assets/images/panaon-kk-youth-registry.jpg" alt="Panaon KK logo" class="w-12 h-12 rounded-lg object-cover">
+                        <span class="text-2xl font-bold tracking-tighter">Panaon KK</span>
                     </div>
                     <h1 class="text-4xl font-extrabold leading-tight tracking-tight mb-4">
                         Join Our<br />Provider Network.
