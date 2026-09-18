@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 $pageTitle = 'About Us';
 ?>
 <!DOCTYPE html>
@@ -36,6 +36,10 @@ $pageTitle = 'About Us';
         footer a:hover { color: #a8b4ff !important; }
         footer .text-primary { color: #a8b4ff !important; }
         footer .border-outline-variant\/15 { border-color: rgba(255,255,255,.08) !important; }
+
+        /* ── Skeleton loading ── */
+        .skeleton-pulse{background:linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%);background-size:200% 100%;animation:skeleton-shimmer 1.4s ease-in-out infinite;border-radius:6px;}
+        @keyframes skeleton-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
     </style>
 
     <script src="<?php echo (isset($basePath) ? $basePath : ""); ?>/assets/js/tailwind.js"></script>
@@ -93,6 +97,12 @@ $pageTitle = 'About Us';
 </head>
 
 <body class="bg-surface font-body text-on-surface">
+<div id="skeleton-loader" class="p-8">
+  <div class="skeleton-pulse h-6 w-1/3 mb-4"></div>
+  <div class="skeleton-pulse h-4 w-2/3 mb-2"></div>
+  <div class="skeleton-pulse h-4 w-1/2"></div>
+</div>
+<div id="real-content" class="hidden">
 
     <header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,14,83,0.04)]">
         <div class="h-16 max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between">
@@ -224,6 +234,15 @@ $pageTitle = 'About Us';
             AOS.init({ once: true });
         }
     </script>
+</div><!-- end #real-content -->
+<script>
+(function(){
+    var sk = document.getElementById('skeleton-loader');
+    var rc = document.getElementById('real-content');
+    if(sk) sk.style.display = 'none';
+    if(rc) rc.classList.remove('hidden');
+})();
+</script>
 </body>
 
 </html>

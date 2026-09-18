@@ -23,7 +23,7 @@ require_once __DIR__ . '/../includes/header.php';
 require_once __DIR__ . '/../Classes/Reference.php';
 
 if (!function_exists('osy_ref_values')) {
-    function osy_ref_values($items, $current = '')
+    function osy_ref_values(mixed $items, mixed $current = ''): array
     {
         $out = [];
         foreach ((array) $items as $item) {
@@ -45,7 +45,7 @@ if (!function_exists('osy_ref_values')) {
 }
 
 if (!function_exists('osy_display')) {
-    function osy_display($value, $fallback = 'Not provided')
+    function osy_display(mixed $value, string $fallback = 'Not provided'): string
     {
         $value = trim((string) ($value ?? ''));
         return $value !== '' ? $value : $fallback;
@@ -58,16 +58,54 @@ $message = '';
 $messageType = '';
 $isEditing = isset($_GET['edit']) && $_GET['edit'] === '1';
 
-$profile = $osyProfile->getByUserId($_SESSION['user_id']);
+$profile = [];
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $profile = $osyProfile->getByUserId($_SESSION['user_id']);
 
-if (!$profile) {
-    echo '<div class="max-w-xl mx-auto mt-16 text-center bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-10">';
-    echo '<span class="material-symbols-outlined text-5xl text-slate-400">person_off</span>';
-    echo '<p class="mt-4 text-slate-600 dark:text-slate-300">No profile found. Please complete your registration first.</p>';
-    echo '<a href="youth-signup.php" class="mt-6 inline-block px-6 py-2.5 bg-blue-900 text-white rounded-xl font-semibold hover:bg-blue-800">Complete Registration</a>';
-    echo '</div>';
-    require_once __DIR__ . '/../includes/footer.php';
-    exit;
+    if (!$profile) {
+        echo '<div class="max-w-xl mx-auto mt-16 text-center bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-10">';
+        echo '<span class="material-symbols-outlined text-5xl text-slate-400">person_off</span>';
+        echo '<p class="mt-4 text-slate-600 dark:text-slate-300">No profile found. Please complete your registration first.</p>';
+        echo '<a href="youth-signup.php" class="mt-6 inline-block px-6 py-2.5 bg-blue-900 text-white rounded-xl font-semibold hover:bg-blue-800">Complete Registration</a>';
+        echo '</div>';
+        require_once __DIR__ . '/../includes/footer.php';
+        exit;
+    }
+} else {
+    $profile = [
+        'id' => 0,
+        'first_name' => '',
+        'middle_name' => '',
+        'last_name' => '',
+        'suffix' => '',
+        'email' => '',
+        'phone' => '',
+        'age' => '',
+        'date_of_birth' => '',
+        'gender' => '',
+        'civil_status' => '',
+        'purok' => '',
+        'address' => '',
+        'province' => Location::DEFAULT_PROVINCE,
+        'municipality' => Location::DEFAULT_MUNICIPALITY,
+        'barangay' => '',
+        'education_level' => '',
+        'occupation' => '',
+        'reason_for_not_in_school' => '',
+        'engagement_status' => '',
+        'govt_id_type' => '',
+        'govt_id_number' => '',
+        'primary_skill' => '',
+        'skills' => '',
+        'interests' => '',
+        'verification_status' => 'Pending',
+        'created_by' => $_SESSION['user_id'] ?? 0,
+        'verification_remark' => '',
+        'image_path' => '',
+        'govt_id_image' => '',
+        'identity_document_path' => '',
+        'updated_at' => null
+    ];
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_profile'])) {
@@ -258,14 +296,16 @@ $engagementOptions = osy_ref_values([
 ], $profile['engagement_status'] ?? '');
 
 $pendingTransfer = null;
-try {
-    $pendingTransfer = $database->fetchOne(
-        "SELECT * FROM youth_barangay_transfers WHERE profile_id = ? AND status = 'Pending' LIMIT 1",
-        [$profile['id']],
-        'i'
-    );
-} catch (Exception $e) {
-    $pendingTransfer = null;
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    try {
+        $pendingTransfer = $database->fetchOne(
+            "SELECT * FROM youth_barangay_transfers WHERE profile_id = ? AND status = 'Pending' LIMIT 1",
+            [$profile['id']],
+            'i'
+        );
+    } catch (Exception $e) {
+        $pendingTransfer = null;
+    }
 }
 
 $verificationStatus = $profile['verification_status'] ?? 'Pending';
@@ -277,10 +317,26 @@ $inputClass = 'w-full rounded-xl border border-slate-200 dark:border-slate-600 b
 $labelClass = 'block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5';
 
 $matching = new Matching($database);
-$applications = $isVerified ? $matching->getMatchesForOSY($profile['id']) : [];
+$applications = [];
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isVerified) {
+    $applications = $matching->getMatchesForOSY($profile['id']);
+}
 ?>
 
-<div class="max-w-6xl mx-auto pb-12">
+<div id="skeleton-loader" class="max-w-6xl mx-auto pb-12">
+    <div class="animate-pulse space-y-8">
+        <div class="h-10 bg-slate-200 dark:bg-slate-700 rounded w-1/3"></div>
+        <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div>
+        <div class="h-32 bg-slate-200 dark:bg-slate-700 rounded-2xl"></div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="h-32 bg-slate-200 dark:bg-slate-700 rounded-2xl"></div>
+            <div class="h-32 bg-slate-200 dark:bg-slate-700 rounded-2xl"></div>
+            <div class="h-32 bg-slate-200 dark:bg-slate-700 rounded-2xl"></div>
+        </div>
+        <div class="h-64 bg-slate-200 dark:bg-slate-700 rounded-2xl"></div>
+    </div>
+</div>
+<div id="real-content" class="max-w-6xl mx-auto pb-12 hidden">
     <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
         <div>
             <nav class="flex items-center gap-2 text-xs font-semibold text-slate-500 tracking-wider uppercase mb-2">
@@ -619,43 +675,100 @@ $applications = $isVerified ? $matching->getMatchesForOSY($profile['id']) : [];
             <section class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
                 <h3 class="font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-blue-800">badge</span> Personal information</h3>
                 <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                    <div><dt class="text-slate-500">Full name</dt><dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($fullName)); ?></dd></div>
-                    <div><dt class="text-slate-500">Suffix</dt><dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($profile['suffix'] ?? '')); ?></dd></div>
-                    <div><dt class="text-slate-500">Date of birth</dt><dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo !empty($profile['date_of_birth']) ? htmlspecialchars(date('F d, Y', strtotime($profile['date_of_birth']))) : 'Not provided'; ?></dd></div>
-                    <div><dt class="text-slate-500">Age</dt><dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($profile['age'] ?? '')); ?></dd></div>
-                    <div><dt class="text-slate-500">Gender</dt><dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($profile['gender'] ?? '')); ?></dd></div>
-                    <div><dt class="text-slate-500">Civil status</dt><dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($profile['civil_status'] ?? '')); ?></dd></div>
-                    <div><dt class="text-slate-500">Phone</dt><dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($profile['phone'] ?? '')); ?></dd></div>
-                    <div class="sm:col-span-2"><dt class="text-slate-500">Email</dt><dd class="font-semibold text-slate-900 dark:text-white mt-1 break-all"><?php echo htmlspecialchars(osy_display($profile['email'] ?? '')); ?></dd></div>
+                    <div>
+                        <dt class="text-slate-500">Full name</dt>
+                        <dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($fullName)); ?></dd>
+                    </div>
+                    <div>
+                        <dt class="text-slate-500">Suffix</dt>
+                        <dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($profile['suffix'] ?? '')); ?></dd>
+                    </div>
+                    <div>
+                        <dt class="text-slate-500">Date of birth</dt>
+                        <dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo !empty($profile['date_of_birth']) ? htmlspecialchars(date('F d, Y', strtotime($profile['date_of_birth']))) : 'Not provided'; ?></dd>
+                    </div>
+                    <div>
+                        <dt class="text-slate-500">Age</dt>
+                        <dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($profile['age'] ?? '')); ?></dd>
+                    </div>
+                    <div>
+                        <dt class="text-slate-500">Gender</dt>
+                        <dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($profile['gender'] ?? '')); ?></dd>
+                    </div>
+                    <div>
+                        <dt class="text-slate-500">Civil status</dt>
+                        <dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($profile['civil_status'] ?? '')); ?></dd>
+                    </div>
+                    <div>
+                        <dt class="text-slate-500">Phone</dt>
+                        <dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($profile['phone'] ?? '')); ?></dd>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <dt class="text-slate-500">Email</dt>
+                        <dd class="font-semibold text-slate-900 dark:text-white mt-1 break-all"><?php echo htmlspecialchars(osy_display($profile['email'] ?? '')); ?></dd>
+                    </div>
                 </dl>
             </section>
 
             <section class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
                 <h3 class="font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-blue-800">home</span> Address</h3>
                 <dl class="grid grid-cols-1 gap-4 text-sm">
-                    <div><dt class="text-slate-500">Purok</dt><dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($profile['purok'] ?? ($profile['address'] ?? ''))); ?></dd></div>
-                    <div><dt class="text-slate-500">Barangay</dt><dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($profile['barangay'] ?? '')); ?></dd></div>
-                    <div><dt class="text-slate-500">Municipality</dt><dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($profile['municipality'] ?? Location::DEFAULT_MUNICIPALITY)); ?></dd></div>
-                    <div><dt class="text-slate-500">Province</dt><dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($profile['province'] ?? Location::DEFAULT_PROVINCE)); ?></dd></div>
+                    <div>
+                        <dt class="text-slate-500">Purok</dt>
+                        <dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($profile['purok'] ?? ($profile['address'] ?? ''))); ?></dd>
+                    </div>
+                    <div>
+                        <dt class="text-slate-500">Barangay</dt>
+                        <dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($profile['barangay'] ?? '')); ?></dd>
+                    </div>
+                    <div>
+                        <dt class="text-slate-500">Municipality</dt>
+                        <dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($profile['municipality'] ?? Location::DEFAULT_MUNICIPALITY)); ?></dd>
+                    </div>
+                    <div>
+                        <dt class="text-slate-500">Province</dt>
+                        <dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($profile['province'] ?? Location::DEFAULT_PROVINCE)); ?></dd>
+                    </div>
                 </dl>
             </section>
 
             <section class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
                 <h3 class="font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-blue-800">school</span> Education and status</h3>
                 <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                    <div><dt class="text-slate-500">Educational attainment</dt><dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($profile['education_level'] ?? '')); ?></dd></div>
-                    <div><dt class="text-slate-500">Occupation</dt><dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($profile['occupation'] ?? '')); ?></dd></div>
-                    <div><dt class="text-slate-500">Engagement</dt><dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($profile['engagement_status'] ?? '')); ?></dd></div>
-                    <div class="sm:col-span-2"><dt class="text-slate-500">Reason not in school</dt><dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($profile['reason_for_not_in_school'] ?? '')); ?></dd></div>
+                    <div>
+                        <dt class="text-slate-500">Educational attainment</dt>
+                        <dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($profile['education_level'] ?? '')); ?></dd>
+                    </div>
+                    <div>
+                        <dt class="text-slate-500">Occupation</dt>
+                        <dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($profile['occupation'] ?? '')); ?></dd>
+                    </div>
+                    <div>
+                        <dt class="text-slate-500">Engagement</dt>
+                        <dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($profile['engagement_status'] ?? '')); ?></dd>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <dt class="text-slate-500">Reason not in school</dt>
+                        <dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($profile['reason_for_not_in_school'] ?? '')); ?></dd>
+                    </div>
                 </dl>
             </section>
 
             <section class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6">
                 <h3 class="font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2"><span class="material-symbols-outlined text-blue-800">workspace_premium</span> Skills and goals</h3>
                 <dl class="grid grid-cols-1 gap-4 text-sm">
-                    <div><dt class="text-slate-500">Primary skill</dt><dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($profile['primary_skill'] ?? '')); ?></dd></div>
-                    <div><dt class="text-slate-500">Skills / certifications</dt><dd class="font-medium text-slate-900 dark:text-white mt-1 whitespace-pre-line"><?php echo htmlspecialchars(osy_display($profile['skills'] ?? '')); ?></dd></div>
-                    <div><dt class="text-slate-500">Interests / career goals</dt><dd class="font-medium text-slate-900 dark:text-white mt-1 whitespace-pre-line"><?php echo htmlspecialchars(osy_display($profile['interests'] ?? '')); ?></dd></div>
+                    <div>
+                        <dt class="text-slate-500">Primary skill</dt>
+                        <dd class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($profile['primary_skill'] ?? '')); ?></dd>
+                    </div>
+                    <div>
+                        <dt class="text-slate-500">Skills / certifications</dt>
+                        <dd class="font-medium text-slate-900 dark:text-white mt-1 whitespace-pre-line"><?php echo htmlspecialchars(osy_display($profile['skills'] ?? '')); ?></dd>
+                    </div>
+                    <div>
+                        <dt class="text-slate-500">Interests / career goals</dt>
+                        <dd class="font-medium text-slate-900 dark:text-white mt-1 whitespace-pre-line"><?php echo htmlspecialchars(osy_display($profile['interests'] ?? '')); ?></dd>
+                    </div>
                 </dl>
             </section>
         </div>
@@ -713,35 +826,166 @@ $applications = $isVerified ? $matching->getMatchesForOSY($profile['id']) : [];
 </div>
 
 <?php if ($isEditing): ?>
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    var dob = document.getElementById('profileDob');
-    var age = document.getElementById('profileAge');
-    if (dob && age) {
-        dob.addEventListener('change', function () {
-            if (!dob.value) { age.value = ''; return; }
-            var birth = new Date(dob.value + 'T00:00:00');
-            var today = new Date();
-            var years = today.getFullYear() - birth.getFullYear();
-            var monthDifference = today.getMonth() - birth.getMonth();
-            if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birth.getDate())) years--;
-            age.value = years >= 0 ? years : '';
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var dob = document.getElementById('profileDob');
+            var age = document.getElementById('profileAge');
+            if (dob && age) {
+                dob.addEventListener('change', function() {
+                    if (!dob.value) {
+                        age.value = '';
+                        return;
+                    }
+                    var birth = new Date(dob.value + 'T00:00:00');
+                    var today = new Date();
+                    var years = today.getFullYear() - birth.getFullYear();
+                    var monthDifference = today.getMonth() - birth.getMonth();
+                    if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birth.getDate())) years--;
+                    age.value = years >= 0 ? years : '';
+                });
+            }
+            var photoInput = document.getElementById('profileImageInput');
+            var preview = document.getElementById('profilePhotoPreview');
+            var placeholder = document.getElementById('profilePhotoPlaceholder');
+            if (photoInput && preview) {
+                photoInput.addEventListener('change', function() {
+                    var file = photoInput.files && photoInput.files[0];
+                    if (!file) return;
+                    preview.src = URL.createObjectURL(file);
+                    preview.classList.remove('hidden');
+                    if (placeholder) placeholder.classList.add('hidden');
+                });
+            }
         });
-    }
-    var photoInput = document.getElementById('profileImageInput');
-    var preview = document.getElementById('profilePhotoPreview');
-    var placeholder = document.getElementById('profilePhotoPlaceholder');
-    if (photoInput && preview) {
-        photoInput.addEventListener('change', function () {
-            var file = photoInput.files && photoInput.files[0];
-            if (!file) return;
-            preview.src = URL.createObjectURL(file);
-            preview.classList.remove('hidden');
-            if (placeholder) placeholder.classList.add('hidden');
-        });
-    }
-});
-</script>
+    </script>
+<?php endif; ?>
+<?php if ($_SERVER['REQUEST_METHOD'] !== 'POST'): ?>
+    <script>
+        (function() {
+            var loader = document.getElementById('skeleton-loader');
+            var content = document.getElementById('real-content');
+
+            fetch('../api/get_my_profile.php')
+                .then(function(res) {
+                    return res.json();
+                })
+                .then(function(data) {
+                    if (data.error) {
+                        if (data.error === 'No profile found') {
+                            window.location.href = 'youth-signup.php';
+                        }
+                        return;
+                    }
+
+                    if (loader) loader.style.display = 'none';
+                    if (content) content.classList.remove('hidden');
+
+                    var isEditing = <?php echo $isEditing ? 'true' : 'false'; ?>;
+                    var profile = data.profile;
+
+                    if (isEditing) {
+                        var updateInput = function(name, val) {
+                            var el = document.querySelector('input[name="' + name + '"], select[name="' + name + '"], textarea[name="' + name + '"]');
+                            if (el) el.value = val || '';
+                        };
+                        updateInput('first_name', profile.first_name);
+                        updateInput('middle_name', profile.middle_name);
+                        updateInput('last_name', profile.last_name);
+                        updateInput('suffix', profile.suffix);
+                        updateInput('email', profile.email);
+                        updateInput('phone', profile.phone);
+                        updateInput('date_of_birth', profile.date_of_birth);
+                        updateInput('age', profile.age);
+                        updateInput('gender', profile.gender);
+                        updateInput('civil_status', profile.civil_status);
+                        updateInput('purok', profile.purok || profile.address);
+                        updateInput('province', profile.province);
+                        updateInput('municipality', profile.municipality);
+                        updateInput('barangay', profile.barangay);
+                        updateInput('education_level', profile.education_level);
+                        updateInput('occupation', profile.occupation);
+                        updateInput('engagement_status', profile.engagement_status);
+                        updateInput('reason_for_not_in_school', profile.reason_for_not_in_school);
+                        updateInput('primary_skill', profile.primary_skill);
+                        updateInput('skills', profile.skills);
+                        updateInput('interests', profile.interests);
+                        updateInput('govt_id_type', profile.govt_id_type);
+                        updateInput('govt_id_number', profile.govt_id_number);
+
+                        var photoSrc = data.photoSrc;
+                        if (photoSrc) {
+                            var preview = document.getElementById('profilePhotoPreview');
+                            var placeholder = document.getElementById('profilePhotoPlaceholder');
+                            if (preview) {
+                                preview.src = photoSrc;
+                                preview.classList.remove('hidden');
+                            }
+                            if (placeholder) {
+                                placeholder.classList.add('hidden');
+                            }
+                        }
+                    } else {
+                        var dts = document.querySelectorAll('#real-content dt');
+                        for (var i = 0; i < dts.length; i++) {
+                            var dt = dts[i];
+                            var dd = dt.nextElementSibling;
+                            if (!dd || dd.tagName !== 'DD') continue;
+
+                            var label = dt.textContent.trim().toLowerCase();
+                            var val = '';
+                            if (label === 'full name') val = profile.first_name + ' ' + (profile.middle_name ? profile.middle_name + ' ' : '') + profile.last_name + ' ' + (profile.suffix || '');
+                            else if (label === 'suffix') val = profile.suffix;
+                            else if (label === 'date of birth') {
+                                if (profile.date_of_birth) {
+                                    var d = new Date(profile.date_of_birth);
+                                    val = d.toLocaleDateString('en-US', {
+                                        month: 'long',
+                                        day: 'numeric',
+                                        year: 'numeric'
+                                    });
+                                }
+                            } else if (label === 'age') val = profile.age;
+                            else if (label === 'gender') val = profile.gender;
+                            else if (label === 'civil status') val = profile.civil_status;
+                            else if (label === 'phone') val = profile.phone;
+                            else if (label === 'email') val = profile.email;
+                            else if (label === 'purok') val = profile.purok || profile.address;
+                            else if (label === 'barangay') val = profile.barangay;
+                            else if (label === 'municipality') val = profile.municipality;
+                            else if (label === 'province') val = profile.province;
+                            else if (label === 'educational attainment') val = profile.education_level;
+                            else if (label === 'occupation') val = profile.occupation;
+                            else if (label === 'engagement') val = profile.engagement_status;
+                            else if (label === 'reason not in school') val = profile.reason_for_not_in_school;
+                            else if (label === 'primary skill') val = profile.primary_skill;
+                            else if (label === 'skills / certifications') val = profile.skills;
+                            else if (label === 'interests / career goals') val = profile.interests;
+
+                            if (val) dd.textContent = val;
+                        }
+
+                        var h2 = document.querySelector('#real-content h2.truncate');
+                        if (h2) h2.textContent = profile.first_name + ' ' + profile.last_name;
+                        var pEmailPhone = document.querySelector('#real-content .text-blue-100');
+                        if (pEmailPhone) pEmailPhone.textContent = (profile.email || 'Not provided') + ' · ' + (profile.phone || 'Not provided');
+                    }
+                })
+                .catch(function(err) {
+                    console.error(err);
+                    if (loader) loader.style.display = 'none';
+                    if (content) content.classList.remove('hidden');
+                });
+        })();
+    </script>
+<?php else: ?>
+    <script>
+        (function() {
+            var loader = document.getElementById('skeleton-loader');
+            var content = document.getElementById('real-content');
+            if (loader) loader.style.display = 'none';
+            if (content) content.classList.remove('hidden');
+        })();
+    </script>
 <?php endif; ?>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

@@ -10,19 +10,44 @@ $osyProfile = new OSYProfile($database);
 $message = '';
 $messageType = '';
 
-$profile = $osyProfile->getById($profile_id);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $profile = $osyProfile->getById($profile_id);
 
-if (!$profile) {
-    header('Location: dashboard.php?error=Profile not found');
-    exit;
-}
-
-// Scoping check for SK Chairman
-if ($_SESSION['role'] === 'sk_chairman') {
-    if ($profile['barangay'] !== $_SESSION['barangay']) {
-        header('Location: sk-barangay-youth.php?error=unauthorized_barangay');
+    if (!$profile) {
+        header('Location: dashboard.php?error=Profile not found');
         exit;
     }
+
+    // Scoping check for SK Chairman
+    if ($_SESSION['role'] === 'sk_chairman') {
+        if ($profile['barangay'] !== $_SESSION['barangay']) {
+            header('Location: sk-barangay-youth.php?error=unauthorized_barangay');
+            exit;
+        }
+    }
+} else {
+    $profile = [
+        'first_name' => '',
+        'middle_name' => '',
+        'last_name' => '',
+        'suffix' => '',
+        'email' => '',
+        'phone' => '',
+        'age' => '',
+        'date_of_birth' => '',
+        'gender' => '',
+        'civil_status' => '',
+        'occupation' => '',
+        'education_level' => '',
+        'primary_skill' => '',
+        'engagement_status' => '',
+        'status' => '',
+        'province' => Location::DEFAULT_PROVINCE,
+        'municipality' => Location::DEFAULT_MUNICIPALITY,
+        'barangay' => '',
+        'purok' => '',
+        'address' => ''
+    ];
 }
 
 // Handle Form Submission
@@ -108,7 +133,37 @@ require_once __DIR__ . '/../includes/header.php';
             <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Update personal and professional information for <?php echo htmlspecialchars($profile['first_name']); ?>.</p>
         </div>
 
-        <form method="POST" class="p-8 space-y-6">
+        <div id="skeleton-loader" class="p-8 space-y-6 animate-pulse">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="h-12 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+                <div class="h-12 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+                <div class="h-12 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+                <div class="h-12 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <div class="h-12 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+                <div class="h-12 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+                <div class="h-12 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+                <div class="h-12 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+                <div class="h-12 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <div class="h-12 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+                <div class="h-12 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                <div class="h-12 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+                <div class="h-12 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+            </div>
+            <div class="flex justify-end gap-3 mt-6">
+                <div class="w-24 h-10 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+                <div class="w-32 h-10 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+            </div>
+        </div>
+
+        <form method="POST" id="edit-form" class="p-8 space-y-6" style="display: none;">
             <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
             <input type="hidden" name="update_profile" value="1">
 
@@ -238,5 +293,51 @@ require_once __DIR__ . '/../includes/header.php';
         </form>
     </div>
 </div>
+
+<script>
+(function() {
+    var profileId = <?php echo $profile_id; ?>;
+    var form = document.getElementById('edit-form');
+    var skeleton = document.getElementById('skeleton-loader');
+
+    if (!profileId) {
+        if (skeleton) skeleton.style.display = 'none';
+        if (form) form.style.display = 'block';
+        return;
+    }
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '../api/get_profile_detail.php?id=' + profileId, true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+            if (skeleton) skeleton.style.display = 'none';
+            if (form) form.style.display = 'block';
+            
+            if (xhr.status === 200) {
+                try {
+                    var data = JSON.parse(xhr.responseText);
+                    if (!data.error) {
+                        for (var key in data) {
+                            if (data.hasOwnProperty(key)) {
+                                var el = form.querySelector('[name="' + key + '"]');
+                                if (el) {
+                                    el.value = data[key] || '';
+                                    // Trigger change event if needed by other scripts
+                                    var event = document.createEvent('HTMLEvents');
+                                    event.initEvent('change', true, false);
+                                    el.dispatchEvent(event);
+                                }
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error parsing profile data', e);
+                }
+            }
+        }
+    };
+    xhr.send();
+})();
+</script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

@@ -9,19 +9,19 @@
 
 class Database
 {
-    private $conn;
-    private $host;
-    private $user;
-    private $pass;
-    private $dbname;
-    private $port;
-    private $charset;
-    private $socket;
-    private $sslMode;
-    private $sslCa;
-    private $sslCert;
-    private $sslKey;
-    private $sslVerifyServerCert;
+    private ?mysqli $conn = null;
+    private string $host;
+    private string $user;
+    private string $pass;
+    private string $dbname;
+    private int $port;
+    private string $charset;
+    private ?string $socket;
+    private ?string $sslMode;
+    private ?string $sslCa;
+    private ?string $sslCert;
+    private ?string $sslKey;
+    private ?bool $sslVerifyServerCert;
 
     public function __construct($host = null, $user = null, $pass = null, $dbname = null, $port = null, $charset = 'utf8mb4', $socket = null, $sslMode = null, $sslCa = null, $sslCert = null, $sslKey = null, $sslVerifyServerCert = null)
     {
@@ -155,7 +155,7 @@ class Database
     /**
      * Execute a prepared statement
      */
-    public function executeQuery($query, $params = [], $types = '')
+    public function executeQuery(string $query, array $params = [], string $types = ''): mysqli_stmt
     {
         try {
             $stmt = $this->conn->prepare($query);
@@ -197,7 +197,7 @@ class Database
     /**
      * Fetch all results
      */
-    public function fetchAll($query, $params = [], $types = '')
+    public function fetchAll(string $query, array $params = [], string $types = ''): array
     {
         $stmt = $this->executeQuery($query, $params, $types);
         $result = $stmt->get_result();
@@ -207,7 +207,7 @@ class Database
     /**
      * Fetch single row
      */
-    public function fetchOne($query, $params = [], $types = '')
+    public function fetchOne(string $query, array $params = [], string $types = ''): ?array
     {
         $stmt = $this->executeQuery($query, $params, $types);
         $result = $stmt->get_result();
@@ -217,7 +217,7 @@ class Database
     /**
      * Insert/Update/Delete
      */
-    public function execute($query, $params = [], $types = '')
+    public function execute(string $query, array $params = [], string $types = ''): int
     {
         $stmt = $this->executeQuery($query, $params, $types);
         return $stmt->affected_rows;
@@ -277,7 +277,7 @@ class Database
     /**
      * Import the SQL dump into the current database connection
      */
-    public function importSqlFile($filePath)
+    public function importSqlFile(string $filePath): void
     {
         if (!file_exists($filePath)) {
             throw new Exception("SQL file not found: " . $filePath);
@@ -302,7 +302,7 @@ class Database
     /**
      * Initialize schema from SQL dump if no tables exist
      */
-    public function initializeSchema($filePath)
+    public function initializeSchema(string $filePath): void
     {
         $lockFile = dirname(__DIR__) . '/.db_initialized';
         if (file_exists($lockFile)) {
@@ -312,14 +312,14 @@ class Database
         if (!$this->hasTables()) {
             $this->importSqlFile($filePath);
         }
-        
+
         file_put_contents($lockFile, '1');
     }
 
     /**
      * Escape string for security
      */
-    public function escape($string)
+    public function escape(string $string): string
     {
         return $this->conn->real_escape_string($string);
     }

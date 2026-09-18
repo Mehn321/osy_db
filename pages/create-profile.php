@@ -60,11 +60,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_profile'])) {
 }
 
 // Fetch references
-require_once __DIR__ . '/../Classes/Reference.php';
-$ref = new Reference($database);
-$barangays = $ref->getByCategory('barangay');
-$eduLevels = $ref->getByCategory('education_level');
-$govtIdTypes = $ref->getByCategory('govt_id_type');
+$barangays = [];
+$eduLevels = [];
+$govtIdTypes = [];
 
 require_once __DIR__ . '/../includes/header.php';
 ?>
@@ -95,7 +93,34 @@ require_once __DIR__ . '/../includes/header.php';
             <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">Fill out the form below to add a new youth record to the system.</p>
         </div>
 
-        <form method="POST" class="p-8 space-y-6">
+        <div id="form-skeleton" class="p-8 space-y-6 animate-pulse">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="h-12 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+                <div class="h-12 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+                <div class="h-12 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+                <div class="h-12 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="h-12 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+                <div class="h-12 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="h-12 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+                <div class="h-12 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+                <div class="h-12 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="h-12 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+                <div class="h-12 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="h-12 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+                <div class="h-12 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+            </div>
+            <div class="h-12 bg-slate-200 dark:bg-slate-700 rounded-xl mb-6"></div>
+        </div>
+
+        <form method="POST" id="profile-form" class="p-8 space-y-6" style="display: none;">
             <input type="hidden" name="form_nonce" value="<?php echo htmlspecialchars(getFormNonce()); ?>">
             <input type="hidden" name="create_profile" value="1">
             <input type="hidden" name="profile_type" value="<?php echo htmlspecialchars($profileType); ?>">
@@ -206,5 +231,49 @@ require_once __DIR__ . '/../includes/header.php';
         </form>
     </div>
 </div>
+
+<script>
+(function() {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '../api/get_create_profile_data.php', true);
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            try {
+                var data = JSON.parse(xhr.responseText);
+                
+                var eduSelect = document.querySelector('select[name="education_level"]');
+                if (eduSelect && data.eduLevels) {
+                    for (var i = 0; i < data.eduLevels.length; i++) {
+                        var option = document.createElement('option');
+                        option.value = data.eduLevels[i];
+                        option.textContent = data.eduLevels[i];
+                        eduSelect.appendChild(option);
+                    }
+                }
+                
+                var cascade = document.querySelector('.location-cascade');
+                if (cascade && data.barangays) {
+                    cascade.setAttribute('data-barangays', JSON.stringify(data.barangays));
+                    var muni = cascade.querySelector('.loc-municipality');
+                    if (muni) {
+                        var event = document.createEvent('HTMLEvents');
+                        event.initEvent('change', false, true);
+                        muni.dispatchEvent(event);
+                    }
+                }
+                
+                var skeleton = document.getElementById('form-skeleton');
+                if (skeleton) skeleton.style.display = 'none';
+                
+                var form = document.getElementById('profile-form');
+                if (form) form.style.display = 'block';
+            } catch (e) {
+                console.error("Error parsing profile data", e);
+            }
+        }
+    };
+    xhr.send();
+})();
+</script>
 
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

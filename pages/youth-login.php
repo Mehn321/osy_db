@@ -58,10 +58,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
+        .skeleton-pulse{background:linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%);background-size:200% 100%;animation:skeleton-shimmer 1.4s ease-in-out infinite;display:block;}
+        @keyframes skeleton-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
     </style>
 </head>
 
 <body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col">
+    <div id="skeleton-loader-login" style="display:flex;align-items:center;justify-content:center;min-height:100vh;padding:2rem">
+        <div style="width:100%;max-width:480px">
+            <div class="skeleton-pulse" style="height:2rem;width:50%;margin-bottom:1rem;border-radius:6px"></div>
+            <div class="skeleton-pulse" style="height:1rem;width:70%;margin-bottom:2rem;border-radius:6px"></div>
+            <div class="skeleton-pulse" style="height:3rem;width:100%;margin-bottom:1rem;border-radius:8px"></div>
+            <div class="skeleton-pulse" style="height:3rem;width:100%;margin-bottom:1rem;border-radius:8px"></div>
+            <div class="skeleton-pulse" style="height:2.5rem;width:100%;border-radius:8px"></div>
+        </div>
+    </div>
+    <div id="real-content-login" style="display:none;min-height:100vh" class="flex flex-col">
     <main class="flex-grow flex items-center justify-center px-6 py-12 relative overflow-hidden">
         <!-- Decorative Background -->
         <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-100 rounded-full blur-3xl opacity-50"></div>
@@ -200,6 +212,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 });
             });
         });
+    </script>
+    </div>
+    <script>
+    (function(){
+        var sk = document.getElementById('skeleton-loader-login');
+        var rc = document.getElementById('real-content-login');
+        if(sk) sk.style.display = 'none';
+        if(rc) rc.style.display = '';
+    })();
     </script>
 </body>
 

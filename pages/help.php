@@ -13,6 +13,14 @@ require_once __DIR__ . '/../includes/header.php';
 <!-- Hidden meta for SPA navigation highlighting -->
 <meta name="page" content="help">
 
+<!-- Skeleton loader for help page -->
+<div id="skeleton-loader-help" style="padding:2rem">
+    <div class="skeleton-pulse" style="height:2rem;width:40%;margin-bottom:1rem;border-radius:6px"></div>
+    <div class="skeleton-pulse" style="height:1rem;width:70%;margin-bottom:.5rem;border-radius:6px"></div>
+    <div class="skeleton-pulse" style="height:1rem;width:55%;border-radius:6px"></div>
+</div>
+<div id="real-content-help" style="display:none">
+
 <!-- Help Center Header -->
 <div class="mb-12">
     <h1 class="text-4xl font-extrabold text-slate-900 dark:text-white mb-4">Help Center</h1>
@@ -212,6 +220,18 @@ require_once __DIR__ . '/../includes/header.php';
             window.scrollTo({ top: 0, behavior: 'smooth' });
         });
     }
+})();
+</script>
+
+
+</div><!-- /#real-content-help -->
+
+<script>
+(function(){
+    var sk = document.getElementById('skeleton-loader-help');
+    var rc = document.getElementById('real-content-help');
+    if(sk) sk.style.display = 'none';
+    if(rc) rc.style.display = '';
 })();
 </script>
 

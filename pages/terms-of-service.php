@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 $pageTitle = 'Terms of Service';
 ?>
 <!DOCTYPE html>
@@ -10,9 +10,21 @@ $pageTitle = 'Terms of Service';
     <script src="<?php echo (isset($basePath) ? $basePath : ""); ?>/assets/js/tailwind.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <title><?= htmlspecialchars($pageTitle); ?> - Youth Profiling System</title>
+    <style>
+    .skeleton-pulse{background:linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%);background-size:200% 100%;animation:skeleton-shimmer 1.4s ease-in-out infinite;display:block;}
+    @keyframes skeleton-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+    </style>
 </head>
 
 <body class="bg-slate-50 text-slate-900 font-['Inter']">
+    <div id="skeleton-loader-tos" style="padding:4rem 2rem;max-width:56rem;margin:0 auto">
+        <div class="skeleton-pulse" style="height:1rem;width:30%;margin-bottom:1rem;border-radius:6px"></div>
+        <div class="skeleton-pulse" style="height:2.5rem;width:60%;margin-bottom:1rem;border-radius:6px"></div>
+        <div class="skeleton-pulse" style="height:1rem;width:25%;margin-bottom:2rem;border-radius:6px"></div>
+        <div class="skeleton-pulse" style="height:1rem;width:80%;margin-bottom:.5rem;border-radius:6px"></div>
+        <div class="skeleton-pulse" style="height:1rem;width:70%;border-radius:6px"></div>
+    </div>
+    <div id="real-content-tos" style="display:none">
     <header class="border-b border-slate-200 bg-white">
         <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-5"><a href="../index.php" class="flex items-center gap-3 font-bold text-blue-900"><span class="material-symbols-outlined">account_balance</span>Youth Profiling System</a><a href="../index.php" class="text-sm font-semibold text-blue-900 hover:text-blue-700">Back to Home</a></div>
     </header>
@@ -39,6 +51,15 @@ $pageTitle = 'Terms of Service';
             </section>
         </div>
     </main>
+    </div>
+    <script>
+    (function(){
+        var sk = document.getElementById('skeleton-loader-tos');
+        var rc = document.getElementById('real-content-tos');
+        if(sk) sk.style.display = 'none';
+        if(rc) rc.style.display = '';
+    })();
+    </script>
 </body>
 
 </html>
