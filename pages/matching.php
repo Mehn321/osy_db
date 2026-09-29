@@ -128,28 +128,28 @@ $minScore = $filters['min_score'];
         $syncStats = $matching->getGlobalSyncStats();
         if ($syncStats['missing_matches'] > 0):
         ?>
-            <div id="syncAlert"
-                class="flex items-center gap-3 px-4 py-2 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-sm">
-                <span class="material-symbols-outlined text-amber-600">warning</span>
-                <span><strong>Data Gap:</strong> <?php echo $syncStats['missing_matches']; ?> potential matches are missing
-                    AI scores.</span>
-                <button onclick="triggerGlobalSync()"
-                    class="ml-2 px-3 py-1 bg-amber-600 text-white rounded font-bold hover:bg-amber-700 transition-colors">Sync
-                    All Now</button>
-            </div>
+        <div id="syncAlert"
+            class="flex items-center gap-3 px-4 py-2 bg-amber-50 border border-amber-200 rounded-lg text-amber-800 text-sm">
+            <span class="material-symbols-outlined text-amber-600">warning</span>
+            <span><strong>Data Gap:</strong> <?php echo $syncStats['missing_matches']; ?> potential matches are missing
+                AI scores.</span>
+            <button onclick="triggerGlobalSync()"
+                class="ml-2 px-3 py-1 bg-amber-600 text-white rounded font-bold hover:bg-amber-700 transition-colors">Sync
+                All Now</button>
+        </div>
         <?php endif; ?>
     </div>
 </div>
 
 <?php if ($message): ?>
-    <div
-        class="mb-6 p-4 <?php echo $messageType === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'; ?> rounded-xl">
-        <p class="<?php echo $messageType === 'success' ? 'text-green-800' : 'text-red-800'; ?> flex items-center gap-2">
-            <span
-                class="material-symbols-outlined text-base"><?php echo $messageType === 'success' ? 'check_circle' : 'error'; ?></span>
-            <?php echo htmlspecialchars($message); ?>
-        </p>
-    </div>
+<div
+    class="mb-6 p-4 <?php echo $messageType === 'success' ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'; ?> rounded-xl">
+    <p class="<?php echo $messageType === 'success' ? 'text-green-800' : 'text-red-800'; ?> flex items-center gap-2">
+        <span
+            class="material-symbols-outlined text-base"><?php echo $messageType === 'success' ? 'check_circle' : 'error'; ?></span>
+        <?php echo htmlspecialchars($message); ?>
+    </p>
+</div>
 <?php endif; ?>
 
 <!-- Hero Section -->
@@ -202,9 +202,9 @@ $minScore = $filters['min_score'];
                     class="w-full bg-blue-800/20 border border-blue-700 rounded-xl py-3 px-4 text-sm text-white focus:ring-2 focus:ring-blue-300 transition-all cursor-pointer">
                     <option value="">-- Choose Opportunity --</option>
                     <?php foreach ($openOpportunities as $opportunityList): ?>
-                        <option value="<?php echo $opportunityList['id']; ?>"
-                            <?php echo $selectedOpportunityId == $opportunityList['id'] ? ' selected' : ''; ?>>
-                            <?php echo htmlspecialchars($opportunityList['title']); ?></option>
+                    <option value="<?php echo $opportunityList['id']; ?>"
+                        <?php echo $selectedOpportunityId == $opportunityList['id'] ? ' selected' : ''; ?>>
+                        <?php echo htmlspecialchars($opportunityList['title']); ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
@@ -220,12 +220,12 @@ $minScore = $filters['min_score'];
         </div>
         <div class="flex flex-col gap-3 mt-6">
             <?php if ($selectedOpportunityId): ?>
-                <button type="button" id="broadcastBtn"
-                    onclick="document.getElementById('broadcastModal').classList.remove('hidden')"
-                    class="w-full py-3 bg-white text-blue-900 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-slate-100 active:scale-[0.98] transition-all focus:outline-none">
-                    <span class="material-symbols-outlined">send</span>
-                    Broadcast to Shortlisted
-                </button>
+            <button type="button" id="broadcastBtn"
+                onclick="document.getElementById('broadcastModal').classList.remove('hidden')"
+                class="w-full py-3 bg-white text-blue-900 font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-slate-100 active:scale-[0.98] transition-all focus:outline-none">
+                <span class="material-symbols-outlined">send</span>
+                Broadcast to Shortlisted
+            </button>
             <?php endif; ?>
         </div>
     </div>
@@ -256,8 +256,8 @@ $minScore = $filters['min_score'];
                         onchange="applyTemplate()">
                         <option value="">-- Custom Message --</option>
                         <?php foreach ($templates as $t): ?>
-                            <option value="<?php echo htmlspecialchars($t['body']); ?>">
-                                <?php echo htmlspecialchars($t['name']); ?></option>
+                        <option value="<?php echo htmlspecialchars($t['body']); ?>">
+                            <?php echo htmlspecialchars($t['name']); ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -315,33 +315,33 @@ $minScore = $filters['min_score'];
 </div>
 
 <script>
-    (function() {
-        // Preview Logic Script
-        window.sampleName =
-            "<?php echo !empty($acceptedMatches) ? addslashes($acceptedMatches[0]['first_name']) : 'John'; ?>";
-        window.oppName = "<?php echo addslashes($selectedOpportunity['title'] ?? 'Sample Job'); ?>";
+(function() {
+    // Preview Logic Script
+    window.sampleName =
+        "<?php echo !empty($acceptedMatches) ? addslashes($acceptedMatches[0]['first_name']) : 'John'; ?>";
+    window.oppName = "<?php echo addslashes($selectedOpportunity['title'] ?? 'Sample Job'); ?>";
 
-        window.applyTemplate = function() {
-            const sel = document.getElementById('templateSelect');
-            if (sel.value) {
-                document.getElementById('customMessageArea').value = sel.value;
-            }
-            updateLivePreview();
-        }
-
-        window.updateLivePreview = function() {
-            let text = document.getElementById('customMessageArea').value;
-            text = text.replace(/{{name}}/g, sampleName);
-            text = text.replace(/{{opportunity}}/g, oppName);
-            document.getElementById('livePreviewBox').textContent = text;
-        }
-
-        // Initial run
-        if (currentOpportunityId) {
-            loadMatchesAJAX(currentOpportunityId);
+    window.applyTemplate = function() {
+        const sel = document.getElementById('templateSelect');
+        if (sel.value) {
+            document.getElementById('customMessageArea').value = sel.value;
         }
         updateLivePreview();
-    })();
+    }
+
+    window.updateLivePreview = function() {
+        let text = document.getElementById('customMessageArea').value;
+        text = text.replace(/{{name}}/g, sampleName);
+        text = text.replace(/{{opportunity}}/g, oppName);
+        document.getElementById('livePreviewBox').textContent = text;
+    }
+
+    // Initial run
+    if (currentOpportunityId) {
+        loadMatchesAJAX(currentOpportunityId);
+    }
+    updateLivePreview();
+})();
 </script>
 
 
@@ -444,152 +444,152 @@ $minScore = $filters['min_score'];
 
 <!-- Real-time Logic -->
 <script>
-    (function() {
-        window.switchTab = function(tab) {
-            if (tab === 'shortlisted') {
-                document.getElementById('tabShortlisted').className =
-                    'flex-1 py-2 text-sm font-bold border-b-2 border-blue-600 text-blue-600';
-                document.getElementById('tabRejected').className =
-                    'flex-1 py-2 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300';
-                document.getElementById('colPending').classList.remove('hidden');
-                document.getElementById('colRejected').classList.add('hidden');
-            } else {
-                document.getElementById('tabRejected').className =
-                    'flex-1 py-2 text-sm font-bold border-b-2 border-red-600 text-red-600';
-                document.getElementById('tabShortlisted').className =
-                    'flex-1 py-2 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300';
-                document.getElementById('colRejected').classList.remove('hidden');
-                document.getElementById('colPending').classList.add('hidden');
+(function() {
+    window.switchTab = function(tab) {
+        if (tab === 'shortlisted') {
+            document.getElementById('tabShortlisted').className =
+                'flex-1 py-2 text-sm font-bold border-b-2 border-blue-600 text-blue-600';
+            document.getElementById('tabRejected').className =
+                'flex-1 py-2 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300';
+            document.getElementById('colPending').classList.remove('hidden');
+            document.getElementById('colRejected').classList.add('hidden');
+        } else {
+            document.getElementById('tabRejected').className =
+                'flex-1 py-2 text-sm font-bold border-b-2 border-red-600 text-red-600';
+            document.getElementById('tabShortlisted').className =
+                'flex-1 py-2 text-sm font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300';
+            document.getElementById('colRejected').classList.remove('hidden');
+            document.getElementById('colPending').classList.add('hidden');
+        }
+    }
+
+    window.showDetailsModal = function(match) {
+        document.getElementById('mdlName').textContent = match.first_name + ' ' + match.last_name;
+        document.getElementById('mdlAge').textContent = match.age || 'N/A';
+        document.getElementById('mdlGender').textContent = match.gender || 'N/A';
+        document.getElementById('mdlBarangay').textContent = match.barangay || 'N/A';
+        document.getElementById('mdlEdu').textContent = match.education_level || 'N/A';
+        document.getElementById('mdlPrimarySkill').textContent = match.primary_skill || 'N/A';
+        document.getElementById('mdlSkills').textContent = match.skills || 'N/A';
+        document.getElementById('mdlInterests').textContent = match.interests || 'N/A';
+        document.getElementById('detailsModal').classList.remove('hidden');
+    }
+
+    window.currentOpportunityId = <?php echo $selectedOpportunityId ?: 'null'; ?>;
+    window.currentOpportunityTitle = "<?php echo addslashes($selectedOpportunity['title'] ?? ''); ?>";
+
+    window.handleOpportunityChange = function(id) {
+        if (!id) return;
+        window.currentOpportunityId = id;
+
+        // Update URL without reload for state persistence
+        const url = new URL(window.location);
+        url.searchParams.set('opportunity_id', id);
+        window.history.pushState({}, '', url);
+
+        loadMatchesAJAX(id);
+    }
+
+    window.loadMatchesAJAX = async function(id) {
+        const colPending = document.getElementById('colPending');
+        const colRejected = document.getElementById('colRejected');
+        const colAccepted = document.getElementById('colAccepted');
+
+        // Loading state
+        colPending.style.opacity = '0.5';
+        if (colRejected) colRejected.style.opacity = '0.5';
+        colAccepted.style.opacity = '0.5';
+
+        try {
+            const res = await fetch(`../api/get_opportunity_matches.php?opportunity_id=${id}`);
+            const result = await res.json();
+
+            if (!result.success || !Array.isArray(result.data)) {
+                console.error('Failed to load matches or malformed response', result);
+                return;
             }
-        }
 
-        window.showDetailsModal = function(match) {
-            document.getElementById('mdlName').textContent = match.first_name + ' ' + match.last_name;
-            document.getElementById('mdlAge').textContent = match.age || 'N/A';
-            document.getElementById('mdlGender').textContent = match.gender || 'N/A';
-            document.getElementById('mdlBarangay').textContent = match.barangay || 'N/A';
-            document.getElementById('mdlEdu').textContent = match.education_level || 'N/A';
-            document.getElementById('mdlPrimarySkill').textContent = match.primary_skill || 'N/A';
-            document.getElementById('mdlSkills').textContent = match.skills || 'N/A';
-            document.getElementById('mdlInterests').textContent = match.interests || 'N/A';
-            document.getElementById('detailsModal').classList.remove('hidden');
-        }
+            // Update Hero information if present
+            if (result.opportunity) {
+                document.getElementById('heroTitle').textContent = result.opportunity.title;
+                document.getElementById('heroDesc').textContent = result.opportunity.description;
+                document.getElementById('heroLocation').textContent = result.opportunity.location;
+                document.getElementById('heroDeadline').textContent = result.opportunity.deadline ?
+                    new Date(result.opportunity.deadline).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                    }) : 'No deadline';
+                document.getElementById('heroMatchCount').textContent = result.data.length +
+                    ' candidates found';
 
-        window.currentOpportunityId = <?php echo $selectedOpportunityId ?: 'null'; ?>;
-        window.currentOpportunityTitle = "<?php echo addslashes($selectedOpportunity['title'] ?? ''); ?>";
+                document.getElementById('totalMatchesCount').textContent = result.data.length;
+                document.getElementById('pendingCount').textContent = result.data.filter(m => m.status ===
+                    'Pending').length;
+                const rejEl = document.getElementById('rejectedCount');
+                if (rejEl) rejEl.textContent = result.data.filter(m => m.status === 'Rejected').length;
+                document.getElementById('acceptedCount').textContent = result.data.filter(m => m.status ===
+                    'Accepted').length;
 
-        window.handleOpportunityChange = function(id) {
-            if (!id) return;
-            window.currentOpportunityId = id;
-
-            // Update URL without reload for state persistence
-            const url = new URL(window.location);
-            url.searchParams.set('opportunity_id', id);
-            window.history.pushState({}, '', url);
-
-            loadMatchesAJAX(id);
-        }
-
-        window.loadMatchesAJAX = async function(id) {
-            const colPending = document.getElementById('colPending');
-            const colRejected = document.getElementById('colRejected');
-            const colAccepted = document.getElementById('colAccepted');
-
-            // Loading state
-            colPending.style.opacity = '0.5';
-            if (colRejected) colRejected.style.opacity = '0.5';
-            colAccepted.style.opacity = '0.5';
-
-            try {
-                const res = await fetch(`../api/get_opportunity_matches.php?opportunity_id=${id}`);
-                const result = await res.json();
-
-                if (!result.success || !Array.isArray(result.data)) {
-                    console.error('Failed to load matches or malformed response', result);
-                    return;
+                // Check if initial load
+                if (!window.initialMatchLoaded && currentOpportunityId) {
+                    window.initialMatchLoaded = true;
                 }
 
-                // Update Hero information if present
-                if (result.opportunity) {
-                    document.getElementById('heroTitle').textContent = result.opportunity.title;
-                    document.getElementById('heroDesc').textContent = result.opportunity.description;
-                    document.getElementById('heroLocation').textContent = result.opportunity.location;
-                    document.getElementById('heroDeadline').textContent = result.opportunity.deadline ?
-                        new Date(result.opportunity.deadline).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric'
-                        }) : 'No deadline';
-                    document.getElementById('heroMatchCount').textContent = result.data.length +
-                        ' candidates found';
-
-                    document.getElementById('totalMatchesCount').textContent = result.data.length;
-                    document.getElementById('pendingCount').textContent = result.data.filter(m => m.status ===
-                        'Pending').length;
-                    const rejEl = document.getElementById('rejectedCount');
-                    if (rejEl) rejEl.textContent = result.data.filter(m => m.status === 'Rejected').length;
-                    document.getElementById('acceptedCount').textContent = result.data.filter(m => m.status ===
-                        'Accepted').length;
-
-                    // Check if initial load
-                    if (!window.initialMatchLoaded && currentOpportunityId) {
-                        window.initialMatchLoaded = true;
-                    }
-
-                    // Broadcast info
-                    const bOppName = document.getElementById('broadcastOppName');
-                    const bOppId = document.getElementById('broadcastOppId');
-                    if (bOppName) bOppName.textContent = result.opportunity.title;
-                    if (bOppId) bOppId.value = result.opportunity.id;
-                    window.oppName = result.opportunity.title;
-                    updateLivePreview();
-                }
-
-                // Clear columns
-                colPending.innerHTML = result.data.filter(m => m.status === 'Pending').length ? '' :
-                    '<p id="pendingEmptyMsg" class="text-xs text-center text-slate-400 mt-10">No shortlisted candidates.</p>';
-                if (colRejected) colRejected.innerHTML = result.data.filter(m => m.status === 'Rejected')
-                    .length ? '' :
-                    '<p id="rejectedEmptyMsg" class="text-xs text-center text-slate-400 mt-10">No rejected candidates.</p>';
-                colAccepted.innerHTML = result.data.filter(m => m.status === 'Accepted').length ? '' :
-                    '<p id="acceptedEmptyMsg" class="text-xs text-center text-slate-400 mt-10">No candidates accepted yet.</p>';
-
-                result.data.forEach(match => {
-                    const html = renderMatchCardJS(match, match.status);
-                    if (match.status === 'Pending') {
-                        colPending.insertAdjacentHTML('beforeend', html);
-                    } else if (match.status === 'Rejected' && colRejected) {
-                        colRejected.insertAdjacentHTML('beforeend', html);
-                    } else if (match.status === 'Accepted') {
-                        colAccepted.insertAdjacentHTML('beforeend', html);
-                    }
-                });
-
-                // Update broadcast button visibility
-                const broadcastBtn = document.getElementById('broadcastBtn');
-                if (broadcastBtn) broadcastBtn.style.display = 'flex';
-
-                // Refresh count and score filter
-                const scoreInput = document.querySelector('input[name="min_score"]');
-                if (scoreInput) updateScoreFilter(scoreInput.value);
-            } catch (e) {
-                console.error('Failed to load matches:', e);
-            } finally {
-                colPending.style.opacity = '1';
-                colAccepted.style.opacity = '1';
+                // Broadcast info
+                const bOppName = document.getElementById('broadcastOppName');
+                const bOppId = document.getElementById('broadcastOppId');
+                if (bOppName) bOppName.textContent = result.opportunity.title;
+                if (bOppId) bOppId.value = result.opportunity.id;
+                window.oppName = result.opportunity.title;
+                updateLivePreview();
             }
+
+            // Clear columns
+            colPending.innerHTML = result.data.filter(m => m.status === 'Pending').length ? '' :
+                '<p id="pendingEmptyMsg" class="text-xs text-center text-slate-400 mt-10">No shortlisted candidates.</p>';
+            if (colRejected) colRejected.innerHTML = result.data.filter(m => m.status === 'Rejected')
+                .length ? '' :
+                '<p id="rejectedEmptyMsg" class="text-xs text-center text-slate-400 mt-10">No rejected candidates.</p>';
+            colAccepted.innerHTML = result.data.filter(m => m.status === 'Accepted').length ? '' :
+                '<p id="acceptedEmptyMsg" class="text-xs text-center text-slate-400 mt-10">No candidates accepted yet.</p>';
+
+            result.data.forEach(match => {
+                const html = renderMatchCardJS(match, match.status);
+                if (match.status === 'Pending') {
+                    colPending.insertAdjacentHTML('beforeend', html);
+                } else if (match.status === 'Rejected' && colRejected) {
+                    colRejected.insertAdjacentHTML('beforeend', html);
+                } else if (match.status === 'Accepted') {
+                    colAccepted.insertAdjacentHTML('beforeend', html);
+                }
+            });
+
+            // Update broadcast button visibility
+            const broadcastBtn = document.getElementById('broadcastBtn');
+            if (broadcastBtn) broadcastBtn.style.display = 'flex';
+
+            // Refresh count and score filter
+            const scoreInput = document.querySelector('input[name="min_score"]');
+            if (scoreInput) updateScoreFilter(scoreInput.value);
+        } catch (e) {
+            console.error('Failed to load matches:', e);
+        } finally {
+            colPending.style.opacity = '1';
+            colAccepted.style.opacity = '1';
         }
+    }
 
-        window.renderMatchCardJS = function(match, status) {
-            if (!match) return '';
-            const scoreClass = match.match_score >= 85 ? 'text-green-600' : (match.match_score >= 70 ?
-                'text-yellow-600' : 'text-orange-600');
-            const firstLetter = match.first_name ? match.first_name.charAt(0).toUpperCase() : '?';
-            const matchData = JSON.stringify(match).replace(/"/g, '&quot;');
+    window.renderMatchCardJS = function(match, status) {
+        if (!match) return '';
+        const scoreClass = match.match_score >= 85 ? 'text-green-600' : (match.match_score >= 70 ?
+            'text-yellow-600' : 'text-orange-600');
+        const firstLetter = match.first_name ? match.first_name.charAt(0).toUpperCase() : '?';
+        const matchData = JSON.stringify(match).replace(/"/g, '&quot;');
 
-            let actionBtns = '';
-            if (status === 'Pending') {
-                actionBtns = `
+        let actionBtns = '';
+        if (status === 'Pending') {
+            actionBtns = `
                 <button onclick="updateMatchStatus(${match.id}, 'Accepted')" class="flex-1 py-1.5 px-3 bg-green-50 text-green-700 hover:bg-green-600 hover:text-white border border-green-200 hover:border-green-600 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95">
                     <span class="material-symbols-outlined text-[16px]">how_to_reg</span> Accept
                 </button>
@@ -597,21 +597,21 @@ $minScore = $filters['min_score'];
                     <span class="material-symbols-outlined text-[16px]">cancel</span> Reject
                 </button>
             `;
-            } else if (status === 'Rejected') {
-                actionBtns = `
+        } else if (status === 'Rejected') {
+            actionBtns = `
                 <button onclick="updateMatchStatus(${match.id}, 'Accepted')" class="flex-1 py-1.5 px-3 bg-green-50 text-green-700 hover:bg-green-600 hover:text-white border border-green-200 hover:border-green-600 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95">
                     <span class="material-symbols-outlined text-[16px]">how_to_reg</span> Accept
                 </button>
             `;
-            } else if (status === 'Accepted') {
-                actionBtns = `
+        } else if (status === 'Accepted') {
+            actionBtns = `
                 <button onclick="updateMatchStatus(${match.id}, 'Pending')" class="flex-1 py-1.5 px-3 bg-orange-50 text-orange-700 hover:bg-orange-600 hover:text-white border border-orange-200 hover:border-orange-600 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95">
                     <span class="material-symbols-outlined text-[16px]">undo</span> Disapprove
                 </button>
             `;
-            }
+        }
 
-            const actionHtml = `
+        const actionHtml = `
             <div id="actionBtns-${match.id}" class="flex gap-2 mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
                 <button onclick="showDetailsModal(${matchData})" class="flex-1 py-1.5 px-3 bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white border border-blue-200 hover:border-blue-600 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1 active:scale-95">
                     <span class="material-symbols-outlined text-[16px]">visibility</span> Details
@@ -620,7 +620,7 @@ $minScore = $filters['min_score'];
             </div>
         `;
 
-            return `
+        return `
             <div id="matchCard-${match.id}" class="match-card bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm transition-all duration-300 relative overflow-hidden group" data-score="${match.match_score}">
                 <div class="flex items-start justify-between mb-3">
                     <div class="flex items-start gap-4">
@@ -647,180 +647,180 @@ $minScore = $filters['min_score'];
                 </div>
             </div>
             `;
-        }
+    }
 
-        function updateScoreFilter(val) {
-            document.getElementById('scoreDisplay').textContent = val + '%';
+    function updateScoreFilter(val) {
+        document.getElementById('scoreDisplay').textContent = val + '%';
 
-            const threshold = parseInt(val);
-            const cards = document.querySelectorAll('.match-card');
+        const threshold = parseInt(val);
+        const cards = document.querySelectorAll('.match-card');
 
-            cards.forEach(card => {
-                const score = parseInt(card.getAttribute('data-score'));
-                if (score < threshold) {
-                    card.style.display = 'none';
-                } else {
-                    card.style.display = 'block';
-                }
-            });
-
-            updateCounts();
-        }
-
-        function updateCounts() {
-            const pendingVisible = document.querySelectorAll('#colPending .match-card:not([style*="display: none"])');
-            const rejectedVisible = document.querySelectorAll('#colRejected .match-card:not([style*="display: none"])');
-            const acceptedVisible = document.querySelectorAll('#colAccepted .match-card:not([style*="display: none"])');
-
-            if (document.getElementById('pendingCount')) document.getElementById('pendingCount').textContent =
-                pendingVisible.length;
-            if (document.getElementById('rejectedCount')) document.getElementById('rejectedCount').textContent =
-                rejectedVisible.length;
-            if (document.getElementById('acceptedCount')) document.getElementById('acceptedCount').textContent =
-                acceptedVisible.length;
-
-            const pMsg = document.getElementById('pendingEmptyMsg');
-            const rMsg = document.getElementById('rejectedEmptyMsg');
-            const aMsg = document.getElementById('acceptedEmptyMsg');
-
-            if (pMsg) pMsg.style.display = pendingVisible.length ? 'none' : 'block';
-            if (rMsg) rMsg.style.display = rejectedVisible.length ? 'none' : 'block';
-            if (aMsg) aMsg.style.display = acceptedVisible.length ? 'none' : 'block';
-        }
-        // Update match status (accept/reject/pending) with UI feedback
-        async function updateMatchStatus(matchId, status) {
-            const card = document.getElementById('matchCard-' + matchId);
-            const actionBtns = document.getElementById('actionBtns-' + matchId);
-            if (card) {
-                card.style.opacity = '0.5';
-                card.style.pointerEvents = 'none';
+        cards.forEach(card => {
+            const score = parseInt(card.getAttribute('data-score'));
+            if (score < threshold) {
+                card.style.display = 'none';
+            } else {
+                card.style.display = 'block';
             }
-            try {
-                const res = await fetch('../api/update_match_status.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        match_id: matchId,
-                        status: status
-                    })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    if (actionBtns) actionBtns.remove();
-                    if (card) {
-                        card.style.transform = 'scale(0.95)';
-                        setTimeout(() => {
-                            loadMatchesAJAX(currentOpportunityId);
-                        }, 300);
-                    }
-                } else {
-                    customAlert('Failed to update status: ' + data.message, "Error", "error");
-                    if (card) {
-                        card.style.opacity = '1';
-                        card.style.pointerEvents = 'auto';
-                    }
+        });
+
+        updateCounts();
+    }
+
+    function updateCounts() {
+        const pendingVisible = document.querySelectorAll('#colPending .match-card:not([style*="display: none"])');
+        const rejectedVisible = document.querySelectorAll('#colRejected .match-card:not([style*="display: none"])');
+        const acceptedVisible = document.querySelectorAll('#colAccepted .match-card:not([style*="display: none"])');
+
+        if (document.getElementById('pendingCount')) document.getElementById('pendingCount').textContent =
+            pendingVisible.length;
+        if (document.getElementById('rejectedCount')) document.getElementById('rejectedCount').textContent =
+            rejectedVisible.length;
+        if (document.getElementById('acceptedCount')) document.getElementById('acceptedCount').textContent =
+            acceptedVisible.length;
+
+        const pMsg = document.getElementById('pendingEmptyMsg');
+        const rMsg = document.getElementById('rejectedEmptyMsg');
+        const aMsg = document.getElementById('acceptedEmptyMsg');
+
+        if (pMsg) pMsg.style.display = pendingVisible.length ? 'none' : 'block';
+        if (rMsg) rMsg.style.display = rejectedVisible.length ? 'none' : 'block';
+        if (aMsg) aMsg.style.display = acceptedVisible.length ? 'none' : 'block';
+    }
+    // Update match status (accept/reject/pending) with UI feedback
+    async function updateMatchStatus(matchId, status) {
+        const card = document.getElementById('matchCard-' + matchId);
+        const actionBtns = document.getElementById('actionBtns-' + matchId);
+        if (card) {
+            card.style.opacity = '0.5';
+            card.style.pointerEvents = 'none';
+        }
+        try {
+            const res = await fetch('../api/update_match_status.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    match_id: matchId,
+                    status: status
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                if (actionBtns) actionBtns.remove();
+                if (card) {
+                    card.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        loadMatchesAJAX(currentOpportunityId);
+                    }, 300);
                 }
-            } catch (e) {
-                customAlert('Network error. Please try again.', "Error", "error");
+            } else {
+                customAlert('Failed to update status: ' + data.message, "Error", "error");
                 if (card) {
                     card.style.opacity = '1';
                     card.style.pointerEvents = 'auto';
                 }
             }
+        } catch (e) {
+            customAlert('Network error. Please try again.', "Error", "error");
+            if (card) {
+                card.style.opacity = '1';
+                card.style.pointerEvents = 'auto';
+            }
+        }
+    }
+
+    async function analyzeMatchAI(matchId) {
+        const btn = document.getElementById('aiBtn-' + matchId);
+        const insightBox = document.getElementById('aiInsight-' + matchId);
+
+        if (!insightBox.classList.contains('hidden') && insightBox.textContent.trim() !== '') {
+            insightBox.classList.add('hidden');
+            return;
         }
 
-        async function analyzeMatchAI(matchId) {
-            const btn = document.getElementById('aiBtn-' + matchId);
-            const insightBox = document.getElementById('aiInsight-' + matchId);
+        const originalHtml = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML =
+            '<span class="material-symbols-outlined text-[18px] animate-spin">sync</span> Analyzing...';
 
-            if (!insightBox.classList.contains('hidden') && insightBox.textContent.trim() !== '') {
-                insightBox.classList.add('hidden');
-                return;
-            }
+        try {
+            const res = await fetch('../api/ai_analyze_match.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    match_id: matchId
+                })
+            });
+            const data = await res.json();
 
-            const originalHtml = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML =
-                '<span class="material-symbols-outlined text-[18px] animate-spin">sync</span> Analyzing...';
-
-            try {
-                const res = await fetch('../api/ai_analyze_match.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        match_id: matchId
-                    })
-                });
-                const data = await res.json();
-
-                if (data.success) {
-                    insightBox.textContent = data.insight;
-                    insightBox.classList.remove('hidden');
-                    btn.innerHTML =
-                        '<span class="material-symbols-outlined text-[18px]">auto_awesome</span> View AI Rationale';
-                } else {
-                    customAlert('AI Analysis failed: ' + data.message, "Error", "error");
-                    btn.innerHTML = originalHtml;
-                }
-            } catch (e) {
-                customAlert('Network error. Could not reach AI service.', "Error", "error");
+            if (data.success) {
+                insightBox.textContent = data.insight;
+                insightBox.classList.remove('hidden');
+                btn.innerHTML =
+                    '<span class="material-symbols-outlined text-[18px]">auto_awesome</span> View AI Rationale';
+            } else {
+                customAlert('AI Analysis failed: ' + data.message, "Error", "error");
                 btn.innerHTML = originalHtml;
-            } finally {
-                btn.disabled = false;
             }
+        } catch (e) {
+            customAlert('Network error. Could not reach AI service.', "Error", "error");
+            btn.innerHTML = originalHtml;
+        } finally {
+            btn.disabled = false;
         }
+    }
 
-        async function triggerGlobalSync() {
-            customConfirm(
-                "This will start a background process to calculate AI scores for all profiles against all jobs. This may take several minutes. Proceed?",
-                async (confirmed) => {
-                    if (!confirmed) return;
+    async function triggerGlobalSync() {
+        customConfirm(
+            "This will start a background process to calculate AI scores for all profiles against all jobs. This may take several minutes. Proceed?",
+            async (confirmed) => {
+                if (!confirmed) return;
 
-                    const alertBox = document.getElementById('syncAlert');
-                    try {
-                        const res = await fetch('../api/trigger_global_sync.php');
-                        const data = await res.json();
-                        if (data.success) {
-                            alertBox.innerHTML =
-                                `<span class="material-symbols-outlined text-blue-600 animate-spin">sync</span><span class="text-blue-800">Background sync started. Scores will populate automatically over the next few minutes.</span>`;
-                            alertBox.className =
-                                "flex items-center gap-3 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg text-sm";
-                        } else {
-                            customAlert(data.message, "Error", "error");
-                        }
-                    } catch (e) {
-                        customAlert("Failed to trigger sync.", "Error", "error");
+                const alertBox = document.getElementById('syncAlert');
+                try {
+                    const res = await fetch('../api/trigger_global_sync.php');
+                    const data = await res.json();
+                    if (data.success) {
+                        alertBox.innerHTML =
+                            `<span class="material-symbols-outlined text-blue-600 animate-spin">sync</span><span class="text-blue-800">Background sync started. Scores will populate automatically over the next few minutes.</span>`;
+                        alertBox.className =
+                            "flex items-center gap-3 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg text-sm";
+                    } else {
+                        customAlert(data.message, "Error", "error");
                     }
-                });
-        }
-    })();
+                } catch (e) {
+                    customAlert("Failed to trigger sync.", "Error", "error");
+                }
+            });
+    }
+})();
 </script>
 
 <style>
-    .skeleton-pulse {
-        background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
-        background-size: 200% 100%;
-        animation: skeleton-shimmer 1.4s ease-in-out infinite;
-        display: block;
+.skeleton-pulse {
+    background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.4s ease-in-out infinite;
+    display: block;
+}
+
+.dark .skeleton-pulse {
+    background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+    background-size: 200% 100%;
+}
+
+@keyframes skeleton-shimmer {
+    0% {
+        background-position: 200% 0
     }
 
-    .dark .skeleton-pulse {
-        background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
-        background-size: 200% 100%;
+    100% {
+        background-position: -200% 0
     }
-
-    @keyframes skeleton-shimmer {
-        0% {
-            background-position: 200% 0
-        }
-
-        100% {
-            background-position: -200% 0
-        }
-    }
+}
 </style>
 <?php require_once __DIR__ . '/../includes/footer.php'; ?>

@@ -41,7 +41,14 @@ if (!$authorized) {
 }
 
 $column = $allowedTypes[$type];
-$storedPath = $profile[$column] ?? '';
+$storedValue = $profile[$column] ?? '';
+$storedPaths = [];
+if ($storedValue !== '') {
+    $decodedPaths = json_decode((string) $storedValue, true);
+    $storedPaths = is_array($decodedPaths) ? array_values(array_filter($decodedPaths, 'is_string')) : [(string) $storedValue];
+}
+$documentIndex = isset($_GET['index']) && ctype_digit((string) $_GET['index']) ? (int) $_GET['index'] : 0;
+$storedPath = $storedPaths[$documentIndex] ?? '';
 if (empty($storedPath)) {
     http_response_code(404);
     exit('Document not found.');

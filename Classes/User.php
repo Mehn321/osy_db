@@ -9,6 +9,16 @@
 class User
 {
     private Database $db;
+
+    // ── Role constants – use these everywhere instead of magic strings ──────────
+    public const ROLE_LYDO             = 'lydo';
+    public const ROLE_SK_CHAIRMAN      = 'sk_chairman';
+    public const ROLE_YOUTH            = 'youth';
+    public const ROLE_EMPLOYER         = 'employer';
+    public const ROLE_TRAINING_PROVIDER = 'training_provider';
+    /** All provider roles that must go through approval before they can log in */
+    public const PROVIDER_ROLES = [self::ROLE_EMPLOYER, self::ROLE_TRAINING_PROVIDER];
+
     private const PASSWORD_MIN_LENGTH = 12;
     private const OTP_EXPIRY_SECONDS = 600;
     private const OTP_RESEND_COOLDOWN_SECONDS = 60;
@@ -536,7 +546,10 @@ class User
     }
 
     /**
-     * Create a new system user or provider account
+     * Create a new system user or provider account.
+     * Provider accounts (employer / training_provider) are created with
+     * is_active = 0 and status = 'Pending' so they cannot log in until
+     * a LYDO admin explicitly approves them via approveProvider().
      */
     public function createUser(array $data)
     {
@@ -548,21 +561,31 @@ class User
                 }
             }
 
-            $existing = $this->db->fetchOne("SELECT id FROM users WHERE username = ? OR email = ? LIMIT 1", [$data['username'], $data['email']], "ss");
+            $existing = $this->db->fetchOne(
+                "SELECT id FROM users WHERE username = ? OR email = ? LIMIT 1",
+                [$data['username'], $data['email']],
+                'ss'
+            );
             if ($existing) {
-                throw new Exception("Username or email already exists");
+                throw new Exception('Username or email already exists');
             }
 
             $role = $data['role'];
-            $validRoles = ['lydo', 'sk_chairman', 'youth', 'employer', 'training_provider'];
+            $validRoles = [
+                self::ROLE_LYDO,
+                self::ROLE_SK_CHAIRMAN,
+                self::ROLE_YOUTH,
+                self::ROLE_EMPLOYER,
+                self::ROLE_TRAINING_PROVIDER,
+            ];
             if (!in_array($role, $validRoles, true)) {
-                throw new Exception("Invalid role specified");
+                throw new Exception('Invalid role specified');
             }
 
             $passwordPlain = $data['password'] ?? $this->generateStrongTemporaryPassword();
             $passwordValidation = $this->validateStrongPassword($passwordPlain, [
                 'username' => $data['username'] ?? '',
-                'email' => $data['email'] ?? '',
+                'email'    => $data['email']    ?? '',
                 'fullname' => $data['fullname'] ?? '',
             ]);
             if (!$passwordValidation['valid']) {
@@ -570,54 +593,78 @@ class User
             }
 
             $hashedPassword = password_hash($passwordPlain, PASSWORD_BCRYPT);
-            $status = $data['status'] ?? 'Active';
-            if (in_array($role, ['employer', 'training_provider'], true)) {
-                $status = 'Pending';
+
+            // Providers start inactive (is_active = 0) and in Pending status.
+            // They can only log in after LYDO approves them (sets is_active = 1, status = 'Active').
+            $isProvider = in_array($role, self::PROVIDER_ROLES, true);
+            $isActive   = $isProvider ? 0 : 1;
+            $status     = $isProvider ? 'Pending' : ($data['status'] ?? 'Active');
+
+            // Wrap the insert + password-history in a transaction so a failure
+            // in either step does not leave the DB in a partial state.
+            $this->db->execute('START TRANSACTION');
+            try {
+                $query = "INSERT INTO users
+                    (username, email, phone, password, fullname, role, is_active, status,
+                     barangay, provider_type, provider_document_path,
+                     temp_password_required, approval_remark, created_by, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
+                $this->db->execute($query, [
+                    $data['username'],
+                    $data['email'],
+                    $data['phone'] ?? null,
+                    $hashedPassword,
+                    $data['fullname'],
+                    $role,
+                    $isActive,
+                    $status,
+                    $data['barangay'] ?? null,
+                    $data['provider_type'] ?? null,
+                    $data['provider_document_path'] ?? null,
+                    $data['temp_password_required'] ?? ($isProvider ? 0 : 1),
+                    $data['approval_remark'] ?? null,
+                    $data['created_by'] ?? null,
+                ], 'ssssssissssiis');
+
+                $createdId = $this->db->lastInsertId();
+                $this->rememberPassword((int) $createdId, $hashedPassword);
+
+                $this->db->execute('COMMIT');
+            } catch (Exception $inner) {
+                $this->db->execute('ROLLBACK');
+                throw $inner;
             }
 
-            $query = "INSERT INTO users (username, email, phone, password, fullname, role, is_active, status, barangay, provider_type, provider_document_path, temp_password_required, approval_remark, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, NOW())";
-            $this->db->execute($query, [
-                $data['username'],
-                $data['email'],
-                $data['phone'] ?? null,
-                $hashedPassword,
-                $data['fullname'],
-                $role,
-                $status,
-                $data['barangay'] ?? null,
-                $data['provider_type'] ?? null,
-                $data['provider_document_path'] ?? null,
-                $data['temp_password_required'] ?? 1,
-                $data['approval_remark'] ?? null,
-                $data['created_by'] ?? null
-            ], "ssssssssssisi");
-
-            $createdId = $this->db->lastInsertId();
-            $this->rememberPassword((int) $createdId, $hashedPassword);
             return [
-                'success' => true,
-                'message' => 'User created successfully',
-                'user_id' => $createdId,
-                'id' => $createdId,
-                'password' => $passwordPlain
+                'success'  => true,
+                'message'  => 'User created successfully',
+                'user_id'  => $createdId,
+                'id'       => $createdId,
+                'password' => $passwordPlain,
             ];
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ];
         }
     }
 
     /**
-     * Update provider approval status
+     * Update provider approval status.
+     * Approving sets is_active = 1 so the provider can log in.
+     * Declining or suspending sets is_active = 0 to block access.
      */
     public function approveProvider(int $user_id, string $status = 'Active', ?string $remark = null)
     {
         try {
-            $user = $this->db->fetchOne("SELECT role, status, provider_document_path FROM users WHERE id = ? LIMIT 1", [$user_id], "i");
-            if (!$user || !in_array($user['role'], ['employer', 'training_provider'], true)) {
-                throw new Exception("Provider account not found");
+            $user = $this->db->fetchOne(
+                "SELECT role, status, provider_document_path FROM users WHERE id = ? LIMIT 1",
+                [$user_id],
+                'i'
+            );
+            if (!$user || !in_array($user['role'], self::PROVIDER_ROLES, true)) {
+                throw new Exception('Provider account not found');
             }
 
             if ($user['status'] !== 'Pending') {
@@ -628,21 +675,30 @@ class User
                 throw new Exception('A legitimacy document is required before a provider can be approved.');
             }
 
-            if (!in_array($status, ['Active', 'Pending', 'Declined', 'Suspended'], true)) {
-                throw new Exception("Invalid status");
+            $validStatuses = ['Active', 'Pending', 'Declined', 'Suspended'];
+            if (!in_array($status, $validStatuses, true)) {
+                throw new Exception('Invalid status');
             }
 
-            $query = "UPDATE users SET status = ?, approval_remark = ? WHERE id = ?";
-            $this->db->execute($query, [$status, $remark, $user_id], "ssi");
+            // is_active follows the approval decision:
+            //   Active   → 1 (can log in)
+            //   anything else → 0 (blocked)
+            $isActive = ($status === 'Active') ? 1 : 0;
+
+            $this->db->execute(
+                "UPDATE users SET status = ?, is_active = ?, approval_remark = ? WHERE id = ?",
+                [$status, $isActive, $remark, $user_id],
+                'sisi'
+            );
 
             return [
                 'success' => true,
-                'message' => 'Provider approval status updated successfully'
+                'message' => 'Provider approval status updated successfully',
             ];
         } catch (Exception $e) {
             return [
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ];
         }
     }

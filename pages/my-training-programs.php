@@ -104,7 +104,7 @@ require_once __DIR__ . '/../includes/header.php';
                         </td>
                         <td class="px-6 py-4 text-right">
                             <div class="flex items-center justify-end gap-2">
-                                <a href="matching.php?opportunity_id=${prog.id}" class="p-2 text-slate-400 hover:text-indigo-900 transition-colors" title="View Applicants"><span class="material-symbols-outlined text-xl">group</span></a>
+                                <a href="opportunity-applications.php?opportunity_id=${prog.id}" class="p-2 text-slate-400 hover:text-indigo-900 transition-colors" title="View Applicants"><span class="material-symbols-outlined text-xl">group</span></a>
                                 <a href="training-programs.php?edit_id=${prog.id}" class="p-2 text-slate-400 hover:text-indigo-900 transition-colors" title="Edit Program"><span class="material-symbols-outlined text-xl">edit</span></a>
                             </div>
                         </td>

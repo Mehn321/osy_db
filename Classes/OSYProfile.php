@@ -8,14 +8,14 @@
 
 class OSYProfile
 {
-    private $db;
-    private $table = 'osy_profiles';
-    private $uploadDir = __DIR__ . '/../uploads/profiles';
-    private $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
-    private $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'pdf'];
-    private $maxFileSize = 5242880; // 5MB
+    private Database $db;
+    private string $table = 'osy_profiles';
+    private string $uploadDir = __DIR__ . '/../uploads/profiles';
+    private array $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
+    private array $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'pdf'];
+    private int $maxFileSize = 5242880; // 5MB
 
-    public function __construct($database)
+    public function __construct(Database $database)
     {
         $this->db = $database;
         // Create upload directory if it doesn't exist
@@ -24,7 +24,7 @@ class OSYProfile
         }
     }
 
-    private function profileSelect($where = '')
+    private function profileSelect(string $where = ''): string
     {
         return "SELECT p.*, u.email AS email, u.phone AS phone
                 FROM {$this->table} p
@@ -34,7 +34,7 @@ class OSYProfile
     /**
      * Handle document upload
      */
-    private function uploadImage($file, $type = 'profile')
+    private function uploadImage(array $file, string $type = 'profile'): ?string
     {
         if (!isset($file) || $file['error'] === UPLOAD_ERR_NO_FILE) {
             return null;
@@ -64,7 +64,6 @@ class OSYProfile
             $finfo = finfo_open(FILEINFO_MIME_TYPE);
             if ($finfo) {
                 $detectedMime = finfo_file($finfo, $file['tmp_name']);
-                finfo_close($finfo);
             }
         }
 
@@ -111,11 +110,39 @@ class OSYProfile
 
         return $path . $filename;
     }
+    private function uploadFiles(?array $files, string $type): array
+    {
+        if (!$files || !isset($files['name'])) {
+            return [];
+        }
+
+        if (!is_array($files['name'])) {
+            $path = $this->uploadImage($files, $type);
+            return $path ? [$path] : [];
+        }
+
+        $paths = [];
+        foreach ($files['name'] as $index => $name) {
+            if ($name === '' || ($files['error'][$index] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+                continue;
+            }
+
+            $paths[] = $this->uploadImage([
+                'name' => $name,
+                'type' => $files['type'][$index] ?? '',
+                'tmp_name' => $files['tmp_name'][$index] ?? '',
+                'error' => $files['error'][$index] ?? UPLOAD_ERR_NO_FILE,
+                'size' => $files['size'][$index] ?? 0,
+            ], $type);
+        }
+
+        return $paths;
+    }
 
     /**
      * Create new youth profile
      */
-    public function create($data, $profileImageFile = null, $govtIdImageFile = null, $certificationFile = null)
+    public function create(array $data, ?array $profileImageFile = null, ?array $govtIdImageFile = null, ?array $certificationFile = null): array
     {
         try {
             unset($data['email'], $data['phone']);
@@ -131,14 +158,12 @@ class OSYProfile
             }
 
             $certificationPath = null;
-            if ($certificationFile) {
-                $certificationPath = $this->uploadImage($certificationFile, 'certification');
-            }
+            $certificationPaths = $this->uploadFiles($certificationFile, 'certification');
 
             // Add the paths to data
             $data['govt_id_image'] = $govtIdImagePath;
             $data['image_path'] = $profileImagePath;
-            $data['identity_document_path'] = $certificationPath;
+            $data['identity_document_path'] = $certificationPaths ? json_encode($certificationPaths) : null;
 
             // Dynamic insert
             $columns = array_keys($data);
@@ -179,7 +204,7 @@ class OSYProfile
     /**
      * Get profile by ID
      */
-    public function getById($id)
+    public function getById(int $id): ?array
     {
         $query = $this->profileSelect('p.id = ?') . " LIMIT 1";
         return $this->db->fetchOne($query, [$id], "i");
@@ -188,13 +213,13 @@ class OSYProfile
     /**
      * Get profile by user ID
      */
-    public function getByUserId($userId)
+    public function getByUserId(int $userId): ?array
     {
         $query = $this->profileSelect('p.created_by = ?') . " LIMIT 1";
         return $this->db->fetchOne($query, [$userId], "i");
     }
 
-    private function applyFilters($filters, &$query)
+    private function applyFilters(array $filters, string &$query): void
     {
         if (isset($filters['profile_type']) && $filters['profile_type'] != 'All Types') {
             $query .= " AND TRIM(p.profile_type) = '" . $this->db->escape(trim($filters['profile_type'])) . "'";
@@ -225,7 +250,7 @@ class OSYProfile
     /**
      * Get all profiles with filters
      */
-    public function getAll($filters = [], $limit = null, $offset = 0)
+    public function getAll(array $filters = [], ?int $limit = null, int $offset = 0): array
     {
         $query = $this->profileSelect('1=1');
         $this->applyFilters($filters, $query);
@@ -241,18 +266,18 @@ class OSYProfile
     /**
      * Get count of filtered profiles
      */
-    public function getFilteredCount($filters = [])
+    public function getFilteredCount(array $filters = []): int
     {
         $query = "SELECT COUNT(*) as total FROM {$this->table} WHERE 1=1";
         $this->applyFilters($filters, $query);
         $result = $this->db->fetchOne($query);
-        return $result['total'] ?? 0;
+        return (int) ($result['total'] ?? 0);
     }
 
     /**
      * Update profile
      */
-    public function update($id, $data, $profileImageFile = null, $govtIdImageFile = null, $certificationFile = null)
+    public function update(int $id, array $data, ?array $profileImageFile = null, ?array $govtIdImageFile = null, ?array $certificationFile = null): array
     {
         try {
             $currentProfile = $this->getById($id);
@@ -319,9 +344,9 @@ class OSYProfile
 
             // Handle certification document upload if provided
             if ($certificationFile) {
-                $certificationPath = $this->uploadImage($certificationFile, 'certification');
+                $certificationPaths = $this->uploadFiles($certificationFile, 'certification');
                 $updates[] = "identity_document_path = ?";
-                $params[] = $certificationPath;
+                $params[] = $certificationPaths ? json_encode($certificationPaths) : null;
                 $types .= 's';
             }
 
@@ -410,7 +435,7 @@ class OSYProfile
     /**
      * Set verification status for a youth profile
      */
-    public function setVerificationStatus($profile_id, $status, $remark = null, $approved_by = null)
+    public function setVerificationStatus(int $profile_id, string $status, ?string $remark = null, ?int $approved_by = null): array
     {
         try {
             $validStatuses = ['Drafting', 'Pending', 'Verified', 'Rejected', 'Action Required', 'Declined'];
@@ -460,14 +485,14 @@ class OSYProfile
     /**
      * Get pending profiles for a barangay
      */
-    public function getPendingByBarangay($barangay)
+    public function getPendingByBarangay(string $barangay): array
     {
         $query = $this->profileSelect("p.barangay = ? AND p.verification_status IN ('Pending', 'Drafting', 'Action Required')") . " ORDER BY p.created_at DESC";
         return $this->db->fetchAll($query, [$barangay], 's');
     }
 
     /** Request a move without changing the profile's current barangay yet. */
-    public function requestBarangayTransfer($profileId, $toBarangay, $requestedBy, $remark = null)
+    public function requestBarangayTransfer(int $profileId, string $toBarangay, int $requestedBy, ?string $remark = null): array
     {
         try {
             $profile = $this->getById($profileId);
@@ -499,7 +524,7 @@ class OSYProfile
         }
     }
 
-    public function getPendingTransfersToBarangay($barangay)
+    public function getPendingTransfersToBarangay(string $barangay): array
     {
         return $this->db->fetchAll(
             "SELECT t.*, p.first_name, p.middle_name, p.last_name, u.email, u.phone, p.image_path
@@ -514,7 +539,7 @@ class OSYProfile
     }
 
     /** Approving performs the actual ownership change atomically. */
-    public function reviewBarangayTransfer($transferId, $destinationBarangay, $approve, $reviewedBy, $remark = null)
+    public function reviewBarangayTransfer(int $transferId, string $destinationBarangay, bool $approve, int $reviewedBy, ?string $remark = null): array
     {
         $conn = $this->db->getConnection();
         try {
@@ -550,7 +575,7 @@ class OSYProfile
     /**
      * Delete profile
      */
-    public function delete($id)
+    public function delete(int $id): array
     {
         try {
             $query = "DELETE FROM {$this->table} WHERE id = ?";
@@ -571,26 +596,26 @@ class OSYProfile
     /**
      * Get total profiles
      */
-    public function getTotalCount()
+    public function getTotalCount(): int
     {
         $result = $this->db->fetchOne("SELECT COUNT(*) as total FROM {$this->table}");
-        return $result['total'];
+        return (int) ($result['total'] ?? 0);
     }
 
     /**
      * Get profiles by status
      */
-    public function getByStatus($status)
+    public function getByStatus(string $status): int
     {
         $query = "SELECT COUNT(*) as count FROM {$this->table} WHERE status = ?";
         $result = $this->db->fetchOne($query, [$status], "s");
-        return $result['count'];
+        return (int) ($result['count'] ?? 0);
     }
 
     /**
      * Search profiles
      */
-    public function search($term)
+    public function search(string $term): array
     {
         $query = $this->profileSelect('p.first_name LIKE ? OR p.last_name LIKE ? OR u.email LIKE ? OR u.phone LIKE ?') .
             " ORDER BY p.created_at DESC";
@@ -602,7 +627,7 @@ class OSYProfile
     /**
      * Get total count by profile type
      */
-    public function getCountByType($type = null)
+    public function getCountByType(?string $type = null): int
     {
         if ($type) {
             $query = "SELECT COUNT(*) as total FROM {$this->table} WHERE profile_type = ?";
@@ -611,13 +636,13 @@ class OSYProfile
             $query = "SELECT COUNT(*) as total FROM {$this->table}";
             $result = $this->db->fetchOne($query);
         }
-        return $result['total'] ?? 0;
+        return (int) ($result['total'] ?? 0);
     }
 
     /**
      * Get profiles by type
      */
-    public function getByType($type)
+    public function getByType(string $type): array
     {
         $query = $this->profileSelect('p.profile_type = ?') . " ORDER BY p.created_at DESC";
         return $this->db->fetchAll($query, [$type], "s");

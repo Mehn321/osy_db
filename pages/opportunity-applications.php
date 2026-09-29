@@ -10,12 +10,24 @@ if (!isset($_SESSION['user_id'])) {
 // Only the listing owner or LYDO may view applicants or make decisions.
 requireRole(['training_provider', 'employer', 'lydo']);
 
-// Get opportunity ID from query string
+// Training providers may open the page without a selected program and choose one below.
 $opportunityId = isset($_GET['opportunity_id']) && ctype_digit($_GET['opportunity_id'])
     ? (int)$_GET['opportunity_id']
     : 0;
+
+$providerPrograms = [];
+if ($_SESSION['role'] === 'training_provider') {
+    $opportunityObj = new Opportunity($database);
+    $providerPrograms = array_values(array_filter(
+        $opportunityObj->getByProvider((int) $_SESSION['user_id']),
+        static fn(array $program): bool => $program['type'] !== 'Job Opening'
+    ));
+    if ($opportunityId <= 0) {
+        $opportunityId = (int) ($providerPrograms[0]['id'] ?? 0);
+    }
+}
 if ($opportunityId <= 0) {
-    die('Invalid opportunity ID');
+    die('No training program selected.');
 }
 
 // Handle status updates (Accept / Reject) submitted via POST
@@ -51,6 +63,17 @@ require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <div class="max-w-5xl mx-auto py-6">
+    <?php if ($_SESSION['role'] === 'training_provider'): ?>
+        <div class="mb-6 rounded-xl border border-indigo-100 bg-indigo-50 dark:border-indigo-900/40 dark:bg-indigo-900/20 p-4">
+            <label for="programSelector" class="block text-xs font-bold uppercase tracking-wide text-indigo-900 dark:text-indigo-300 mb-2">Training program</label>
+            <select id="programSelector" onchange="if (this.value) window.location.href = 'opportunity-applications.php?opportunity_id=' + this.value" class="w-full max-w-xl rounded-lg border border-indigo-200 bg-white px-3 py-2.5 text-sm text-slate-900 dark:border-indigo-800 dark:bg-slate-800 dark:text-white">
+                <?php foreach ($providerPrograms as $program): ?>
+                    <option value="<?php echo (int) $program['id']; ?>" <?php echo (int) $program['id'] === $opportunityId ? 'selected' : ''; ?>><?php echo htmlspecialchars($program['title']); ?></option>
+                <?php endforeach; ?>
+            </select>
+            <p class="mt-2 text-xs text-indigo-800 dark:text-indigo-300">Review applicants for the selected program and accept or reject pending applications.</p>
+        </div>
+    <?php endif; ?>
     <h1 class="text-2xl font-bold mb-4">Applications for "<?= htmlspecialchars($opportunity['title']) ?>"</h1>
 
     <?php if (!empty($updateMessage)): ?>

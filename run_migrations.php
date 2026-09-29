@@ -96,6 +96,16 @@ foreach ($defaultSettings as $key => $value) {
 }
 $success[] = "✔ system_settings default rows seeded";
 
+// ─── 3. Multiple certification/supporting documents ─────────────────────────
+try {
+    $database->getConnection()->query(
+        "ALTER TABLE `osy_profiles` MODIFY COLUMN `identity_document_path` TEXT DEFAULT NULL"
+    );
+    $success[] = "✔ osy_profiles.identity_document_path supports multiple documents";
+} catch (Exception $e) {
+    $errors[] = "✘ osy_profiles document storage migration: " . $e->getMessage();
+}
+
 echo "<h2>Migration Results</h2>";
 echo "<h3 style='color:green'>Success (" . count($success) . ")</h3><ul>";
 foreach ($success as $s) echo "<li>$s</li>";

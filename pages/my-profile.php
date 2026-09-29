@@ -313,6 +313,16 @@ $needsAction = in_array($verificationStatus, ['Declined', 'Rejected', 'Action Re
 $isVerified = $verificationStatus === 'Verified';
 $fullName = trim(($profile['first_name'] ?? '') . ' ' . ($profile['middle_name'] ?? '') . ' ' . ($profile['last_name'] ?? '') . ' ' . ($profile['suffix'] ?? ''));
 $photoSrc = !empty($profile['image_path']) ? '../' . ltrim($profile['image_path'], '/') : '';
+$govtDocumentUrl = 'youth-document.php?type=govt_id&profile_id=' . intval($profile['id']);
+$certificationDocumentPaths = [];
+if (!empty($profile['identity_document_path'])) {
+    $decodedCertificationPaths = json_decode((string) $profile['identity_document_path'], true);
+    $certificationDocumentPaths = is_array($decodedCertificationPaths)
+        ? array_values(array_filter($decodedCertificationPaths, 'is_string'))
+        : [(string) $profile['identity_document_path']];
+}
+$imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+$isGovtDocumentImage = !empty($profile['govt_id_image']) && in_array(strtolower(pathinfo($profile['govt_id_image'], PATHINFO_EXTENSION)), $imageExtensions, true);
 $inputClass = 'w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 py-3 px-4 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-700';
 $labelClass = 'block text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1.5';
 
@@ -609,11 +619,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isVerified) {
                     </div>
                     <div>
                         <label class="<?php echo $labelClass; ?>">Update certification / supporting document</label>
-                        <input type="file" name="certification_file" accept="image/jpeg,image/png,image/gif,application/pdf" class="block w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-full file:border-0 file:bg-blue-100 file:text-blue-800 file:font-semibold">
+                        <input type="file" name="certification_file[]" accept="image/jpeg,image/png,image/gif,application/pdf" multiple class="block w-full text-sm text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-full file:border-0 file:bg-blue-100 file:text-blue-800 file:font-semibold">
                         <?php if (!empty($profile['identity_document_path'])): ?>
-                            <a href="youth-document.php?type=certification&profile_id=<?php echo intval($profile['id']); ?>" target="_blank" class="inline-flex items-center gap-1 mt-2 text-sm font-semibold text-blue-700 hover:text-blue-800">
-                                <span class="material-symbols-outlined text-base">open_in_new</span> View current document
-                            </a>
+                            <p class="mt-2 text-xs text-slate-500">Select one or more files to replace the current documents.</p>
                         <?php else: ?>
                             <p class="mt-2 text-xs text-slate-500">No certification file uploaded yet.</p>
                         <?php endif; ?>
@@ -781,13 +789,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isVerified) {
                     <p class="font-semibold text-slate-900 dark:text-white mt-1"><?php echo htmlspecialchars(osy_display($profile['govt_id_type'] ?? '')); ?></p>
                     <p class="text-slate-600 dark:text-slate-300 mt-1">No. <?php echo htmlspecialchars(osy_display($profile['govt_id_number'] ?? '')); ?></p>
                     <?php if (!empty($profile['govt_id_image'])): ?>
-                        <a href="youth-document.php?type=govt_id&profile_id=<?php echo intval($profile['id']); ?>" target="_blank" class="inline-flex items-center gap-1 mt-3 text-blue-700 font-semibold">View ID file</a>
+                        <?php if ($isGovtDocumentImage): ?>
+                            <a href="<?php echo htmlspecialchars($govtDocumentUrl); ?>" target="_blank" rel="noopener" class="group block mt-3" title="Open government ID in full size">
+                                <img src="<?php echo htmlspecialchars($govtDocumentUrl); ?>" alt="Government ID document" loading="lazy" class="w-full h-40 object-contain rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 group-hover:ring-2 group-hover:ring-blue-500 transition-all">
+                                <span class="inline-flex items-center gap-1 mt-2 text-xs font-semibold text-blue-700 dark:text-blue-400"><span class="material-symbols-outlined text-sm">open_in_new</span> Click image to view full size</span>
+                            </a>
+                        <?php else: ?>
+                            <a href="<?php echo htmlspecialchars($govtDocumentUrl); ?>" target="_blank" rel="noopener" class="inline-flex items-center gap-1 mt-3 text-blue-700 font-semibold"><span class="material-symbols-outlined text-base">open_in_new</span> View ID file</a>
+                        <?php endif; ?>
                     <?php endif; ?>
                 </div>
                 <div class="rounded-xl bg-slate-50 dark:bg-slate-700/40 p-4">
                     <p class="text-slate-500">Certification / supporting document</p>
-                    <?php if (!empty($profile['identity_document_path'])): ?>
-                        <a href="youth-document.php?type=certification&profile_id=<?php echo intval($profile['id']); ?>" target="_blank" class="inline-flex items-center gap-1 mt-3 text-blue-700 font-semibold">View file</a>
+                    <?php if ($certificationDocumentPaths): ?>
+                        <div class="grid grid-cols-2 gap-3 mt-3">
+                            <?php foreach ($certificationDocumentPaths as $documentIndex => $documentPath): ?>
+                                <?php $documentUrl = 'youth-document.php?type=certification&profile_id=' . intval($profile['id']) . '&index=' . $documentIndex; ?>
+                                <?php $isDocumentImage = in_array(strtolower(pathinfo($documentPath, PATHINFO_EXTENSION)), $imageExtensions, true); ?>
+                                <?php if ($isDocumentImage): ?>
+                                    <a href="<?php echo htmlspecialchars($documentUrl); ?>" target="_blank" rel="noopener" class="group" title="Open supporting document in full size">
+                                        <img src="<?php echo htmlspecialchars($documentUrl); ?>" alt="Certification or supporting document <?php echo $documentIndex + 1; ?>" loading="lazy" class="w-full h-32 object-contain rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 group-hover:ring-2 group-hover:ring-blue-500 transition-all">
+                                    </a>
+                                <?php else: ?>
+                                    <a href="<?php echo htmlspecialchars($documentUrl); ?>" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-blue-700 font-semibold"><span class="material-symbols-outlined text-base">open_in_new</span> View file <?php echo $documentIndex + 1; ?></a>
+                                <?php endif; ?>
+                            <?php endforeach; ?>
+                        </div>
+                        <p class="mt-2 text-xs text-slate-500">Click an image to view it in full size.</p>
                     <?php else: ?>
                         <p class="font-semibold text-slate-900 dark:text-white mt-1">Not provided</p>
                     <?php endif; ?>

@@ -195,14 +195,33 @@ class Opportunity
     }
 
     /**
-     * Get opportunities by provider
+     * Get opportunities by provider with optional pagination.
+     *
+     * @param int|null $providerId  Provider user ID (defaults to current session user).
+     * @param int      $limit       Max rows to return (0 = no limit).
+     * @param int      $offset      Row offset for pagination.
      */
-    public function getByProvider(?int $providerId = null): array
+    public function getByProvider(?int $providerId = null, int $limit = 0, int $offset = 0): array
     {
-        $providerId = $providerId ?? $_SESSION['user_id'];
-        $query = "SELECT o.*, u.fullname as provider_name FROM {$this->table} o LEFT JOIN users u ON o.provider_id = u.id WHERE provider_id = ? ORDER BY created_at DESC";
-        return $this->db->fetchAll($query, [$providerId], "i");
+        $providerId = $providerId ?? (int) ($_SESSION['user_id'] ?? 0);
+        $query  = "SELECT o.*, u.fullname AS provider_name
+                   FROM {$this->table} o
+                   LEFT JOIN users u ON o.provider_id = u.id
+                   WHERE o.provider_id = ?
+                   ORDER BY o.created_at DESC";
+        $params = [$providerId];
+        $types  = 'i';
+
+        if ($limit > 0) {
+            $query   .= ' LIMIT ? OFFSET ?';
+            $params[] = $limit;
+            $params[] = max(0, $offset);
+            $types   .= 'ii';
+        }
+
+        return $this->db->fetchAll($query, $params, $types);
     }
+
 
     /**
      * Employers may publish jobs only; training providers may publish training

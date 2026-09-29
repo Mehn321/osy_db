@@ -72,23 +72,36 @@ class Dashboard
     }
 
     /**
-     * Get statistics for Provider (Employer/Training Provider)
+     * Get statistics for Provider (Employer/Training Provider).
+     * Uses a single aggregated query instead of multiple round-trips.
      */
     public function getProviderStats($userId)
     {
-        $stats = [];
+        $row = $this->db->fetchOne(
+            "SELECT
+                COUNT(o.id)                                        AS total_posted,
+                SUM(IF(o.status = 'Open', 1, 0))                  AS open_opportunities,
+                SUM(IF(o.status = 'Closed', 1, 0))                AS closed_opportunities,
+                COUNT(m.id)                                        AS total_applications,
+                SUM(IF(m.status = 'Accepted', 1, 0))              AS accepted_applications,
+                SUM(IF(m.status = 'Pending', 1, 0))               AS pending_applications
+             FROM opportunities o
+             LEFT JOIN osy_matches m ON m.opportunity_id = o.id
+             WHERE o.created_by = ?",
+            [$userId],
+            'i'
+        );
 
-        $res = $this->db->fetchOne("SELECT COUNT(*) as cnt FROM opportunities WHERE created_by = ?", [$userId]);
-        $stats['total_posted'] = $res['cnt'] ?? 0;
-
-        // Count matches/applications for their opportunities
-        $res = $this->db->fetchOne("SELECT COUNT(*) as cnt FROM osy_matches m 
-                                   JOIN opportunities o ON m.opportunity_id = o.id 
-                                   WHERE o.created_by = ?", [$userId]);
-        $stats['total_applications'] = $res['cnt'] ?? 0;
-
-        return $stats;
+        return [
+            'total_posted'          => (int) ($row['total_posted']          ?? 0),
+            'open_opportunities'    => (int) ($row['open_opportunities']    ?? 0),
+            'closed_opportunities'  => (int) ($row['closed_opportunities']  ?? 0),
+            'total_applications'    => (int) ($row['total_applications']    ?? 0),
+            'accepted_applications' => (int) ($row['accepted_applications'] ?? 0),
+            'pending_applications'  => (int) ($row['pending_applications']  ?? 0),
+        ];
     }
+
 
     /**
      * Get total KK (all registered youth)

@@ -595,7 +595,7 @@ CREATE TABLE `osy_profiles` (
   `verification_status` enum('Drafting','Pending','Verified','Action Required') DEFAULT 'Drafting',
   `verification_remark` text DEFAULT NULL,
   `consent_accepted` tinyint(1) DEFAULT 0,
-  `identity_document_path` varchar(255) DEFAULT NULL,
+  `identity_document_path` TEXT DEFAULT NULL,
   `approved_by` int(11) DEFAULT NULL,
   `approved_at` datetime DEFAULT NULL,
   `created_by` int(11) DEFAULT NULL,

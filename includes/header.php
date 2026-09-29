@@ -238,7 +238,7 @@ $basePath = $basePath === '/' ? '' : $basePath;
                     $navItems = [
                         ['name' => 'Dashboard',          'icon' => 'dashboard',          'path' => 'dashboard.php'],
                         ['name' => 'My Programs',        'icon' => 'school',             'path' => 'my-training-programs.php'],
-                        ['name' => 'Skills Matching',    'icon' => 'psychology',         'path' => 'matching.php'],
+                        ['name' => 'Program Applicants', 'icon' => 'groups',             'path' => 'opportunity-applications.php'],
                         ['name' => 'My Notifications',   'icon' => 'notifications_active', 'path' => 'my-notifications.php'],
                     ];
                 } elseif ($userRole === 'youth') {
@@ -333,6 +333,14 @@ $basePath = $basePath === '/' ? '' : $basePath;
             </div>
             <div class="flex items-center gap-4">
 
+                <?php
+                $profileHref = match ($userRole) {
+                    'youth' => 'my-profile.php',
+                    'lydo' => 'settings.php?tab=profile',
+                    default => 'account.php',
+                };
+                ?>
+
                 <a href="<?php echo $basePath; ?>/pages/my-notifications.php" class="relative inline-flex items-center text-slate-600 dark:text-slate-400 hover:text-blue-900 transition-colors">
                     <span class="material-symbols-outlined">notifications</span>
                     <?php if (isset($notifCount) && $notifCount > 0): ?>
@@ -340,9 +348,9 @@ $basePath = $basePath === '/' ? '' : $basePath;
                     <?php endif; ?>
                 </a>
                 <div class="flex items-center gap-3 border-l border-slate-200 dark:border-slate-700 pl-4">
-                    <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+                    <a href="<?php echo $basePath; ?>/pages/<?php echo $profileHref; ?>" title="View profile" aria-label="View profile" class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors">
                         <span class="material-symbols-outlined text-blue-900 dark:text-blue-200">account_circle</span>
-                    </div>
+                    </a>
                     <div class="text-sm hidden sm:block">
                         <p class="font-semibold text-slate-900 dark:text-white"><?php echo htmlspecialchars($_SESSION['fullname'] ?? 'User'); ?></p>
                         <p class="text-xs text-slate-500 dark:text-slate-400"><?php
