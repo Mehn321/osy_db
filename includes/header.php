@@ -50,6 +50,25 @@ $basePath = $basePath === '/' ? '' : $basePath;
             background-color: #f8fafc;
         }
 
+        @media (max-width: 767px) {
+            body.sidebar-open .app-topbar {
+                z-index: 60;
+                background: transparent;
+                border-color: transparent;
+                box-shadow: none;
+                pointer-events: none;
+            }
+
+            body.sidebar-open .app-topbar>div {
+                visibility: hidden;
+            }
+
+            body.sidebar-open .app-topbar #mobileMenuBtn {
+                visibility: visible;
+                pointer-events: auto;
+            }
+        }
+
         .dark .text-slate-500:not([class*="dark:text-"]),
         .dark .text-gray-500:not([class*="dark:text-"]) {
             color: #cbd5e1 !important;
@@ -326,7 +345,7 @@ $basePath = $basePath === '/' ? '' : $basePath;
         <div class="app-topbar fixed top-0 left-0 md:left-64 right-0 bg-white dark:bg-slate-900 border-b border-slate-200/50 dark:border-slate-700/50 h-16 flex items-center justify-between px-4 md:px-8 z-40 shadow-sm">
             <div class="flex items-center gap-3">
                 <!-- Mobile Menu Button (Now inside Top Bar) -->
-                <button id="mobileMenuBtn" class="md:hidden p-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition">
+                <button id="mobileMenuBtn" aria-label="Open menu" aria-expanded="false" class="md:hidden p-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition">
                     <span class="material-symbols-outlined">menu</span>
                 </button>
                 <h2 class="text-lg font-bold text-slate-900 dark:text-white truncate max-w-[200px] sm:max-w-none"><?php echo isset($pageTitle) ? $pageTitle : 'Dashboard'; ?></h2>
@@ -579,8 +598,19 @@ $basePath = $basePath === '/' ? '' : $basePath;
                 function toggleSidebar() {
                     const sidebar = document.getElementById('sidebar');
                     const overlay = document.getElementById('sidebarOverlay');
-                    sidebar.classList.toggle('-translate-x-full');
-                    overlay.classList.toggle('hidden');
+                    if (!sidebar || !overlay) return;
+
+                    const isOpen = !sidebar.classList.toggle('-translate-x-full');
+                    overlay.classList.toggle('hidden', !isOpen);
+                    document.body.classList.toggle('sidebar-open', isOpen);
+
+                    const menuButton = document.getElementById('mobileMenuBtn');
+                    if (menuButton) {
+                        menuButton.setAttribute('aria-expanded', String(isOpen));
+                        menuButton.setAttribute('aria-label', isOpen ? 'Close menu' : 'Open menu');
+                        const icon = menuButton.querySelector('.material-symbols-outlined');
+                        if (icon) icon.textContent = isOpen ? 'close' : 'menu';
+                    }
                 }
                 document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('mobileMenuBtn')?.addEventListener('click', toggleSidebar);
@@ -728,8 +758,6 @@ $basePath = $basePath === '/' ? '' : $basePath;
 
                 function reinitializeState() {
                     console.log('SPA: Re-initializing page state...');
-                    // Re-bind global UI events that might be lost
-                    document.getElementById('mobileMenuBtn')?.addEventListener('click', toggleSidebar);
 
                     // Inject CSRF tokens to any newly loaded forms
                     injectCsrfTokens();

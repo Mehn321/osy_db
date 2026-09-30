@@ -106,7 +106,7 @@ $unreadCount = 0;
                     if (data.success) {
                         const card = form.closest('.notification-card');
                         if (card) {
-                            card.classList.remove('border-l-4', 'border-l-blue-500');
+                            card.classList.remove('notification-unread');
                             card.querySelector('.new-badge')?.remove();
                         }
                         form.remove();
@@ -190,7 +190,7 @@ $unreadCount = 0;
 
                     list.innerHTML = res.notifications.map(notif => {
                         const isNew = notif.status === 'Sent';
-                        const borderClass = isNew ? 'border-l-4 border-l-blue-500' : '';
+                        const unreadClass = isNew ? 'notification-unread' : '';
                         const badgeHtml = isNew ? `<span class="new-badge inline-flex items-center rounded-full bg-blue-100 text-blue-800 px-2 py-1 text-xs font-semibold">New</span>` : '';
 
                         const dt = new Date(notif.created_at);
@@ -216,7 +216,7 @@ $unreadCount = 0;
                     ` : '';
 
                         return `
-                    <div class="notification-card bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 ${borderClass}">
+                    <div class="notification-card bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 ${unreadClass}">
                         <div class="flex items-start justify-between gap-4">
                             <div class="flex-1">
                                 <div class="flex items-center gap-2 mb-2">
@@ -258,6 +258,19 @@ $unreadCount = 0;
     })();
 </script>
 <style>
+    .notification-unread {
+        background-color: #eff6ff;
+        border-color: #93c5fd;
+        border-left: 4px solid #2563eb !important;
+        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.12);
+    }
+
+    .dark .notification-unread {
+        background-color: #172554;
+        border-color: #1e40af;
+        border-left-color: #60a5fa !important;
+    }
+
     .skeleton-pulse {
         background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
         background-size: 200% 100%;
