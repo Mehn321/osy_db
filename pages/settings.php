@@ -59,23 +59,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             $activeTab = 'security';
         } elseif (isset($_POST['update_notifications'])) {
-            $fields = ['traccar_token', 'brevo_api_key', 'brevo_sender_email'];
-            foreach ($fields as $f) {
-                // Use INSERT ... ON DUPLICATE KEY UPDATE so new keys are created automatically
+            $supportEmail = trim((string) ($_POST['contact_support_email'] ?? ''));
+            if (!filter_var($supportEmail, FILTER_VALIDATE_EMAIL)) {
+                $message = 'Enter a valid general Contact Support email address.';
+                $messageType = 'error';
+            } else {
+                $fields = ['traccar_token', 'brevo_api_key', 'brevo_sender_email'];
+                foreach ($fields as $f) {
+                    // Use INSERT ... ON DUPLICATE KEY UPDATE so new keys are created automatically
+                    $database->execute(
+                        "INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)",
+                        [$f, $_POST[$f] ?? ''],
+                        "ss"
+                    );
+                }
                 $database->execute(
                     "INSERT INTO system_settings (setting_key, setting_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)",
-                    [$f, $_POST[$f] ?? ''],
+                    ['contact_support_email', $supportEmail],
                     "ss"
                 );
+                $sys_settings['contact_support_email'] = $supportEmail;
+                foreach ($fields as $f) {
+                    $sys_settings[$f] = $_POST[$f] ?? '';
+                }
+                $message = "Notification settings updated successfully.";
+                $messageType = "success";
             }
-            $message = "Notification settings updated successfully.";
-            $messageType = "success";
             $activeTab = 'notifications';
-
-            // Refresh sys_settings array
-            foreach ($fields as $f) {
-                $sys_settings[$f] = $_POST[$f] ?? '';
-            }
         } elseif (isset($_POST['test_sms'])) {
             require_once __DIR__ . '/../Classes/SmsService.php';
             $sms = new SmsService($database);
@@ -318,6 +328,25 @@ $scoringPct = $syncStats['total_possible'] > 0
                             <div>
                                 <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Verified Sender Email</label>
                                 <input type="email" name="brevo_sender_email" value="<?php echo htmlspecialchars($sys_settings['brevo_sender_email'] ?? ''); ?>" placeholder="sender@yourdomain.com" class="w-full px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-900" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-2 text-slate-900 dark:text-white">
+                            <span class="material-symbols-outlined text-xl">support_agent</span>
+                            <h4 class="font-bold uppercase tracking-widest text-xs">Contact Support Routing</h4>
+                        </div>
+                        <div class="grid grid-cols-1 gap-4 rounded-xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-700 dark:bg-slate-700/30 md:grid-cols-2">
+                            <div>
+                                <label class="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">General Contact Support Email</label>
+                                <input type="email" name="contact_support_email" required maxlength="254" value="<?php echo htmlspecialchars($sys_settings['contact_support_email'] ?? 'aclonhemday@gmail.com'); ?>" class="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-slate-900 focus:ring-2 focus:ring-blue-900 dark:border-slate-600 dark:bg-slate-800 dark:text-white" />
+                                <p class="mt-2 text-xs text-slate-500">Contact requests from users other than LYDO are sent to this address.</p>
+                            </div>
+                            <div>
+                                <label class="mb-2 block text-sm font-semibold text-slate-700 dark:text-slate-300">LYDO Contact Support Email</label>
+                                <input type="email" value="aclonhemday@gmail.com" readonly aria-readonly="true" class="w-full rounded-lg border border-slate-200 bg-slate-100 px-4 py-3 text-slate-700 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300" />
+                                <p class="mt-2 text-xs text-slate-500">Fixed address for LYDO support requests; it cannot be edited.</p>
                             </div>
                         </div>
                     </div>
