@@ -346,7 +346,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isVerified) {
         <div class="h-64 bg-slate-200 dark:bg-slate-700 rounded-2xl"></div>
     </div>
 </div>
-<div id="real-content" class="max-w-6xl mx-auto pb-12 hidden">
+<div id="real-content" class="max-w-6xl mx-auto pb-12 hidden break-words">
     <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
         <div>
             <nav class="flex items-center gap-2 text-xs font-semibold text-slate-500 tracking-wider uppercase mb-2">
@@ -432,7 +432,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isVerified) {
                         <p class="mt-1 text-[11px] text-slate-500">JPG, PNG, or GIF. Max 5MB.</p>
                     </div>
                     <div class="space-y-5">
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                             <div>
                                 <label class="<?php echo $labelClass; ?>">First name *</label>
                                 <input type="text" name="first_name" required maxlength="50" value="<?php echo htmlspecialchars($profile['first_name'] ?? ''); ?>" class="<?php echo $inputClass; ?>">
@@ -465,7 +465,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $isVerified) {
                                 <input type="tel" name="phone" maxlength="20" placeholder="09XXXXXXXXX" value="<?php echo htmlspecialchars($profile['phone'] ?? ''); ?>" class="<?php echo $inputClass; ?>">
                             </div>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
                             <div>
                                 <label class="<?php echo $labelClass; ?>">Date of birth</label>
                                 <input type="date" name="date_of_birth" id="profileDob" value="<?php echo htmlspecialchars($profile['date_of_birth'] ?? ''); ?>" class="<?php echo $inputClass; ?>">

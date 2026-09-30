@@ -100,19 +100,19 @@ require_once __DIR__ . '/../includes/header.php';
             <dl class="grid gap-4 sm:grid-cols-2">
                 <div>
                     <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Full name</dt>
-                    <dd class="mt-1 font-semibold text-slate-900 dark:text-white"><?php echo htmlspecialchars($account['fullname'] ?? 'Not provided'); ?></dd>
+                    <dd class="mt-1 break-words font-semibold text-slate-900 dark:text-white"><?php echo htmlspecialchars($account['fullname'] ?? 'Not provided'); ?></dd>
                 </div>
                 <div>
                     <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Username</dt>
-                    <dd class="mt-1 font-semibold text-slate-900 dark:text-white"><?php echo htmlspecialchars($account['username'] ?? 'Not provided'); ?></dd>
+                    <dd class="mt-1 break-words font-semibold text-slate-900 dark:text-white"><?php echo htmlspecialchars($account['username'] ?? 'Not provided'); ?></dd>
                 </div>
                 <div>
                     <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Email address</dt>
-                    <dd class="mt-1 font-semibold text-slate-900 dark:text-white"><?php echo htmlspecialchars($account['email'] ?? 'Not provided'); ?></dd>
+                    <dd class="mt-1 break-words font-semibold text-slate-900 dark:text-white"><?php echo htmlspecialchars($account['email'] ?? 'Not provided'); ?></dd>
                 </div>
                 <div>
                     <dt class="text-xs font-bold uppercase tracking-wide text-slate-500">Account type</dt>
-                    <dd class="mt-1 font-semibold text-slate-900 dark:text-white"><?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $account['role'] ?? 'User'))); ?></dd>
+                    <dd class="mt-1 break-words font-semibold text-slate-900 dark:text-white"><?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $account['role'] ?? 'User'))); ?></dd>
                 </div>
             </dl>
         </section>
