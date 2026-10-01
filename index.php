@@ -11,6 +11,8 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Youth Profiling System | Panaon KK</title>
+    <link rel="icon" type="image/svg+xml" href="assets/images/logo.svg" />
     <!-- Reset / base styles -->
     <style>
     @layer base {
@@ -233,17 +235,34 @@
         display: block;
     }
 
+    @media (max-width: 639px) {
+        .hero-section {
+            height: auto !important;
+            min-height: max(600px, 100svh);
+            padding-top: 6rem;
+            padding-bottom: 9rem;
+        }
+
+        .hero-content {
+            z-index: 30;
+        }
+
+        .hero-section .scroll-indicator {
+            bottom: 5.25rem;
+        }
+    }
+
     /* ── Scroll indicator bounce ── */
     @keyframes scrollBounce {
 
         0%,
         100% {
-            transform: translateY(0);
+            transform: translate(-50%, 0);
             opacity: .8;
         }
 
         50% {
-            transform: translateY(8px);
+            transform: translate(-50%, 8px);
             opacity: 1;
         }
     }
@@ -302,10 +321,7 @@
     <header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,14,83,0.04)]">
         <div class="h-16 max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between">
             <div class="flex items-center gap-2">
-                <div
-                    class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary-container flex items-center justify-center">
-                    <span class="material-symbols-outlined text-on-primary text-[20px]">account_balance</span>
-                </div>
+                <img src="assets/images/logo.svg" alt="Panaon KK logo" class="w-8 h-8 rounded-lg object-contain" />
                 <span class="text-lg font-headline font-bold tracking-tight text-primary">Youth Profiling System</span>
             </div>
             <nav class="hidden md:flex items-center gap-10">
@@ -324,7 +340,7 @@
     <main class="w-full pt-16">
         <!-- HERO SECTION -->
         <section
-            class="relative w-full h-[600px] lg:h-[700px] flex items-center justify-center -mt-16 pt-16 overflow-hidden">
+            class="hero-section relative w-full h-[600px] lg:h-[700px] flex items-center justify-center -mt-16 pt-16 overflow-hidden">
             <!-- Background image -->
             <img src="assets/images/hero_background.jpg" alt="Filipino youth skills training - TESDA"
                 class="absolute inset-0 w-full h-full object-cover z-0" />
@@ -341,7 +357,7 @@
                 style="background:radial-gradient(circle,rgba(82,92,135,.25) 0%,transparent 70%);"></div>
 
             <!-- Hero content -->
-            <div class="relative z-20 max-w-7xl mx-auto px-6 lg:px-12 w-full flex flex-col items-center text-center">
+            <div class="hero-content relative z-20 max-w-7xl mx-auto px-6 lg:px-12 w-full flex flex-col items-center text-center">
                 <span
                     class="hero-title inline-block mb-4 px-4 py-1.5 rounded-full text-xs font-label font-bold uppercase tracking-widest glow-badge"
                     style="background:rgba(255,255,255,.12);color:#dce1ff;border:1px solid rgba(255,255,255,.2);">🇵🇭

@@ -10,8 +10,8 @@ $basePath = $basePath === '/' ? '' : $basePath;
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo isset($pageTitle) ? $pageTitle . ' - Panaon KK Youth Profiling System' : 'Panaon KK Youth Profiling System'; ?></title>
-    <link rel="icon" type="image/jpeg" href="<?php echo $basePath; ?>/assets/images/panaon-kk-youth-registry.jpg">
-    <link rel="apple-touch-icon" href="<?php echo $basePath; ?>/assets/images/panaon-kk-youth-registry.jpg">
+    <link rel="icon" type="image/svg+xml" href="<?php echo $basePath; ?>/assets/images/logo.svg">
+    <link rel="apple-touch-icon" href="<?php echo $basePath; ?>/assets/images/logo.svg">
     <meta name="csrf-token" content="<?php echo htmlspecialchars(getCsrfToken()); ?>">
     <meta name="form-nonce" content="<?php echo htmlspecialchars(getFormNonce()); ?>">
     <script src="<?php echo $basePath; ?>/assets/js/tailwind.js"></script>
@@ -186,7 +186,7 @@ $basePath = $basePath === '/' ? '' : $basePath;
         <!-- Sidebar -->
         <aside id="sidebar" class="app-sidebar fixed left-0 top-0 h-full flex flex-col p-4 gap-2 bg-white dark:bg-slate-900 w-64 border-r border-slate-200/50 dark:border-slate-700/50 z-50 font-inter transform -translate-x-full md:translate-x-0 transition-transform duration-300">
             <div class="flex items-center gap-3 px-2 py-4 mb-6">
-                <img src="<?php echo $basePath; ?>/assets/images/panaon-kk-youth-registry.jpg" alt="Panaon KK logo" class="w-10 h-10 rounded-lg object-cover shadow-lg">
+                <img src="<?php echo $basePath; ?>/assets/images/logo.svg" alt="Panaon KK logo" class="w-10 h-10 rounded-lg object-contain shadow-lg">
                 <div>
                     <h1 class="font-bold text-white leading-tight text-sm">Panaon KK</h1>
                     <p class="text-xs text-slate-500 dark:text-slate-400 font-medium uppercase tracking-widest mt-1">Youth Registry</p>

@@ -7,6 +7,7 @@ $pageTitle = 'Terms of Service';
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/svg+xml" href="../assets/images/logo.svg">
     <script src="<?php echo (isset($basePath) ? $basePath : ""); ?>/assets/js/tailwind.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <title><?= htmlspecialchars($pageTitle); ?> - Youth Profiling System</title>
@@ -26,7 +27,7 @@ $pageTitle = 'Terms of Service';
     </div>
     <div id="real-content-tos" style="display:none">
     <header class="border-b border-slate-200 bg-white">
-        <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-5"><a href="../index.php" class="flex items-center gap-3 font-bold text-blue-900"><span class="material-symbols-outlined">account_balance</span>Youth Profiling System</a><a href="../index.php" class="text-sm font-semibold text-blue-900 hover:text-blue-700">Back to Home</a></div>
+        <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-5"><a href="../index.php" class="flex items-center gap-3 font-bold text-blue-900"><img src="../assets/images/logo.svg" alt="Panaon KK logo" class="h-8 w-8 rounded-lg object-contain">Youth Profiling System</a><a href="../index.php" class="text-sm font-semibold text-blue-900 hover:text-blue-700">Back to Home</a></div>
     </header>
     <main class="mx-auto max-w-4xl px-6 py-16">
         <p class="mb-3 text-sm font-bold uppercase tracking-[0.2em] text-blue-700">Using the platform</p>

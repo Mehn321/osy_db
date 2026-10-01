@@ -30,6 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="../assets/images/logo.svg">
     <title>Verify Registration</title>
     <script src="<?php echo htmlspecialchars($basePath ?? ''); ?>/assets/js/tailwind.js"></script>
 </head>

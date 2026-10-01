@@ -356,6 +356,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="../assets/images/logo.svg">
     <title>Youth Sign Up - Youth Profiling System</title>
     <script src="<?php echo (isset($basePath) ? $basePath : ''); ?>/assets/js/tailwind.js"></script>
     <link href="<?php echo (isset($basePath) ? $basePath : ''); ?>/assets/css/design-system.css" rel="stylesheet">
@@ -375,7 +376,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['signup'])) {
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                 <div class="flex items-center justify-between">
                     <div>
-                        <h1 class="text-2xl font-bold text-blue-900">Youth Profiling System</h1>
+                        <div class="flex items-center gap-3">
+                            <img src="../assets/images/logo.svg" alt="Panaon KK logo" class="h-10 w-10 rounded-lg object-contain">
+                            <h1 class="text-2xl font-bold text-blue-900">Youth Profiling System</h1>
+                        </div>
                         <p class="text-sm text-slate-600">Community Youth Registration & Matching</p>
                     </div>
                     <a href="login.php" class="text-blue-700 hover:text-blue-900 font-semibold flex items-center gap-2">

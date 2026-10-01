@@ -91,6 +91,7 @@ $pageTitle = 'About Us';
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet" />
+    <link rel="icon" type="image/svg+xml" href="../assets/images/logo.svg" />
     <link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css" />
     <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
     <title><?= htmlspecialchars($pageTitle); ?> - Youth Profiling System</title>
@@ -107,9 +108,7 @@ $pageTitle = 'About Us';
     <header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,14,83,0.04)]">
         <div class="h-16 max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between">
             <div class="flex items-center gap-2">
-                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-primary-container flex items-center justify-center">
-                    <span class="material-symbols-outlined text-on-primary text-[20px]">account_balance</span>
-                </div>
+                <img src="../assets/images/logo.svg" alt="Panaon KK logo" class="w-8 h-8 rounded-lg object-contain" />
                 <span class="text-lg font-headline font-bold tracking-tight text-primary">Youth Profiling System</span>
             </div>
             <nav class="hidden md:flex items-center gap-10">

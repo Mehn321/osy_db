@@ -140,6 +140,7 @@ if ($user->isLoggedIn()) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="../assets/images/logo.svg">
     <title>Provider Registration - Youth Profiling System</title>
     <script src="<?php echo (isset($basePath) ? $basePath : ""); ?>/assets/js/tailwind.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -167,7 +168,7 @@ if ($user->isLoggedIn()) {
                 <div class="absolute inset-0 opacity-20 bg-[url('data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2220%22 cy=%2220%22 r=%225%22 fill=%22white%22/></svg>')]"></div>
                 <div class="relative z-10">
                     <div class="flex items-center gap-2 mb-8">
-                        <img src="../assets/images/panaon-kk-youth-registry.jpg" alt="Panaon KK logo" class="w-12 h-12 rounded-lg object-cover">
+                        <img src="../assets/images/logo.svg" alt="Panaon KK logo" class="w-12 h-12 rounded-lg object-contain">
                         <span class="text-2xl font-bold tracking-tighter">Panaon KK</span>
                     </div>
                     <h1 class="text-4xl font-extrabold leading-tight tracking-tight mb-4">

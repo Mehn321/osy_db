@@ -1,0 +1,168 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]: account_balance
+        - generic [ref=e7]: Youth Profiling System
+      - navigation [ref=e8]:
+        - link "Home" [ref=e9] [cursor=pointer]:
+          - /url: index.php
+        - link "About" [ref=e10] [cursor=pointer]:
+          - /url: pages/about.php
+      - generic [ref=e11]: person
+  - main [ref=e14]:
+    - generic [ref=e15]:
+      - img "Filipino youth skills training - TESDA" [ref=e16]
+      - generic [ref=e18]:
+        - generic [ref=e19]: 🇵🇭 Youth & Skills — Philippines
+        - heading "Bridge the Gap to Your Future" [level=1] [ref=e20]: Bridge the Gapto Your Future
+        - paragraph [ref=e21]: Connect Filipino youth with verified training, internships, and local job opportunities. Build skills. Find work. Grow together.
+        - generic [ref=e22]:
+          - link "school I am a Youth" [ref=e23] [cursor=pointer]:
+            - /url: pages/youth-login.php
+            - generic [ref=e24]: school
+            - text: I am a Youth
+          - link "domain I am a Provider" [ref=e25] [cursor=pointer]:
+            - /url: pages/provider-login.php
+            - generic [ref=e26]: domain
+            - text: I am a Provider
+      - generic [ref=e27]:
+        - generic [ref=e28]: Scroll
+        - generic [ref=e29]: expand_more
+    - generic [ref=e31]:
+      - paragraph [ref=e32]: Trusted by Community Partners
+      - generic [ref=e33]:
+        - generic [ref=e34]:
+          - generic [ref=e35]: account_balance
+          - text: Barangay Council
+        - generic [ref=e36]:
+          - generic [ref=e37]: school
+          - text: TESDA
+        - generic [ref=e38]:
+          - generic [ref=e39]: storefront
+          - text: Local Businesses
+        - generic [ref=e40]:
+          - generic [ref=e41]: groups
+          - text: Youth Council
+    - generic [ref=e43]:
+      - generic [ref=e44]:
+        - text: Value Propositions
+        - heading "Why Join the Youth Profiling System?" [level=2] [ref=e45]
+      - generic [ref=e46]:
+        - generic [ref=e47]:
+          - generic [ref=e48]:
+            - generic [ref=e49]: emoji_events
+            - heading "For Youth" [level=3] [ref=e51]
+          - list [ref=e52]:
+            - listitem [ref=e53]:
+              - generic [ref=e54]: check_circle
+              - generic [ref=e55]:
+                - strong [ref=e56]: Access Verified Internships
+                - paragraph [ref=e57]: Connect with legitimate local businesses offering real‑world experience.
+            - listitem [ref=e58]:
+              - generic [ref=e59]: check_circle
+              - generic [ref=e60]:
+                - strong [ref=e61]: Build a Professional Profile
+                - paragraph [ref=e62]: Create a digital portfolio that showcases your growing skill set.
+            - listitem [ref=e63]:
+              - generic [ref=e64]: check_circle
+              - generic [ref=e65]:
+                - strong [ref=e66]: Get Matched with Free Training
+                - paragraph [ref=e67]: Discover skill‑building programs tailored to your interests.
+        - generic [ref=e68]:
+          - generic [ref=e69]:
+            - generic [ref=e70]: trending_up
+            - heading "For Providers" [level=3] [ref=e72]
+          - list [ref=e73]:
+            - listitem [ref=e74]:
+              - generic [ref=e75]: check_circle
+              - generic [ref=e76]:
+                - strong [ref=e77]: Direct Access to Local Talent
+                - paragraph [ref=e78]: Reach motivated youth eager to contribute to your mission.
+            - listitem [ref=e79]:
+              - generic [ref=e80]: check_circle
+              - generic [ref=e81]:
+                - strong [ref=e82]: Verified Skills Inventory
+                - paragraph [ref=e83]: Find candidates with the exact competencies you need.
+            - listitem [ref=e84]:
+              - generic [ref=e85]: check_circle
+              - generic [ref=e86]:
+                - strong [ref=e87]: Streamlined Recruitment
+                - paragraph [ref=e88]: Manage postings, applications, and communications from a single dashboard.
+    - generic [ref=e90]:
+      - generic [ref=e91]:
+        - text: Join the Network
+        - heading "Paths to Engagement" [level=2] [ref=e92]
+      - generic [ref=e93]:
+        - generic [ref=e94]:
+          - img "Youth collaborating in a barangay community" [ref=e97]
+          - generic [ref=e98]:
+            - generic [ref=e99]: rocket_launch
+            - heading "Join as a Youth" [level=3] [ref=e101]
+            - paragraph [ref=e102]: Discover internships, training programs, and community projects tailored for young talent. Take the first step in building your civic profile.
+            - link "Start Your Journey arrow_forward" [ref=e103] [cursor=pointer]:
+              - /url: pages/youth-signup.php
+              - text: Start Your Journey
+              - generic [ref=e104]: arrow_forward
+        - generic [ref=e105]:
+          - img "Provider networking event" [ref=e108]
+          - generic [ref=e109]:
+            - generic [ref=e110]: handshake
+            - heading "Register as a Provider" [level=3] [ref=e112]
+            - paragraph [ref=e113]: Post opportunities, connect with enthusiastic youth, and grow your impact. Build a stronger community by mentoring the next generation.
+            - link "Find Local Talent arrow_forward" [ref=e114] [cursor=pointer]:
+              - /url: pages/provider-registration.php
+              - text: Find Local Talent
+              - generic [ref=e115]: arrow_forward
+    - generic [ref=e117]:
+      - generic [ref=e118]:
+        - text: Simple Process
+        - heading "How It Works" [level=2] [ref=e119]
+        - paragraph [ref=e120]: Getting started is easy. Follow these steps to connect with opportunities across the Philippines.
+      - generic [ref=e121]:
+        - generic [ref=e123]:
+          - generic [ref=e124]: person_add
+          - generic: "01"
+          - heading "Create Your Profile" [level=3] [ref=e126]
+          - paragraph [ref=e127]: Register as a youth or provider. Fill in your skills, interests, and goals to get matched with the right opportunities.
+        - generic [ref=e128]:
+          - generic [ref=e129]: search
+          - generic: "02"
+          - heading "Discover Opportunities" [level=3] [ref=e131]
+          - paragraph [ref=e132]: Browse verified training programs, internships, and livelihood projects available in your local community.
+        - generic [ref=e133]:
+          - generic [ref=e134]: handshake
+          - generic: "03"
+          - heading "Connect & Grow" [level=3] [ref=e136]
+          - paragraph [ref=e137]: Apply directly, communicate with providers, and build your future — all through one transparent platform.
+  - contentinfo [ref=e138]:
+    - generic [ref=e139]:
+      - generic [ref=e140]:
+        - generic [ref=e141]:
+          - generic [ref=e142]: Youth Profiling System
+          - paragraph [ref=e144]: Empowering the next generation through digital transformation and community engagement.
+        - generic [ref=e145]:
+          - heading "Navigation" [level=4] [ref=e146]
+          - navigation [ref=e147]:
+            - link "Home" [ref=e148] [cursor=pointer]:
+              - /url: index.php
+            - link "About" [ref=e149] [cursor=pointer]:
+              - /url: pages/about.php
+        - generic [ref=e150]:
+          - heading "Support" [level=4] [ref=e151]
+          - navigation [ref=e152]:
+            - link "Contact Support" [ref=e153] [cursor=pointer]:
+              - /url: "#"
+            - link "Privacy Policy" [ref=e154] [cursor=pointer]:
+              - /url: pages/privacy-policy.php
+            - link "Terms of Service" [ref=e155] [cursor=pointer]:
+              - /url: pages/terms-of-service.php
+      - generic [ref=e156]:
+        - paragraph [ref=e157]: © 2026 Youth Profiling System.
+        - generic [ref=e158]:
+          - link "Facebook" [ref=e159] [cursor=pointer]:
+            - /url: "#"
+          - link "Twitter" [ref=e160] [cursor=pointer]:
+            - /url: "#"
+          - link "Instagram" [ref=e161] [cursor=pointer]:
+            - /url: "#"

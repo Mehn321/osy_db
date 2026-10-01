@@ -5,8 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panaon KK - Youth Skills Matching & Employment Opportunities</title>
-    <link rel="icon" type="image/jpeg" href="assets/images/panaon-kk-youth-registry.jpg">
-    <link rel="apple-touch-icon" href="assets/images/panaon-kk-youth-registry.jpg">
+    <link rel="icon" type="image/svg+xml" href="assets/images/logo.svg">
+    <link rel="apple-touch-icon" href="assets/images/logo.svg">
     <script src="<?php echo (isset($basePath) ? $basePath : ""); ?>/assets/js/tailwind.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
@@ -18,7 +18,7 @@
     <nav class="bg-white shadow-sm sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <img src="assets/images/panaon-kk-youth-registry.jpg" alt="Panaon KK logo" class="w-10 h-10 rounded-lg object-cover">
+                <img src="assets/images/logo.svg" alt="Panaon KK logo" class="w-10 h-10 rounded-lg object-contain">
                 <span class="text-xl font-bold text-blue-900">Panaon KK</span>
             </div>
             <a href="pages/login.php" class="px-6 py-2 bg-blue-900 text-white rounded-lg font-semibold hover:bg-blue-800 transition-colors">
