@@ -9,10 +9,21 @@ $pageTitle = 'About Us';
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <style>
         @layer base {
-            html, body { margin: 0; padding: 0; }
-            body { overscroll-behavior: none; }
+
+            html,
+            body {
+                margin: 0;
+                padding: 0;
+            }
+
+            body {
+                overscroll-behavior: none;
+            }
         }
-        ::-webkit-scrollbar { display: none; }
+
+        ::-webkit-scrollbar {
+            display: none;
+        }
 
         /* ── Hover animations & Gradients (Copied from index) ── */
         .grad-text {
@@ -21,25 +32,78 @@ $pageTitle = 'About Us';
             -webkit-text-fill-color: transparent;
             background-clip: text;
         }
-        .tilt-card { transition: transform .35s cubic-bezier(.25,.46,.45,.94), box-shadow .35s ease; }
-        .tilt-card:hover { transform: translateY(-6px) rotate(-0.5deg); box-shadow: 0 20px 60px rgba(0,40,142,.12); }
-        @keyframes floatBlob {
-            0%,100% { transform: translateY(0) scale(1); }
-            50%      { transform: translateY(-24px) scale(1.04); }
+
+        .tilt-card {
+            transition: transform .35s cubic-bezier(.25, .46, .45, .94), box-shadow .35s ease;
         }
-        .blob { animation: floatBlob 7s ease-in-out infinite; }
-        .blob-2 { animation: floatBlob 9s 2s ease-in-out infinite; }
-        
+
+        .tilt-card:hover {
+            transform: translateY(-6px) rotate(-0.5deg);
+            box-shadow: 0 20px 60px rgba(0, 40, 142, .12);
+        }
+
+        @keyframes floatBlob {
+
+            0%,
+            100% {
+                transform: translateY(0) scale(1);
+            }
+
+            50% {
+                transform: translateY(-24px) scale(1.04);
+            }
+        }
+
+        .blob {
+            animation: floatBlob 7s ease-in-out infinite;
+        }
+
+        .blob-2 {
+            animation: floatBlob 9s 2s ease-in-out infinite;
+        }
+
         /* ── Footer gradient ── */
-        footer { background: linear-gradient(160deg, #1a1e2e 0%, #0d1422 100%) !important; }
-        footer, footer a, footer p, footer h4, footer span { color: #c5c6d0 !important; }
-        footer a:hover { color: #a8b4ff !important; }
-        footer .text-primary { color: #a8b4ff !important; }
-        footer .border-outline-variant\/15 { border-color: rgba(255,255,255,.08) !important; }
+        footer {
+            background: linear-gradient(160deg, #1a1e2e 0%, #0d1422 100%) !important;
+        }
+
+        footer,
+        footer a,
+        footer p,
+        footer h4,
+        footer span {
+            color: #c5c6d0 !important;
+        }
+
+        footer a:hover {
+            color: #a8b4ff !important;
+        }
+
+        footer .text-primary {
+            color: #a8b4ff !important;
+        }
+
+        footer .border-outline-variant\/15 {
+            border-color: rgba(255, 255, 255, .08) !important;
+        }
 
         /* ── Skeleton loading ── */
-        .skeleton-pulse{background:linear-gradient(90deg,#e2e8f0 25%,#f1f5f9 50%,#e2e8f0 75%);background-size:200% 100%;animation:skeleton-shimmer 1.4s ease-in-out infinite;border-radius:6px;}
-        @keyframes skeleton-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+        .skeleton-pulse {
+            background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+            background-size: 200% 100%;
+            animation: skeleton-shimmer 1.4s ease-in-out infinite;
+            border-radius: 6px;
+        }
+
+        @keyframes skeleton-shimmer {
+            0% {
+                background-position: 200% 0
+            }
+
+            100% {
+                background-position: -200% 0
+            }
+        }
     </style>
 
     <script src="<?php echo (isset($basePath) ? $basePath : ""); ?>/assets/js/tailwind.js"></script>
@@ -98,150 +162,152 @@ $pageTitle = 'About Us';
 </head>
 
 <body class="bg-surface font-body text-on-surface">
-<div id="skeleton-loader" class="p-8">
-  <div class="skeleton-pulse h-6 w-1/3 mb-4"></div>
-  <div class="skeleton-pulse h-4 w-2/3 mb-2"></div>
-  <div class="skeleton-pulse h-4 w-1/2"></div>
-</div>
-<div id="real-content" class="hidden">
+    <div id="skeleton-loader" class="p-8">
+        <div class="skeleton-pulse h-6 w-1/3 mb-4"></div>
+        <div class="skeleton-pulse h-4 w-2/3 mb-2"></div>
+        <div class="skeleton-pulse h-4 w-1/2"></div>
+    </div>
+    <div id="real-content" class="hidden">
 
-    <header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,14,83,0.04)]">
-        <div class="h-16 max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <img src="../assets/images/logo.svg" alt="Panaon KK logo" class="w-8 h-8 rounded-lg object-contain" />
-                <span class="text-lg font-headline font-bold tracking-tight text-primary">Youth Profiling System</span>
-            </div>
-            <nav class="hidden md:flex items-center gap-10">
-                <a href="../index.php" class="text-sm text-on-surface-variant hover:text-on-surface transition-colors">Home</a>
-                <a href="about.php" class="transition-colors text-primary font-semibold">About</a>
-            </nav>
-            <div class="flex items-center gap-4">
-                <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                    <span class="material-symbols-outlined text-on-primary text-[18px]">person</span>
+        <header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,14,83,0.04)]">
+            <div class="h-16 max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <img src="../assets/images/logo.svg" alt="Panaon KK logo" class="w-8 h-8 rounded-lg object-contain" />
+                    <span class="text-lg font-headline font-bold tracking-tight text-primary">Youth Profiling System</span>
+                </div>
+                <nav class="hidden md:flex items-center gap-10">
+                    <a href="../index.php" class="text-sm text-on-surface-variant hover:text-on-surface transition-colors">Home</a>
+                    <a href="about.php" class="transition-colors text-primary font-semibold">About</a>
+                </nav>
+                <div class="flex items-center gap-4">
+                    <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                        <span class="material-symbols-outlined text-on-primary text-[18px]">person</span>
+                    </div>
                 </div>
             </div>
-        </div>
-    </header>
+        </header>
 
-    <div class="pt-16"></div>
-    
-    <!-- Hero / Header Section for About -->
-    <section class="relative w-full py-24 lg:py-32 overflow-hidden bg-surface-container-low" style="background: linear-gradient(160deg, #f8f9fb 0%, #eef1ff 100%);">
-        <!-- Floating decorative blobs -->
-        <div class="blob absolute top-0 right-10 w-64 h-64 rounded-full z-0 pointer-events-none" style="background:radial-gradient(circle,rgba(0,40,142,.08) 0%,transparent 70%);"></div>
-        <div class="blob-2 absolute bottom-10 left-10 w-72 h-72 rounded-full z-0 pointer-events-none" style="background:radial-gradient(circle,rgba(107,83,140,.06) 0%,transparent 70%);"></div>
+        <div class="pt-16"></div>
 
-        <div class="relative z-10 max-w-4xl mx-auto px-6 text-center">
-            <p class="mb-4 text-sm font-label font-bold uppercase tracking-[0.2em] text-primary" data-aos="fade-up">About the platform</p>
-            <h1 class="mb-6 text-4xl lg:text-5xl lg:leading-tight font-display font-extrabold tracking-tight text-on-surface" data-aos="fade-up" data-aos-delay="100">
-                Connecting young people with a <span class="grad-text">clearer next step.</span>
-            </h1>
-            <p class="text-xl leading-relaxed text-on-surface-variant max-w-2xl mx-auto font-medium" data-aos="fade-up" data-aos-delay="200">
-                The Youth Profiling System helps local communities understand the skills, interests, and goals of out-of-school youth in the Philippines.
-            </p>
-        </div>
-    </section>
+        <!-- Hero / Header Section for About -->
+        <section class="relative w-full py-24 lg:py-32 overflow-hidden bg-surface-container-low" style="background: linear-gradient(160deg, #f8f9fb 0%, #eef1ff 100%);">
+            <!-- Floating decorative blobs -->
+            <div class="blob absolute top-0 right-10 w-64 h-64 rounded-full z-0 pointer-events-none" style="background:radial-gradient(circle,rgba(0,40,142,.08) 0%,transparent 70%);"></div>
+            <div class="blob-2 absolute bottom-10 left-10 w-72 h-72 rounded-full z-0 pointer-events-none" style="background:radial-gradient(circle,rgba(107,83,140,.06) 0%,transparent 70%);"></div>
 
-    <main class="w-full bg-surface pb-24">
-        <div class="max-w-4xl mx-auto px-6 relative -mt-12 z-20">
-            <!-- Content Block -->
-            <div class="bg-surface-container-lowest p-8 lg:p-12 rounded-2xl shadow-xl border border-outline-variant/15 space-y-6 text-lg leading-relaxed text-on-surface-variant" data-aos="fade-up" data-aos-delay="300">
-                <p>
-                    Young people can build a profile and discover relevant training (like TESDA), internships, and community opportunities tailored specifically to their location and career aspirations.
-                </p>
-                <p>
-                    Local providers, businesses, and organizations can share programs and connect directly with motivated local talent, ensuring that opportunities reach those who need them most.
-                </p>
-                <p class="font-headline font-semibold text-primary">
-                    Our goal is simple: make support easier to find, make skills more visible, and help communities create better pathways into learning and work.
+            <div class="relative z-10 max-w-4xl mx-auto px-6 text-center">
+                <p class="mb-4 text-sm font-label font-bold uppercase tracking-[0.2em] text-primary" data-aos="fade-up">About the platform</p>
+                <h1 class="mb-6 text-4xl lg:text-5xl lg:leading-tight font-display font-extrabold tracking-tight text-on-surface" data-aos="fade-up" data-aos-delay="100">
+                    Connecting young people with a <span class="grad-text">clearer next step.</span>
+                </h1>
+                <p class="text-xl leading-relaxed text-on-surface-variant max-w-2xl mx-auto font-medium" data-aos="fade-up" data-aos-delay="200">
+                    The Youth Profiling System helps local communities understand the skills, interests, and goals of out-of-school youth in the Philippines.
                 </p>
             </div>
-            
-            <!-- Value Prop Cards -->
-            <section class="mt-16 grid gap-8 md:grid-cols-3">
-                <div class="tilt-card border-t-4 border-primary bg-surface-container-lowest p-8 shadow-sm rounded-xl" data-aos="fade-up">
-                    <div class="w-12 h-12 rounded-full flex items-center justify-center text-primary mb-4" style="background:linear-gradient(135deg,#eef1ff,#dce1ff);">
-                        <span class="material-symbols-outlined">person</span>
-                    </div>
-                    <h2 class="mb-2 font-headline font-bold text-xl text-on-surface">Youth first</h2>
-                    <p class="text-sm leading-relaxed text-on-surface-variant">Profiles and pathways designed around real goals, prioritizing the needs of young job-seekers.</p>
-                </div>
-                <div class="tilt-card border-t-4 border-tertiary bg-surface-container-lowest p-8 shadow-sm rounded-xl" data-aos="fade-up" data-aos-delay="100">
-                    <div class="w-12 h-12 rounded-full flex items-center justify-center text-tertiary mb-4" style="background:linear-gradient(135deg,#f3eeff,#e9d8ff);">
-                        <span class="material-symbols-outlined">map</span>
-                    </div>
-                    <h2 class="mb-2 font-headline font-bold text-xl text-on-surface">Local connection</h2>
-                    <p class="text-sm leading-relaxed text-on-surface-variant">Community providers and localized training programs aggregated in one accessible place.</p>
-                </div>
-                <div class="tilt-card border-t-4 border-secondary bg-surface-container-lowest p-8 shadow-sm rounded-xl" data-aos="fade-up" data-aos-delay="200">
-                    <div class="w-12 h-12 rounded-full flex items-center justify-center text-secondary mb-4" style="background:linear-gradient(135deg,#e8eaf6,#c5cae9);">
-                        <span class="material-symbols-outlined">trending_up</span>
-                    </div>
-                    <h2 class="mb-2 font-headline font-bold text-xl text-on-surface">Practical progress</h2>
-                    <p class="text-sm leading-relaxed text-on-surface-variant">Smart skills matching that turns user information into concrete, actionable next steps.</p>
-                </div>
-            </section>
-        </div>
-    </main>
+        </section>
 
-    <footer class="w-full bg-surface-container-low pt-16 pb-12 mt-auto">
-        <div class="max-w-7xl mx-auto px-6 lg:px-12">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
-                <!-- Brand -->
-                <div class="space-y-4">
-                    <div class="flex items-center gap-2">
-                        <span class="text-lg font-headline font-bold tracking-tight text-primary">Youth Profiling System</span>
-                    </div>
-                    <p class="text-sm text-on-surface-variant leading-relaxed max-w-xs">
-                        Empowering the next generation through digital transformation and community engagement.
+        <main class="w-full bg-surface pb-24">
+            <div class="max-w-4xl mx-auto px-6 relative -mt-12 z-20">
+                <!-- Content Block -->
+                <div class="bg-surface-container-lowest p-8 lg:p-12 rounded-2xl shadow-xl border border-outline-variant/15 space-y-6 text-lg leading-relaxed text-on-surface-variant" data-aos="fade-up" data-aos-delay="300">
+                    <p>
+                        Young people can build a profile and discover relevant training (like TESDA), internships, and community opportunities tailored specifically to their location and career aspirations.
+                    </p>
+                    <p>
+                        Local providers, businesses, and organizations can share programs and connect directly with motivated local talent, ensuring that opportunities reach those who need them most.
+                    </p>
+                    <p class="font-headline font-semibold text-primary">
+                        Our goal is simple: make support easier to find, make skills more visible, and help communities create better pathways into learning and work.
                     </p>
                 </div>
 
-                <!-- Navigation -->
-                <div class="space-y-4">
-                    <h4 class="text-xs font-label font-bold uppercase tracking-widest text-on-surface-variant">Navigation</h4>
-                    <nav class="flex flex-col gap-2">
-                        <a class="text-sm text-on-surface hover:text-primary transition-colors" href="../index.php">Home</a>
-                        <a class="text-sm text-on-surface hover:text-primary transition-colors" href="about.php">About</a>
-                    </nav>
+                <!-- Value Prop Cards -->
+                <section class="mt-16 grid gap-8 md:grid-cols-3">
+                    <div class="tilt-card border-t-4 border-primary bg-surface-container-lowest p-8 shadow-sm rounded-xl" data-aos="fade-up">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center text-primary mb-4" style="background:linear-gradient(135deg,#eef1ff,#dce1ff);">
+                            <span class="material-symbols-outlined">person</span>
+                        </div>
+                        <h2 class="mb-2 font-headline font-bold text-xl text-on-surface">Youth first</h2>
+                        <p class="text-sm leading-relaxed text-on-surface-variant">Profiles and pathways designed around real goals, prioritizing the needs of young job-seekers.</p>
+                    </div>
+                    <div class="tilt-card border-t-4 border-tertiary bg-surface-container-lowest p-8 shadow-sm rounded-xl" data-aos="fade-up" data-aos-delay="100">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center text-tertiary mb-4" style="background:linear-gradient(135deg,#f3eeff,#e9d8ff);">
+                            <span class="material-symbols-outlined">map</span>
+                        </div>
+                        <h2 class="mb-2 font-headline font-bold text-xl text-on-surface">Local connection</h2>
+                        <p class="text-sm leading-relaxed text-on-surface-variant">Community providers and localized training programs aggregated in one accessible place.</p>
+                    </div>
+                    <div class="tilt-card border-t-4 border-secondary bg-surface-container-lowest p-8 shadow-sm rounded-xl" data-aos="fade-up" data-aos-delay="200">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center text-secondary mb-4" style="background:linear-gradient(135deg,#e8eaf6,#c5cae9);">
+                            <span class="material-symbols-outlined">trending_up</span>
+                        </div>
+                        <h2 class="mb-2 font-headline font-bold text-xl text-on-surface">Practical progress</h2>
+                        <p class="text-sm leading-relaxed text-on-surface-variant">Smart skills matching that turns user information into concrete, actionable next steps.</p>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <footer class="w-full bg-surface-container-low pt-16 pb-12 mt-auto">
+            <div class="max-w-7xl mx-auto px-6 lg:px-12">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
+                    <!-- Brand -->
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg font-headline font-bold tracking-tight text-primary">Youth Profiling System</span>
+                        </div>
+                        <p class="text-sm text-on-surface-variant leading-relaxed max-w-xs">
+                            Empowering the next generation through digital transformation and community engagement.
+                        </p>
+                    </div>
+
+                    <!-- Navigation -->
+                    <div class="space-y-4">
+                        <h4 class="text-xs font-label font-bold uppercase tracking-widest text-on-surface-variant">Navigation</h4>
+                        <nav class="flex flex-col gap-2">
+                            <a class="text-sm text-on-surface hover:text-primary transition-colors" href="../index.php">Home</a>
+                            <a class="text-sm text-on-surface hover:text-primary transition-colors" href="about.php">About</a>
+                        </nav>
+                    </div>
+
+                    <!-- Support -->
+                    <div class="space-y-4">
+                        <h4 class="text-xs font-label font-bold uppercase tracking-widest text-on-surface-variant">Support</h4>
+                        <nav class="flex flex-col gap-2">
+                            <a class="text-sm text-on-surface hover:text-primary transition-colors" href="#">Contact Support</a>
+                            <a class="text-sm text-on-surface hover:text-primary transition-colors" href="privacy-policy.php">Privacy Policy</a>
+                            <a class="text-sm text-on-surface hover:text-primary transition-colors" href="terms-of-service.php">Terms of Service</a>
+                        </nav>
+                    </div>
                 </div>
 
-                <!-- Support -->
-                <div class="space-y-4">
-                    <h4 class="text-xs font-label font-bold uppercase tracking-widest text-on-surface-variant">Support</h4>
-                    <nav class="flex flex-col gap-2">
-                        <a class="text-sm text-on-surface hover:text-primary transition-colors" href="#">Contact Support</a>
-                        <a class="text-sm text-on-surface hover:text-primary transition-colors" href="privacy-policy.php">Privacy Policy</a>
-                        <a class="text-sm text-on-surface hover:text-primary transition-colors" href="terms-of-service.php">Terms of Service</a>
-                    </nav>
+                <div class="pt-8 border-t border-outline-variant/15 flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-label text-on-surface-variant">
+                    <p>© <?= date('Y'); ?> Youth Profiling System.</p>
+                    <div class="flex gap-6">
+                        <a class="hover:text-primary" href="#">Facebook</a>
+                        <a class="hover:text-primary" href="#">Twitter</a>
+                        <a class="hover:text-primary" href="#">Instagram</a>
+                    </div>
                 </div>
             </div>
+        </footer>
 
-            <div class="pt-8 border-t border-outline-variant/15 flex flex-col md:flex-row justify-between items-center gap-4 text-xs font-label text-on-surface-variant">
-                <p>© <?= date('Y'); ?> Youth Profiling System.</p>
-                <div class="flex gap-6">
-                    <a class="hover:text-primary" href="#">Facebook</a>
-                    <a class="hover:text-primary" href="#">Twitter</a>
-                    <a class="hover:text-primary" href="#">Instagram</a>
-                </div>
-            </div>
-        </div>
-    </footer>
-
+        <script>
+            if (typeof AOS !== 'undefined') {
+                AOS.init({
+                    once: true
+                });
+            }
+        </script>
+    </div><!-- end #real-content -->
     <script>
-        if (typeof AOS !== 'undefined') {
-            AOS.init({ once: true });
-        }
+        (function() {
+            var sk = document.getElementById('skeleton-loader');
+            var rc = document.getElementById('real-content');
+            if (sk) sk.style.display = 'none';
+            if (rc) rc.classList.remove('hidden');
+        })();
     </script>
-</div><!-- end #real-content -->
-<script>
-(function(){
-    var sk = document.getElementById('skeleton-loader');
-    var rc = document.getElementById('real-content');
-    if(sk) sk.style.display = 'none';
-    if(rc) rc.classList.remove('hidden');
-})();
-</script>
 </body>
 
 </html>

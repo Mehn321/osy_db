@@ -15,80 +15,80 @@
     <link rel="icon" type="image/svg+xml" href="assets/images/logo.svg" />
     <!-- Reset / base styles -->
     <style>
-    @layer base {
+        @layer base {
 
-        html,
-        body {
-            margin: 0;
-            padding: 0;
+            html,
+            body {
+                margin: 0;
+                padding: 0;
+            }
+
+            body {
+                overscroll-behavior: none;
+            }
+
+            main>:first-child {
+                margin-top: 0 !important;
+            }
+
+            main>:last-child {
+                margin-bottom: 0 !important;
+            }
         }
 
-        body {
-            overscroll-behavior: none;
+        ::-webkit-scrollbar {
+            display: none;
         }
-
-        main>:first-child {
-            margin-top: 0 !important;
-        }
-
-        main>:last-child {
-            margin-bottom: 0 !important;
-        }
-    }
-
-    ::-webkit-scrollbar {
-        display: none;
-    }
     </style>
     <!-- Tailwind (using the same config you already have) -->
     <script src="<?php echo (isset($basePath) ? $basePath : ""); ?>/assets/js/tailwind.js"></script>
     <script id="tailwind-config">
-    tailwind.config = {
-        darkMode: "class",
-        theme: {
-            extend: {
-                colors: {
-                    "surface-variant": "#e1e2e4",
-                    "primary": "#00288e",
-                    "primary-container": "#1e40af",
-                    "primary-fixed": "#dce1ff",
-                    "on-primary": "#ffffff",
-                    "secondary": "#525c87",
-                    "on-secondary": "#ffffff",
-                    "tertiary": "#6b538c",
-                    "on-tertiary": "#ffffff",
-                    "background": "#f8f9fb",
-                    "on-background": "#191c1e",
-                    "surface": "#f8f9fb",
-                    "on-surface": "#191c1e",
-                    "on-surface-variant": "#44474f",
-                    "surface-container-low": "#f3f4f6",
-                    "surface-container-lowest": "#ffffff",
-                    "surface-container": "#edeef0",
-                    "surface-container-high": "#e7e8ea",
-                    "surface-container-highest": "#e1e2e4",
-                    "surface-bright": "#f8f9fb",
-                    "outline": "#757684",
-                    "outline-variant": "#c5c6d0",
-                    "error": "#ba1a1a",
-                    "error-container": "#ffdad6",
-                    "on-error-container": "#93000a"
-                },
-                borderRadius: {
-                    DEFAULT: "0.25rem",
-                    lg: "0.5rem",
-                    xl: "0.75rem",
-                    full: "9999px"
-                },
-                fontFamily: {
-                    headline: ["Inter"],
-                    display: ["Inter"],
-                    body: ["Inter"],
-                    label: ["Inter"]
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-variant": "#e1e2e4",
+                        "primary": "#00288e",
+                        "primary-container": "#1e40af",
+                        "primary-fixed": "#dce1ff",
+                        "on-primary": "#ffffff",
+                        "secondary": "#525c87",
+                        "on-secondary": "#ffffff",
+                        "tertiary": "#6b538c",
+                        "on-tertiary": "#ffffff",
+                        "background": "#f8f9fb",
+                        "on-background": "#191c1e",
+                        "surface": "#f8f9fb",
+                        "on-surface": "#191c1e",
+                        "on-surface-variant": "#44474f",
+                        "surface-container-low": "#f3f4f6",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container": "#edeef0",
+                        "surface-container-high": "#e7e8ea",
+                        "surface-container-highest": "#e1e2e4",
+                        "surface-bright": "#f8f9fb",
+                        "outline": "#757684",
+                        "outline-variant": "#c5c6d0",
+                        "error": "#ba1a1a",
+                        "error-container": "#ffdad6",
+                        "on-error-container": "#93000a"
+                    },
+                    borderRadius: {
+                        DEFAULT: "0.25rem",
+                        lg: "0.5rem",
+                        xl: "0.75rem",
+                        full: "9999px"
+                    },
+                    fontFamily: {
+                        headline: ["Inter"],
+                        display: ["Inter"],
+                        body: ["Inter"],
+                        label: ["Inter"]
+                    }
                 }
             }
-        }
-    };
+        };
     </script>
 
     <!-- Material icons & Inter font (same as original) -->
@@ -99,232 +99,232 @@
     <link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css" />
     <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
     <style>
-    /* ── Highlight flash ── */
-    .highlight {
-        animation: highlightFade 2s forwards;
-    }
-
-    @keyframes highlightFade {
-        from {
-            box-shadow: 0 0 0 4px rgba(0, 120, 255, 0.5);
+        /* ── Highlight flash ── */
+        .highlight {
+            animation: highlightFade 2s forwards;
         }
 
-        to {
-            box-shadow: none;
-        }
-    }
+        @keyframes highlightFade {
+            from {
+                box-shadow: 0 0 0 4px rgba(0, 120, 255, 0.5);
+            }
 
-    /* ── Hero text entrance ── */
-    @keyframes heroSlideUp {
-        from {
-            opacity: 0;
-            transform: translateY(40px);
+            to {
+                box-shadow: none;
+            }
         }
 
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
+        /* ── Hero text entrance ── */
+        @keyframes heroSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
 
-    .hero-title {
-        animation: heroSlideUp .9s ease both;
-    }
-
-    .hero-sub {
-        animation: heroSlideUp .9s .2s ease both;
-    }
-
-    .hero-cta {
-        animation: heroSlideUp .9s .4s ease both;
-    }
-
-    /* ── Floating blobs in hero ── */
-    @keyframes floatBlob {
-
-        0%,
-        100% {
-            transform: translateY(0) scale(1);
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
-        50% {
-            transform: translateY(-24px) scale(1.04);
-        }
-    }
-
-    .blob {
-        animation: floatBlob 7s ease-in-out infinite;
-    }
-
-    .blob-2 {
-        animation: floatBlob 9s 2s ease-in-out infinite;
-    }
-
-    .blob-3 {
-        animation: floatBlob 11s 4s ease-in-out infinite;
-    }
-
-    /* ── Pulse ring on profile icon ── */
-    @keyframes pulseRing {
-        0% {
-            box-shadow: 0 0 0 0 rgba(0, 40, 142, .45);
+        .hero-title {
+            animation: heroSlideUp .9s ease both;
         }
 
-        70% {
-            box-shadow: 0 0 0 10px rgba(0, 40, 142, 0);
+        .hero-sub {
+            animation: heroSlideUp .9s .2s ease both;
         }
 
-        100% {
-            box-shadow: 0 0 0 0 rgba(0, 40, 142, 0);
-        }
-    }
-
-    #profile-icon {
-        animation: pulseRing 2.4s ease-out infinite;
-        cursor: pointer;
-    }
-
-    /* ── Shimmer on partner logos ── */
-    @keyframes shimmer {
-        0% {
-            background-position: -400px 0;
+        .hero-cta {
+            animation: heroSlideUp .9s .4s ease both;
         }
 
-        100% {
-            background-position: 400px 0;
-        }
-    }
+        /* ── Floating blobs in hero ── */
+        @keyframes floatBlob {
 
-    /* ── Gradient text ── */
-    .grad-text {
-        background: linear-gradient(135deg, #00288e 0%, #6b538c 60%, #525c87 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
+            0%,
+            100% {
+                transform: translateY(0) scale(1);
+            }
 
-    /* ── Card tilt on hover ── */
-    .tilt-card {
-        transition: transform .35s cubic-bezier(.25, .46, .45, .94), box-shadow .35s ease;
-    }
-
-    .tilt-card:hover {
-        transform: translateY(-6px) rotate(-0.5deg);
-        box-shadow: 0 20px 60px rgba(0, 40, 142, .12);
-    }
-
-    /* ── Step icon bounce ── */
-    @keyframes iconBounce {
-
-        0%,
-        100% {
-            transform: translateY(0);
+            50% {
+                transform: translateY(-24px) scale(1.04);
+            }
         }
 
-        50% {
-            transform: translateY(-6px);
-        }
-    }
-
-    .step-card:hover .step-icon {
-        animation: iconBounce .6s ease;
-    }
-
-    /* ── Wave SVG divider ── */
-    .wave-divider svg {
-        display: block;
-    }
-
-    @media (max-width: 639px) {
-        .hero-section {
-            height: auto !important;
-            min-height: max(600px, 100svh);
-            padding-top: 6rem;
-            padding-bottom: 9rem;
+        .blob {
+            animation: floatBlob 7s ease-in-out infinite;
         }
 
-        .hero-content {
-            z-index: 30;
+        .blob-2 {
+            animation: floatBlob 9s 2s ease-in-out infinite;
         }
 
-        .hero-section .scroll-indicator {
-            bottom: 5.25rem;
-        }
-    }
-
-    /* ── Scroll indicator bounce ── */
-    @keyframes scrollBounce {
-
-        0%,
-        100% {
-            transform: translate(-50%, 0);
-            opacity: .8;
+        .blob-3 {
+            animation: floatBlob 11s 4s ease-in-out infinite;
         }
 
-        50% {
-            transform: translate(-50%, 8px);
-            opacity: 1;
+        /* ── Pulse ring on profile icon ── */
+        @keyframes pulseRing {
+            0% {
+                box-shadow: 0 0 0 0 rgba(0, 40, 142, .45);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(0, 40, 142, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(0, 40, 142, 0);
+            }
         }
-    }
 
-    .scroll-indicator {
-        animation: scrollBounce 1.8s ease-in-out infinite;
-    }
+        #profile-icon {
+            animation: pulseRing 2.4s ease-out infinite;
+            cursor: pointer;
+        }
 
-    /* ── Gradient section backgrounds ── */
-    .grad-section-blue {
-        background: linear-gradient(160deg, #eef1ff 0%, #f8f9fb 60%);
-    }
+        /* ── Shimmer on partner logos ── */
+        @keyframes shimmer {
+            0% {
+                background-position: -400px 0;
+            }
 
-    .grad-section-purple {
-        background: linear-gradient(160deg, #f3eeff 0%, #f8f9fb 70%);
-    }
+            100% {
+                background-position: 400px 0;
+            }
+        }
 
-    .grad-section-dark {
-        background: linear-gradient(135deg, #00288e 0%, #1e40af 50%, #6b538c 100%);
-    }
+        /* ── Gradient text ── */
+        .grad-text {
+            background: linear-gradient(135deg, #00288e 0%, #6b538c 60%, #525c87 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
 
-    /* ── Glow badge ── */
-    .glow-badge {
-        box-shadow: 0 0 0 4px rgba(0, 40, 142, .08), 0 2px 12px rgba(0, 40, 142, .15);
-    }
+        /* ── Card tilt on hover ── */
+        .tilt-card {
+            transition: transform .35s cubic-bezier(.25, .46, .45, .94), box-shadow .35s ease;
+        }
 
-    /* ── Footer gradient ── */
-    footer {
-        background: linear-gradient(160deg, #1a1e2e 0%, #0d1422 100%) !important;
-    }
+        .tilt-card:hover {
+            transform: translateY(-6px) rotate(-0.5deg);
+            box-shadow: 0 20px 60px rgba(0, 40, 142, .12);
+        }
 
-    footer,
-    footer a,
-    footer p,
-    footer h4,
-    footer span {
-        color: #c5c6d0 !important;
-    }
+        /* ── Step icon bounce ── */
+        @keyframes iconBounce {
 
-    footer a:hover {
-        color: #a8b4ff !important;
-    }
+            0%,
+            100% {
+                transform: translateY(0);
+            }
 
-    footer .text-primary {
-        color: #a8b4ff !important;
-    }
+            50% {
+                transform: translateY(-6px);
+            }
+        }
 
-    footer .border-outline-variant\/15 {
-        border-color: rgba(255, 255, 255, .08) !important;
-    }
+        .step-card:hover .step-icon {
+            animation: iconBounce .6s ease;
+        }
+
+        /* ── Wave SVG divider ── */
+        .wave-divider svg {
+            display: block;
+        }
+
+        @media (max-width: 639px) {
+            .hero-section {
+                height: auto !important;
+                min-height: max(600px, 100svh);
+                padding-top: 6rem;
+                padding-bottom: 9rem;
+            }
+
+            .hero-content {
+                z-index: 30;
+            }
+
+            .hero-section .scroll-indicator {
+                bottom: 5.25rem;
+            }
+        }
+
+        /* ── Scroll indicator bounce ── */
+        @keyframes scrollBounce {
+
+            0%,
+            100% {
+                transform: translate(-50%, 0);
+                opacity: .8;
+            }
+
+            50% {
+                transform: translate(-50%, 8px);
+                opacity: 1;
+            }
+        }
+
+        .scroll-indicator {
+            animation: scrollBounce 1.8s ease-in-out infinite;
+        }
+
+        /* ── Gradient section backgrounds ── */
+        .grad-section-blue {
+            background: linear-gradient(160deg, #eef1ff 0%, #f8f9fb 60%);
+        }
+
+        .grad-section-purple {
+            background: linear-gradient(160deg, #f3eeff 0%, #f8f9fb 70%);
+        }
+
+        .grad-section-dark {
+            background: linear-gradient(135deg, #00288e 0%, #1e40af 50%, #6b538c 100%);
+        }
+
+        /* ── Glow badge ── */
+        .glow-badge {
+            box-shadow: 0 0 0 4px rgba(0, 40, 142, .08), 0 2px 12px rgba(0, 40, 142, .15);
+        }
+
+        /* ── Footer gradient ── */
+        footer {
+            background: linear-gradient(160deg, #1a1e2e 0%, #0d1422 100%) !important;
+        }
+
+        footer,
+        footer a,
+        footer p,
+        footer h4,
+        footer span {
+            color: #c5c6d0 !important;
+        }
+
+        footer a:hover {
+            color: #a8b4ff !important;
+        }
+
+        footer .text-primary {
+            color: #a8b4ff !important;
+        }
+
+        footer .border-outline-variant\/15 {
+            border-color: rgba(255, 255, 255, .08) !important;
+        }
     </style>
 </head>
 
 <body class="bg-surface font-body text-on-surface">
 
     <header class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,14,83,0.04)]">
-        <div class="h-16 max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between">
+        <div class="relative h-16 max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between">
             <div class="flex items-center gap-2">
                 <img src="assets/images/logo.svg" alt="Panaon KK logo" class="w-8 h-8 rounded-lg object-contain" />
                 <span class="text-lg font-headline font-bold tracking-tight text-primary">Youth Profiling System</span>
             </div>
-            <nav class="hidden md:flex items-center gap-10">
+            <nav class="hidden md:flex md:absolute md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 items-center gap-10">
                 <a href="index.php" class="transition-colors text-primary font-semibold">Home</a>
                 <a href="pages/about.php"
                     class="text-sm text-on-surface-variant hover:text-on-surface transition-colors">About</a>
@@ -747,25 +747,25 @@
     </footer>
 
     <script>
-    // Initialize AOS animations
-    if (typeof AOS !== 'undefined') {
-        AOS.init({
-            once: true
-        });
-    }
-    // Smooth scroll to Paths to Engagement section when profile icon is clicked
-    const profileIcon = document.getElementById('profile-icon');
-    const pathsSection = document.getElementById('paths-section');
-    if (profileIcon && pathsSection) {
-        profileIcon.addEventListener('click', function(e) {
-            e.preventDefault();
-            pathsSection.scrollIntoView({
-                behavior: 'smooth'
+        // Initialize AOS animations
+        if (typeof AOS !== 'undefined') {
+            AOS.init({
+                once: true
             });
-            pathsSection.classList.add('highlight');
-            setTimeout(() => pathsSection.classList.remove('highlight'), 2000);
-        });
-    }
+        }
+        // Smooth scroll to Paths to Engagement section when profile icon is clicked
+        const profileIcon = document.getElementById('profile-icon');
+        const pathsSection = document.getElementById('paths-section');
+        if (profileIcon && pathsSection) {
+            profileIcon.addEventListener('click', function(e) {
+                e.preventDefault();
+                pathsSection.scrollIntoView({
+                    behavior: 'smooth'
+                });
+                pathsSection.classList.add('highlight');
+                setTimeout(() => pathsSection.classList.remove('highlight'), 2000);
+            });
+        }
     </script>
 </body>
 
